@@ -714,6 +714,17 @@ function handle_action(string $action): never
         redirect('pathway', $courseId ? ['course'=>$courseId] : ($candidate?['course'=>(int)$candidate['course_id']]:[]));
     }
 
+    if($action==='create_pathway'&&$user['role']==='teacher'){
+        $result=create_pathway(db(),(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['code']??''),(string)($_POST['description']??''));
+        if($result['status']==='created'){
+            flash('Parcours créé.');
+            redirect('pathway',['course'=>$result['course_id']]);
+        }
+        if($result['status']==='duplicate')flash('Ce code de parcours est déjà utilisé. Choisissez-en un autre.','error');
+        else flash('Le nom est requis. Le code doit contenir 3 à 40 caractères : lettres sans accent, chiffres, point, tiret ou soulignement.','error');
+        redirect('pathway');
+    }
+
     if ($action === 'manage_course' && $user['role'] === 'teacher') {
         $courseId = (int)($_POST['course_id'] ?? 0);
         $operation = (string)($_POST['operation'] ?? '');

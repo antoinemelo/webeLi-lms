@@ -39,6 +39,34 @@ function update_course_identity(PDO $pdo, int $courseId, int $teacherId, string 
     return 'updated';
 }
 
+/**
+ * @return array{status:'created'|'invalid'|'duplicate',course_id?:int}
+ */
+function create_pathway(PDO $pdo, int $teacherId, string $title, string $code, string $description): array
+{
+    $title=trim($title);
+    $code=strtoupper(trim($code));
+    $description=trim($description);
+    if($title===''||mb_strlen($title)>160||mb_strlen($description)>2000||!preg_match('/^[A-Z0-9][A-Z0-9._-]{2,39}$/',$code))return ['status'=>'invalid'];
+    $duplicate=$pdo->prepare('SELECT 1 FROM courses WHERE lower(code)=lower(?)');
+    $duplicate->execute([$code]);
+    if($duplicate->fetchColumn())return ['status'=>'duplicate'];
+
+    $pdo->beginTransaction();
+    try{
+        $insert=$pdo->prepare('INSERT INTO courses(reference,title,code,description,teacher_id,accent) VALUES(?,?,?,?,?,?)');
+        $insert->execute([new_entity_reference('COURSE'),$title,$code,$description,$teacherId,'#6d5dfc']);
+        $courseId=(int)$pdo->lastInsertId();
+        $reward=$pdo->prepare('INSERT INTO reward_types(course_id,name,icon,color,default_points) VALUES(?,?,?,?,?)');
+        foreach([['Persévérance','🌱',5],['Curiosité','🔎',5],['Entraide','🤝',10],['Travail soigné','✨',5]] as [$name,$icon,$points])$reward->execute([$courseId,$name,$icon,'#6d5dfc',$points]);
+        $pdo->commit();
+        return ['status'=>'created','course_id'=>$courseId];
+    }catch(Throwable $exception){
+        if($pdo->inTransaction())$pdo->rollBack();
+        throw $exception;
+    }
+}
+
 function page_objectives(PDO $pdo, int $pageId): array
 {
     $query=$pdo->prepare('SELECT id,page_id,title,description,position FROM page_objectives WHERE page_id=? ORDER BY position,id');
@@ -53,6 +81,29 @@ function pathway_objectives(PDO $pdo, int $courseId): array
         WHERE pi.course_id=? GROUP BY lower(po.title) ORDER BY MIN(pi.position),po.title");
     $query->execute([$courseId]);
     return $query->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function pathway_sidebar_skills(PDO $pdo, int $courseId): array
+{
+    $query=$pdo->prepare("SELECT s.*,
+        COUNT(i.pathway_item_id) AS linked_count,
+        SUM(CASE WHEN pi.access_mode='all' THEN 1 ELSE 0 END) AS open_count,
+        SUM(CASE WHEN pi.access_mode='restricted' THEN 1 ELSE 0 END) AS restricted_count
+        FROM course_skills s
+        LEFT JOIN item_skills i ON i.skill_id=s.id
+        LEFT JOIN pathway_items pi ON pi.id=i.pathway_item_id
+        WHERE s.course_id=? GROUP BY s.id ORDER BY s.position,s.id");
+    $query->execute([$courseId]);
+    $skills=[];
+    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $skill){
+        $linked=(int)$skill['linked_count'];
+        $open=(int)$skill['open_count'];
+        $restricted=(int)$skill['restricted_count'];
+        if($linked>0&&$open===0&&$restricted===0)continue;
+        $skill['access_visibility']=$open===0&&$restricted>0?'restricted':'open';
+        $skills[]=$skill;
+    }
+    return $skills;
 }
 
 function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, bool $resetDeadlines): ?int
