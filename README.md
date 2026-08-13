@@ -76,8 +76,7 @@ Le script prépare uniquement le dossier local. Il n’effectue aucun transfert 
 
 ```bash
 python3 scripts/apr.py \
-  --git-release ../git \
-  --release-version 2026.08.13
+  --git-release ../git
 ```
 
 Cette commande crée le dépôt local, configure `origin`, génère `VERSION` et `RELEASE.json`, puis crée un commit. Elle ne contacte pas GitHub. Après contrôle du contenu, le push doit être demandé explicitement :
@@ -85,7 +84,6 @@ Cette commande crée le dépôt local, configure `origin`, génère `VERSION` et
 ```bash
 python3 scripts/apr.py \
   --git-release ../git \
-  --release-version 2026.08.13.1 \
   --force \
   --git-push
 ```

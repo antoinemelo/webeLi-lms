@@ -1,5 +1,12 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE schema_migrations (
+    version INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    checksum TEXT NOT NULL,
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -62,6 +69,15 @@ CREATE TABLE enrollments (
     UNIQUE(course_id, student_id),
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE course_accesses (
+    user_id INTEGER NOT NULL,
+    course_id INTEGER NOT NULL,
+    last_accessed_at INTEGER NOT NULL,
+    PRIMARY KEY(user_id, course_id),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
 CREATE TABLE pages (
@@ -182,6 +198,7 @@ CREATE TABLE edit_locks (
     entity_type TEXT NOT NULL CHECK(entity_type IN ('page_metadata','page_block','pathway_item','course_structure')),
     entity_id INTEGER NOT NULL,
     teacher_id INTEGER NOT NULL,
+    owner_token TEXT NOT NULL,
     acquired_at INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,
     PRIMARY KEY(entity_type, entity_id),
@@ -298,6 +315,7 @@ CREATE INDEX idx_password_reset_attempts_ip ON password_reset_attempts(ip_hash, 
 CREATE INDEX idx_password_reset_attempts_email ON password_reset_attempts(email_hash, requested_at);
 CREATE INDEX idx_users_verification_expiry ON users(account_status, verification_expires_at);
 CREATE INDEX idx_courses_reference ON courses(reference);
+CREATE INDEX idx_course_accesses_recent ON course_accesses(user_id,last_accessed_at DESC);
 CREATE INDEX idx_pages_reference ON pages(reference);
 CREATE INDEX idx_course_teachers_teacher ON course_teachers(teacher_id, course_id);
 CREATE INDEX idx_item_students_student ON pathway_item_students(student_id, pathway_item_id);
@@ -310,3 +328,5 @@ WHEN NEW.account_status='pending' AND (SELECT COUNT(*) FROM users WHERE account_
 BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
+
+PRAGMA user_version = 6;

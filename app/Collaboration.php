@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 const EDIT_LOCK_SECONDS = 120;
 
+function edit_lock_owner_token(?string $sessionToken=null): string
+{
+    $sessionToken??=session_id();
+    return hash('sha256','liike-edit-lock:'.$sessionToken);
+}
+
 function teacher_can_access_course(PDO $pdo, int $courseId, int $teacherId): bool
 {
     $query=$pdo->prepare("SELECT 1 FROM courses c WHERE c.id=? AND (c.teacher_id=? OR EXISTS(SELECT 1 FROM course_teachers ct WHERE ct.course_id=c.id AND ct.teacher_id=?))");
@@ -64,31 +70,32 @@ function lock_target_is_accessible(PDO $pdo, string $type, int $entityId, int $t
     };
 }
 
-function acquire_edit_lock(PDO $pdo, string $type, int $entityId, int $teacherId): array
+function acquire_edit_lock(PDO $pdo, string $type, int $entityId, int $teacherId, ?string $sessionToken=null): array
 {
     if(!in_array($type,['page_metadata','page_block','pathway_item','course_structure'],true)||$entityId<1||!lock_target_is_accessible($pdo,$type,$entityId,$teacherId))return ['ok'=>false,'owner'=>null];
-    $now=time();$expires=$now+EDIT_LOCK_SECONDS;
+    $ownerToken=edit_lock_owner_token($sessionToken);$now=time();$expires=$now+EDIT_LOCK_SECONDS;
     $pdo->prepare('DELETE FROM edit_locks WHERE expires_at<=?')->execute([$now]);
-    $claim=$pdo->prepare('INSERT INTO edit_locks(entity_type,entity_id,teacher_id,acquired_at,expires_at) VALUES(?,?,?,?,?)
-        ON CONFLICT(entity_type,entity_id) DO UPDATE SET teacher_id=excluded.teacher_id,acquired_at=excluded.acquired_at,expires_at=excluded.expires_at
-        WHERE edit_locks.teacher_id=excluded.teacher_id OR edit_locks.expires_at<=excluded.acquired_at');
-    $claim->execute([$type,$entityId,$teacherId,$now,$expires]);
+    $claim=$pdo->prepare('INSERT INTO edit_locks(entity_type,entity_id,teacher_id,owner_token,acquired_at,expires_at) VALUES(?,?,?,?,?,?)
+        ON CONFLICT(entity_type,entity_id) DO UPDATE SET teacher_id=excluded.teacher_id,owner_token=excluded.owner_token,acquired_at=excluded.acquired_at,expires_at=excluded.expires_at
+        WHERE (edit_locks.teacher_id=excluded.teacher_id AND edit_locks.owner_token=excluded.owner_token) OR edit_locks.expires_at<=excluded.acquired_at');
+    $claim->execute([$type,$entityId,$teacherId,$ownerToken,$now,$expires]);
     $query=$pdo->prepare('SELECT l.*,u.name AS owner_name FROM edit_locks l JOIN users u ON u.id=l.teacher_id WHERE l.entity_type=? AND l.entity_id=?');
     $query->execute([$type,$entityId]);$lock=$query->fetch(PDO::FETCH_ASSOC);
-    return ['ok'=>$lock&&(int)$lock['teacher_id']===$teacherId,'owner'=>$lock['owner_name']??null,'expires_at'=>(int)($lock['expires_at']??0)];
+    return ['ok'=>$lock&&(int)$lock['teacher_id']===$teacherId&&hash_equals((string)$lock['owner_token'],$ownerToken),'owner'=>$lock['owner_name']??null,'expires_at'=>(int)($lock['expires_at']??0)];
 }
 
-function edit_lock_allows(PDO $pdo, string $type, int $entityId, int $teacherId): bool
+function edit_lock_allows(PDO $pdo, string $type, int $entityId, int $teacherId, ?string $sessionToken=null): bool
 {
     $pdo->prepare('DELETE FROM edit_locks WHERE expires_at<=?')->execute([time()]);
-    $query=$pdo->prepare('SELECT teacher_id FROM edit_locks WHERE entity_type=? AND entity_id=?');$query->execute([$type,$entityId]);$owner=$query->fetchColumn();
-    return $owner===false || (int)$owner===$teacherId;
+    $query=$pdo->prepare('SELECT teacher_id,owner_token FROM edit_locks WHERE entity_type=? AND entity_id=?');$query->execute([$type,$entityId]);$lock=$query->fetch(PDO::FETCH_ASSOC);
+    return $lock!==false && (int)$lock['teacher_id']===$teacherId && hash_equals((string)$lock['owner_token'],edit_lock_owner_token($sessionToken));
 }
 
-function release_edit_locks(PDO $pdo, int $teacherId, ?string $type=null, ?int $entityId=null): void
+function release_edit_locks(PDO $pdo, int $teacherId, ?string $type=null, ?int $entityId=null, ?string $sessionToken=null): void
 {
-    if($type!==null&&$entityId!==null)$pdo->prepare('DELETE FROM edit_locks WHERE teacher_id=? AND entity_type=? AND entity_id=?')->execute([$teacherId,$type,$entityId]);
-    else $pdo->prepare('DELETE FROM edit_locks WHERE teacher_id=?')->execute([$teacherId]);
+    $ownerToken=edit_lock_owner_token($sessionToken);
+    if($type!==null&&$entityId!==null)$pdo->prepare('DELETE FROM edit_locks WHERE teacher_id=? AND owner_token=? AND entity_type=? AND entity_id=?')->execute([$teacherId,$ownerToken,$type,$entityId]);
+    else $pdo->prepare('DELETE FROM edit_locks WHERE teacher_id=? AND owner_token=?')->execute([$teacherId,$ownerToken]);
 }
 
 function collaboration_comments(PDO $pdo, string $type, int $subjectId, string $status): array

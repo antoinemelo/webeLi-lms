@@ -83,6 +83,11 @@ document.addEventListener('click', (event) => {
   if (profile && !event.target.closest('.profile-menu')) profile.removeAttribute('open');
 });
 
+let lockSubmissionInProgress = false;
+document.addEventListener('submit', (event) => {
+  if (event.target.matches?.('[data-edit-lock]') || event.target.querySelector?.('[data-edit-lock]')) lockSubmissionInProgress = true;
+});
+
 const heldEditLocks = new Map();
 const lockKey = (scope) => `${scope.dataset.lockType}:${scope.dataset.lockId}`;
 const lockScopes = (key) => Array.from(document.querySelectorAll('[data-edit-lock]')).filter((scope) => lockKey(scope) === key);
@@ -90,13 +95,20 @@ const setLockState = (key, state, owner = '') => {
   lockScopes(key).forEach((scope) => {
     scope.querySelectorAll('[data-lock-status]').forEach((status) => {
       status.textContent = state === 'held' ? ui('lock_active', 'Zone réservée pour votre modification')
-        : state === 'blocked' ? ui('locked_by', 'Modification en cours par :name').replace(':name', owner || '—') : '';
+        : state === 'blocked' ? ui('locked_by', 'Modification en cours par :name').replace(':name', owner || '—')
+          : state === 'released' ? ui('lock_released', 'Zone libérée') : '';
       status.classList.toggle('blocked', state === 'blocked');
     });
-    scope.querySelectorAll('[data-release-edit-lock]').forEach((button) => { button.hidden = state !== 'held'; });
+    scope.querySelectorAll('[data-release-edit-lock]').forEach((button) => {
+      button.dataset.releaseHtml ||= button.innerHTML;
+      button.hidden = state !== 'held' && state !== 'released';
+      if (state === 'released') button.textContent = ui('lock_resume', 'Reprendre la modification');
+      else button.innerHTML = button.dataset.releaseHtml;
+    });
     scope.querySelectorAll('input:not([type="hidden"]),textarea,select,button').forEach((control) => {
-      if (state === 'blocked' && !control.disabled) { control.disabled = true; control.dataset.collaborationDisabled = '1'; }
-      if (state !== 'blocked' && control.dataset.collaborationDisabled) { control.disabled = false; delete control.dataset.collaborationDisabled; }
+      const mustDisable = state === 'blocked' || state === 'released';
+      if (mustDisable && !control.disabled && !control.matches('[data-release-edit-lock]')) { control.disabled = true; control.dataset.collaborationDisabled = '1'; }
+      if (!mustDisable && control.dataset.collaborationDisabled) { control.disabled = false; delete control.dataset.collaborationDisabled; }
     });
   });
 };
@@ -124,6 +136,7 @@ document.querySelectorAll('[data-release-edit-lock]').forEach((button) => button
   const scope = button.closest('[data-edit-lock]');
   if (!scope) return;
   const key = lockKey(scope);
+  if (!heldEditLocks.has(key)) { editLockRequest(scope); return; }
   const data = new FormData();
   data.set('token', document.body.dataset.csrf || '');
   data.set('action', 'release_edit_lock');
@@ -133,16 +146,16 @@ document.querySelectorAll('[data-release-edit-lock]').forEach((button) => button
     const response = await fetch(window.location.href, { method: 'POST', body: data, credentials: 'same-origin' });
     if (!response.ok) throw new Error('release failed');
     heldEditLocks.delete(key);
-    setLockState(key, 'idle');
+    setLockState(key, 'released');
     button.blur();
   } catch (_) {
     lockScopes(key).forEach((part) => part.querySelectorAll('[data-lock-status]').forEach((status) => { status.textContent = ui('lock_error', 'Impossible de réserver cette zone'); }));
   }
 }));
 if (document.querySelector('[data-edit-lock]')) window.setInterval(() => heldEditLocks.forEach((scope) => editLockRequest(scope)), 45000);
-window.addEventListener('pagehide', () => heldEditLocks.forEach((scope) => {
+window.addEventListener('pagehide', () => { if (!lockSubmissionInProgress) heldEditLocks.forEach((scope) => {
   const data = new FormData();data.set('token', document.body.dataset.csrf || '');data.set('action', 'release_edit_lock');data.set('entity_type', scope.dataset.lockType);data.set('entity_id', scope.dataset.lockId);navigator.sendBeacon(window.location.href, data);
-}));
+}); });
 
 document.querySelectorAll('.reward-select').forEach((select) => select.addEventListener('change', () => {
   const option = select.selectedOptions[0];
@@ -173,6 +186,30 @@ if (libraryFilters) {
     control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', applyLibraryFilters);
   });
 }
+
+const pageEditor = document.querySelector('.editor-form');
+if (pageEditor) {
+  let dirty = false;
+  let submitting = false;
+  const markDirty = () => { dirty = true; };
+  pageEditor.addEventListener('input', markDirty);
+  pageEditor.addEventListener('change', markDirty);
+  pageEditor.addEventListener('click', (event) => {
+    if (event.target.closest('[data-add-block],[data-remove-block],[data-add-page-objective],[data-remove-page-objective]')) markDirty();
+  });
+  pageEditor.addEventListener('submit', () => { submitting = true; dirty = false; });
+  window.addEventListener('beforeunload', (event) => {
+    if (!dirty || submitting) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+}
+
+document.querySelector('[data-print-pdf]')?.addEventListener('click', () => {
+  const frame = document.querySelector('[data-pdf-frame]');
+  frame?.contentWindow?.focus();
+  frame?.contentWindow?.print();
+});
 
 document.querySelectorAll('.student-access').forEach((section) => {
   const students = section.querySelector('[data-allowed-students]');

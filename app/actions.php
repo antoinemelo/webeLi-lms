@@ -234,6 +234,7 @@ function handle_action(string $action): never
     if ($action === 'logout') {
         $studentId=(int)($_SESSION['user_id']??0);$studentToken=(string)($_SESSION['student_session_token']??'');
         if($studentId>0&&$studentToken!=='')close_student_session(db(),$studentId,$studentToken);
+        $account=actor();if($account&&$account['role']==='teacher')release_edit_locks(db(),(int)$account['id']);
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();
@@ -472,7 +473,7 @@ function handle_action(string $action): never
             if(!$status['available'])throw new UpdateException('L’application utilise déjà la dernière version stable.');
             @set_time_limit(120);ignore_user_abort(true);
             $result=maintenance_apply_release(db(),dirname(__DIR__),$manifest);
-            flash(t('Mise à jour :version installée. Une sauvegarde a été créée.',['version'=>$result['version']]));
+            flash(t('Mise à jour :version installée avec les migrations de la base. Une sauvegarde a été créée.',['version'=>$result['version']]));
         }catch(Throwable $exception){flash(t('Mise à jour impossible : :details',['details'=>$exception->getMessage()]),'error');}
         redirect('admin');
     }
@@ -557,13 +558,15 @@ function handle_action(string $action): never
             AND (pi.access_mode='all'
               OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))", [$user['id'],$itemId,$user['id']]);
         if (!$item) { flash('Étape introuvable.', 'error'); redirect('student'); }
-        run('INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,updated_at)
+        run("INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,updated_at)
             VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET student_level=excluded.student_level,student_note=excluded.student_note,student_validated_at=CURRENT_TIMESTAMP,teacher_level=NULL,teacher_note="",teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP',
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET student_level=excluded.student_level,student_note=excluded.student_note,student_validated_at=CURRENT_TIMESTAMP,teacher_level=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP",
             [$item['enrollment_id'],$itemId,$level,trim((string)($_POST['note'] ?? ''))]);
         $teacherLanguage=normalize_language((string)($item['teacher_language']??''))??'fr';
-        enqueue('student.validated', $item['teacher_email'], t(':name a terminé « :page »',['name'=>$user['name'],'page'=>$item['page_title']],$teacherLanguage),
-            t(':name s’auto-positionne au niveau :level. Une confirmation est attendue.',['name'=>$user['name'],'level'=>$level],$teacherLanguage));
+        try{
+            enqueue('student.validated', $item['teacher_email'], t(':name a terminé « :page »',['name'=>$user['name'],'page'=>$item['page_title']],$teacherLanguage),
+                t(':name s’auto-positionne au niveau :level. Une confirmation est attendue.',['name'=>$user['name'],'level'=>$level],$teacherLanguage));
+        }catch(Throwable $exception){error_log('Notification student.validated non créée : '.$exception->getMessage());}
         flash('Étape envoyée à votre enseignant. Bravo pour ce pas !');
         redirect('learn', ['item'=>$itemId]);
     }
@@ -645,7 +648,7 @@ function handle_action(string $action): never
                     move_uploaded_file($_FILES['block_file']['tmp_name'][$i], APR_PUBLIC_ROOT . '/uploads/' . $safe);
                     $body = 'uploads/' . $safe;
                 }
-                if($body==='')continue;$caption=trim((string)($captions[$i]??''));$blockId=(int)($blockIds[$i]??0);$revision=(int)($blockRevisions[$i]??0);
+                $caption=trim((string)($captions[$i]??''));$blockId=(int)($blockIds[$i]??0);$revision=(int)($blockRevisions[$i]??0);
                 if($blockId>0){
                     $stored=one('SELECT * FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);
                     if(!$stored){$conflicts[]=t('Bloc introuvable');continue;}
@@ -654,7 +657,7 @@ function handle_action(string $action): never
                     $update=db()->prepare('UPDATE page_blocks SET type=?,body=?,caption=?,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND page_id=? AND revision=?');
                     $update->execute([$type,$body,$caption,$user['id'],$blockId,$pageId,$revision]);
                     if($update->rowCount()===1)$changed=true;else $conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);
-                }else{
+                }elseif($body!==''){
                     $position=(int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM page_blocks WHERE page_id=?',[$pageId])['n']??1);
                     run('INSERT INTO page_blocks(page_id,type,body,caption,position,updated_by) VALUES(?,?,?,?,?,?)',[$pageId,$type,$body,$caption,$position,$user['id']]);$changed=true;
                 }

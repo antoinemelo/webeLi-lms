@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+require_once __DIR__.'/DatabaseMigrations.php';
+
 final class Database
 {
+    public const SCHEMA_VERSION = 6;
+
     public static function connect(string $root): PDO
     {
         $storage = $root . '/storage';
@@ -21,14 +25,105 @@ final class Database
         if ($fresh) {
             $pdo->exec((string) file_get_contents($root . '/database/schema.sql'));
             $pdo->exec((string) file_get_contents($root . '/database/seed.sql'));
-        } else {
-            self::migrateUsers($pdo);
         }
-        self::migrateLearningActivity($pdo);
-        self::migrateCollaboration($pdo);
-        self::migratePageObjectives($pdo);
-        self::migrateDefaultTags($pdo);
+        self::runMigrations($pdo,$path,!$fresh);
         return $pdo;
+    }
+
+    public static function migrateFile(string $path, bool $backup=true): array
+    {
+        $path=(string)(realpath($path)?:$path);
+        if(!is_file($path))throw new RuntimeException('Base SQLite introuvable : '.$path);
+        $pdo=new PDO('sqlite:'.$path,null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
+        $pdo->exec('PRAGMA foreign_keys = ON');$pdo->exec('PRAGMA busy_timeout = 5000');
+        return self::runMigrations($pdo,$path,$backup);
+    }
+
+    public static function migrationStatus(PDO $pdo): array
+    {
+        $migrations=self::migrations();$applied=[];
+        $hasTable=(bool)$pdo->query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'")->fetchColumn();
+        if($hasTable)$applied=array_map('intval',$pdo->query('SELECT version FROM schema_migrations ORDER BY version')->fetchAll(PDO::FETCH_COLUMN));
+        $userVersion=(int)$pdo->query('PRAGMA user_version')->fetchColumn();
+        if(!$applied&&$userVersion>=self::SCHEMA_VERSION)$applied=array_keys($migrations);
+        $pending=array_values(array_diff(array_keys($migrations),$applied));
+        $current=0;foreach(array_keys($migrations) as $version){if(!in_array($version,$applied,true))break;$current=$version;}
+        return ['current'=>$current,'latest'=>self::SCHEMA_VERSION,'applied'=>$applied,'pending'=>$pending,'up_to_date'=>!$pending];
+    }
+
+    private static function migrations(): array
+    {
+        $migrations=[
+            1=>['name'=>'Comptes, inscriptions et références stables','method'=>'migrateUsers'],
+            2=>['name'=>'Historique des consultations','method'=>'migrateLearningActivity'],
+            3=>['name'=>'Collaboration, restrictions et verrous par session','method'=>'migrateCollaboration'],
+            4=>['name'=>'Dernier accès aux parcours','method'=>'migrateCourseAccesses'],
+            5=>['name'=>'Objectifs propres aux pages','method'=>'migratePageObjectives'],
+            6=>['name'=>'Catégories de contenus historiques','method'=>'migrateDefaultTags'],
+        ];
+        foreach(database_packaged_migrations(dirname(__DIR__).'/database/migrations') as $version=>$migration){
+            if(isset($migrations[$version]))throw new RuntimeException('La migration v'.$version.' existe déjà dans le socle historique.');
+            $migrations[$version]=$migration;
+        }
+        ksort($migrations);$latest=(int)array_key_last($migrations);
+        if($latest!==self::SCHEMA_VERSION)throw new RuntimeException('La version de schéma déclarée (v'.self::SCHEMA_VERSION.') ne correspond pas à la dernière migration (v'.$latest.').');
+        return $migrations;
+    }
+
+    private static function runMigrations(PDO $pdo, string $path, bool $backup): array
+    {
+        $lock=fopen($path.'.migration.lock','c+');
+        if(!$lock||!flock($lock,LOCK_EX))throw new RuntimeException('Impossible de verrouiller la migration de la base.');
+        try{
+            $status=self::migrationStatus($pdo);$migrations=self::migrations();
+            if(!$status['pending']){
+                self::recordCurrentSchema($pdo,$migrations);
+                database_compatibility_contract(dirname(__DIR__).'/database/compatibility.php')($pdo);
+                return ['applied'=>[],'backup'=>null,'status'=>self::migrationStatus($pdo)];
+            }
+            $backupPath=null;
+            if($backup){
+                $directory=dirname($path).'/backups';
+                if(!is_dir($directory)&&!mkdir($directory,0775,true)&&!is_dir($directory))throw new RuntimeException('Le dossier de sauvegarde de la base ne peut pas être créé.');
+                $backupPath=$directory.'/'.pathinfo($path,PATHINFO_FILENAME).'-avant-schema-v'.self::SCHEMA_VERSION.'-'.date('Ymd-His').'-'.bin2hex(random_bytes(3)).'.sqlite';
+                $pdo->exec('VACUUM INTO '.$pdo->quote($backupPath));
+                if(!is_file($backupPath)||filesize($backupPath)===0)throw new RuntimeException('La sauvegarde préalable de la base a échoué.');
+            }
+            $pdo->exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY,name TEXT NOT NULL,checksum TEXT NOT NULL,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+            $applied=[];
+            foreach($status['pending'] as $version){
+                $migration=$migrations[$version];$external=isset($migration['up']);
+                try{
+                    if($external)$pdo->beginTransaction();
+                    if($external)($migration['up'])($pdo);else{$method=$migration['method'];self::$method($pdo);}
+                    $checksum=$migration['checksum']??hash('sha256',$version.':'.$migration['name']);
+                    $statement=$pdo->prepare('INSERT OR REPLACE INTO schema_migrations(version,name,checksum,applied_at) VALUES(?,?,?,CURRENT_TIMESTAMP)');
+                    $statement->execute([$version,$migration['name'],$checksum]);
+                    if($external)$pdo->commit();
+                }catch(Throwable $exception){if($external&&$pdo->inTransaction())$pdo->rollBack();throw new RuntimeException('Migration '.$version.' (« '.$migration['name'].' ») impossible : '.$exception->getMessage(),0,$exception);}
+                $applied[]=$version;
+            }
+            $pdo->exec('PRAGMA user_version = '.self::SCHEMA_VERSION);
+            if($pdo->query('PRAGMA integrity_check')->fetchColumn()!=='ok')throw new RuntimeException('Le contrôle d’intégrité SQLite a échoué après migration.');
+            $foreignKeys=$pdo->query('PRAGMA foreign_key_check')->fetchAll();
+            if($foreignKeys)throw new RuntimeException('Des relations de la base sont invalides après migration.');
+            database_compatibility_contract(dirname(__DIR__).'/database/compatibility.php')($pdo);
+            return ['applied'=>$applied,'backup'=>$backupPath,'status'=>self::migrationStatus($pdo)];
+        }finally{
+            flock($lock,LOCK_UN);fclose($lock);
+        }
+    }
+
+    private static function recordCurrentSchema(PDO $pdo, array $migrations): void
+    {
+        $pdo->exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY,name TEXT NOT NULL,checksum TEXT NOT NULL,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+        $count=(int)$pdo->query('SELECT COUNT(*) FROM schema_migrations')->fetchColumn();
+        $userVersion=(int)$pdo->query('PRAGMA user_version')->fetchColumn();
+        if($count===0&&$userVersion>=self::SCHEMA_VERSION){
+            $statement=$pdo->prepare('INSERT INTO schema_migrations(version,name,checksum) VALUES(?,?,?)');
+            foreach($migrations as $version=>$migration)$statement->execute([$version,$migration['name'],$migration['checksum']??hash('sha256',$version.':'.$migration['name'])]);
+        }
+        $pdo->exec('PRAGMA user_version = '.self::SCHEMA_VERSION);
     }
 
     private static function migrateUsers(PDO $pdo): void
@@ -161,6 +256,12 @@ final class Database
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_learning_visits_retention ON learning_visits(last_seen_at)');
     }
 
+    private static function migrateCourseAccesses(PDO $pdo): void
+    {
+        $pdo->exec('CREATE TABLE IF NOT EXISTS course_accesses (user_id INTEGER NOT NULL,course_id INTEGER NOT NULL,last_accessed_at INTEGER NOT NULL,PRIMARY KEY(user_id,course_id),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE)');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_course_accesses_recent ON course_accesses(user_id,last_accessed_at DESC)');
+    }
+
     private static function migrateCollaboration(PDO $pdo): void
     {
         $pageColumns=array_column($pdo->query('PRAGMA table_info(pages)')->fetchAll(),'name');
@@ -177,7 +278,9 @@ final class Database
         $pdo->exec('CREATE TABLE IF NOT EXISTS course_teachers (course_id INTEGER NOT NULL,teacher_id INTEGER NOT NULL,added_by INTEGER NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(course_id,teacher_id),FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE,FOREIGN KEY(added_by) REFERENCES users(id) ON DELETE RESTRICT)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS pathway_item_students (pathway_item_id INTEGER NOT NULL,student_id INTEGER NOT NULL,PRIMARY KEY(pathway_item_id,student_id),FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE,FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE)');
         $pdo->exec("CREATE TABLE IF NOT EXISTS collaboration_comments (id INTEGER PRIMARY KEY AUTOINCREMENT,subject_type TEXT NOT NULL CHECK(subject_type IN ('page','course')),subject_id INTEGER NOT NULL,author_id INTEGER NOT NULL,body TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','resolved')),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,resolved_by INTEGER,resolved_at TEXT,FOREIGN KEY(author_id) REFERENCES users(id) ON DELETE CASCADE,FOREIGN KEY(resolved_by) REFERENCES users(id) ON DELETE SET NULL)");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS edit_locks (entity_type TEXT NOT NULL CHECK(entity_type IN ('page_metadata','page_block','pathway_item','course_structure')),entity_id INTEGER NOT NULL,teacher_id INTEGER NOT NULL,acquired_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,PRIMARY KEY(entity_type,entity_id),FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE)");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS edit_locks (entity_type TEXT NOT NULL CHECK(entity_type IN ('page_metadata','page_block','pathway_item','course_structure')),entity_id INTEGER NOT NULL,teacher_id INTEGER NOT NULL,owner_token TEXT NOT NULL,acquired_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,PRIMARY KEY(entity_type,entity_id),FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE)");
+        $lockColumns=array_column($pdo->query('PRAGMA table_info(edit_locks)')->fetchAll(),'name');
+        if(!in_array('owner_token',$lockColumns,true)){$pdo->exec("ALTER TABLE edit_locks ADD COLUMN owner_token TEXT NOT NULL DEFAULT ''");$pdo->exec('DELETE FROM edit_locks');}
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_course_teachers_teacher ON course_teachers(teacher_id,course_id)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_item_students_student ON pathway_item_students(student_id,pathway_item_id)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_collaboration_comments_subject ON collaboration_comments(subject_type,subject_id,status,created_at)');

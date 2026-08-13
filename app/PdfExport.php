@@ -12,7 +12,7 @@ function pdf_date_fr(?string $date): string
 function pdf_document(string $title, string $body, bool $landscape = false): string
 {
     $orientation=$landscape?'landscape':'portrait';
-    return '<!doctype html><html lang="'.e(current_language()).'"><head><meta charset="utf-8"><title>'.e($title).'</title><style>
+    return '<!doctype html><html lang="'.e(current_language()).'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.e($title).'</title><style>
     @page{size:A4 '.$orientation.';margin:14mm}*{box-sizing:border-box}body{margin:0;color:#29273b;font:12px/1.5 Arial,sans-serif}h1{margin:0 0 6px;font-size:25px}h2{margin:22px 0 8px;font-size:17px}h3{margin:16px 0 6px;font-size:14px}p{margin:5px 0}.muted{color:#706e80}.header{margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #6757df}.eyebrow{color:#6757df;font-size:10px;font-weight:bold;letter-spacing:1px;text-transform:uppercase}.meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.pill{padding:3px 7px;border-radius:5px;background:#ece9ff;font-size:10px}.notice{margin:12px 0;padding:9px;border-left:3px solid #6757df;background:#f5f3ff}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #dcd9e5;text-align:left;vertical-align:top}th{background:#ece9ff;font-size:10px;text-transform:uppercase}tr:nth-child(even){background:#fafafd}.content{margin:13px 0;padding:12px;border:1px solid #dedbe7;border-radius:8px;break-inside:avoid}.content img{max-width:100%;max-height:175mm}.content blockquote{margin:8px 0;padding:7px 10px;border-left:3px solid #6757df;background:#f5f3ff}.content pre{overflow-wrap:anywhere;padding:8px;background:#29273b;color:#fff;white-space:pre-wrap}.content code{font-family:monospace}.footer{margin-top:20px;padding-top:8px;border-top:1px solid #ddd;color:#777;font-size:9px}</style></head><body>'.$body.'</body></html>';
 }
 
@@ -57,80 +57,9 @@ function chromium_binary(): ?string
     ] as $candidate)if(is_executable($candidate))return $candidate;return null;
 }
 
-function pdf_plain_text(string $html): string
-{
-    $html=preg_replace('~<(style|script)[^>]*>.*?</\1>~is','',$html)??$html;
-    $html=preg_replace('~<li[^>]*>~i','- ',$html)??$html;
-    $html=preg_replace('~</t[dh]>~i',' | ',$html)??$html;
-    $html=preg_replace('~<(?:br\s*/?|/p|/div|/h[1-6]|/header|/section|/article|/tr|/li)[^>]*>~i',"\n",$html)??$html;
-    $text=html_entity_decode(strip_tags($html),ENT_QUOTES|ENT_HTML5,'UTF-8');
-    $text=str_replace(["\r\n","\r","\xC2\xA0"],["\n","\n",' '],$text);
-    $lines=[];
-    foreach(explode("\n",$text) as $source){
-        $source=trim((string)(preg_replace('/[ \t]+/u',' ',$source)??$source),' |');
-        if($source===''){if($lines&&end($lines)!=='')$lines[]='';continue;}
-        $lines[]=$source;
-    }
-    return trim(implode("\n",$lines));
-}
-
-function pdf_wrap_line(string $line, int $limit): array
-{
-    if($line==='')return [''];
-    $wrapped=[];$current='';
-    foreach(preg_split('/\s+/u',$line,-1,PREG_SPLIT_NO_EMPTY)?:[] as $word){
-        while(mb_strlen($word,'UTF-8')>$limit){
-            if($current!==''){$wrapped[]=$current;$current='';}
-            $wrapped[]=mb_substr($word,0,$limit,'UTF-8');
-            $word=mb_substr($word,$limit,null,'UTF-8');
-        }
-        $candidate=$current===''?$word:$current.' '.$word;
-        if(mb_strlen($candidate,'UTF-8')>$limit){$wrapped[]=$current;$current=$word;}else $current=$candidate;
-    }
-    if($current!==''||!$wrapped)$wrapped[]=$current;
-    return $wrapped;
-}
-
-function pdf_fallback_document(string $html): string
-{
-    $landscape=str_contains($html,'size:A4 landscape');
-    $width=$landscape?842:595;$height=$landscape?595:842;
-    $lineLimit=$landscape?132:88;$linesPerPage=$landscape?34:52;$lines=[];
-    foreach(explode("\n",pdf_plain_text($html)) as $line)foreach(pdf_wrap_line($line,$lineLimit) as $wrapped)$lines[]=$wrapped;
-    $pages=array_chunk($lines?:['Document vide'],$linesPerPage);
-    $objects=[1=>'<< /Type /Catalog /Pages 2 0 R >>',3=>'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'];
-    $pageRefs=[];
-    foreach($pages as $index=>$pageLines){
-        $pageId=4+$index*2;$contentId=$pageId+1;$pageRefs[]=$pageId.' 0 R';
-        $stream="BT\n/F1 10 Tf\n14 TL\n40 ".($height-45)." Td\n";
-        foreach($pageLines as $line){
-            $encoded=function_exists('iconv')?(string)iconv('UTF-8','Windows-1252//TRANSLIT//IGNORE',$line):preg_replace('/[^\x20-\x7E]/','?',$line);
-            $encoded=preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/','',$encoded)??'';
-            $encoded=strtr($encoded,['\\'=>'\\\\','('=>'\\(',')'=>'\\)']);
-            $stream.='('.$encoded.") Tj T*\n";
-        }
-        $stream.="ET\n";
-        $objects[$pageId]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '.$width.' '.$height.'] /Resources << /Font << /F1 3 0 R >> >> /Contents '.$contentId.' 0 R >>';
-        $objects[$contentId]='<< /Length '.strlen($stream)." >>\nstream\n".$stream.'endstream';
-    }
-    $objects[2]='<< /Type /Pages /Kids ['.implode(' ',$pageRefs).'] /Count '.count($pageRefs).' >>';
-    ksort($objects);$pdf="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";$offsets=[0=>0];
-    foreach($objects as $id=>$object){$offsets[$id]=strlen($pdf);$pdf.=$id." 0 obj\n".$object."\nendobj\n";}
-    $xref=strlen($pdf);$size=max(array_keys($objects))+1;$pdf.="xref\n0 $size\n0000000000 65535 f \n";
-    for($id=1;$id<$size;$id++)$pdf.=sprintf('%010d 00000 n ',(int)($offsets[$id]??0))."\n";
-    return $pdf.'trailer << /Size '.$size." /Root 1 0 R >>\nstartxref\n".$xref."\n%%EOF\n";
-}
-
-function render_pdf_fallback_file(string $html): string
-{
-    $path=tempnam(sys_get_temp_dir(),'lms-pdf-');
-    if($path===false||file_put_contents($path,pdf_fallback_document($html))===false)throw new TransferException('Le fichier PDF temporaire ne peut pas être créé.');
-    return $path;
-}
-
 function render_pdf_file(string $html): string
 {
-    $chromium=chromium_binary();if(!$chromium||!function_exists('proc_open'))return render_pdf_fallback_file($html);
+    $chromium=chromium_binary();if(!$chromium||!function_exists('proc_open'))throw new TransferException('Le téléchargement PDF côté serveur nécessite Chromium. Utilisez l’aperçu imprimable.');
     $directory=sys_get_temp_dir().'/elan-pdf-'.bin2hex(random_bytes(8));if(!mkdir($directory,0700,true))throw new TransferException('Le répertoire PDF temporaire ne peut pas être créé.');$htmlPath=$directory.'/document.html';$pdfPath=$directory.'/document.pdf';file_put_contents($htmlPath,$html);
     $profilePath=$directory.'/chromium-profile';
     $command=[$chromium,'--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--allow-file-access-from-files','--user-data-dir='.$profilePath,'--no-pdf-header-footer','--print-to-pdf='.$pdfPath,'file://'.$htmlPath];

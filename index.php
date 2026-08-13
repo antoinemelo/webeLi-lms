@@ -46,8 +46,16 @@ if (!actor()) {
 
 $user = require_actor();
 $view = (string) ($_GET['view'] ?? ($user['role'] === 'teacher' ? 'teacher' : 'student'));
+if($view==='pdf-document'&&$user['role']==='teacher'){
+    try{
+        $type=($_GET['type']??'course')==='item'?'item':'course';$id=(int)($_GET['id']??0);
+        $document=$type==='item'?pathway_page_pdf_html(db(),$id,(int)$user['id']):course_pdf_html(db(),$id,(int)$user['id']);
+        header('Content-Type: text/html; charset=UTF-8');header('Cache-Control: private, no-store');echo $document;
+    }catch(Throwable $exception){http_response_code(404);echo '<!doctype html><meta charset="utf-8"><p>'.e(t('Document introuvable.')).'</p>';}
+    exit;
+}
 $allowed = $user['role'] === 'teacher'
-    ? ['teacher','student-detail','students','library','page-edit','pathway','outbox','profile']
+    ? ['teacher','student-detail','students','library','page-edit','pathway','pdf-preview','outbox','profile']
     : ['student','learn','competencies','rewards','profile','join'];
 if ($user['role'] === 'teacher' && (int)($user['is_superadmin'] ?? 0) === 1) $allowed[] = 'admin';
 if (!in_array($view, $allowed, true)) {
