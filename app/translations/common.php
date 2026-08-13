@@ -591,6 +591,7 @@ return [
     'État inconnu'=>['en'=>'Unknown status','de'=>'Unbekannter Status','it'=>'Stato sconosciuto','es'=>'Estado desconocido'],
     'Versions de l’application'=>['en'=>'Application versions','de'=>'Anwendungsversionen','it'=>'Versioni dell’applicazione','es'=>'Versiones de la aplicación'],
     'Version installée'=>['en'=>'Installed version','de'=>'Installierte Version','it'=>'Versione installata','es'=>'Versión instalada'],
+    'Version installée de la base'=>['en'=>'Installed database version','de'=>'Installierte Datenbankversion','it'=>'Versione del database installata','es'=>'Versión instalada de la base de datos'],
     'Version des migrations de la base'=>['en'=>'Database migration version','de'=>'Version der Datenbankmigrationen','it'=>'Versione delle migrazioni del database','es'=>'Versión de las migraciones de la base de datos'],
     'Version de base proposée par Git'=>['en'=>'Database version proposed by Git','de'=>'Von Git vorgeschlagene Datenbankversion','it'=>'Versione del database proposta da Git','es'=>'Versión de base de datos propuesta por Git'],
     'Dernière version stable disponible'=>['en'=>'Latest stable version available','de'=>'Neueste verfügbare stabile Version','it'=>'Ultima versione stabile disponibile','es'=>'Última versión estable disponible'],
