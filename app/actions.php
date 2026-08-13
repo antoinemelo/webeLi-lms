@@ -477,6 +477,15 @@ function handle_action(string $action): never
         }catch(Throwable $exception){flash(t('Mise à jour impossible : :details',['details'=>$exception->getMessage()]),'error');}
         redirect('admin');
     }
+    if ($action === 'superadmin_cleanup_storage' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
+        try{
+            $result=maintenance_cleanup_storage(dirname(__DIR__));
+            $count=(int)$result['files']+(int)$result['directories'];
+            if($count===0)flash(t('Aucune ancienne sauvegarde ou mise à jour à supprimer.'));
+            else flash(t('Nettoyage terminé : :count élément(s) supprimé(s), :size libérés.',['count'=>$count,'size'=>maintenance_format_bytes((int)$result['bytes'])]));
+        }catch(Throwable $exception){flash(t('Nettoyage impossible : :details',['details'=>$exception->getMessage()]),'error');}
+        redirect('admin');
+    }
     if (in_array($action, ['update_profile','update_teacher_profile'], true)) {
         $firstName = trim((string)($_POST['first_name'] ?? ''));
         $lastName = mb_strtoupper(trim((string)($_POST['last_name'] ?? '')), 'UTF-8');

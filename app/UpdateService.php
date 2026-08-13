@@ -161,6 +161,58 @@ function maintenance_backup_database(PDO $pdo,string $destination): void
     if(!is_file($destination)||filesize($destination)===0)throw new UpdateException('La sauvegarde de la base de données a échoué.');
 }
 
+function maintenance_cleanup_entry(string $path,array &$result): void
+{
+    if(is_link($path)||is_file($path)){
+        $size=is_file($path)?(int)(filesize($path)?:0):0;
+        if(!unlink($path))throw new UpdateException('Impossible de supprimer un ancien fichier de maintenance.');
+        $result['files']++;$result['bytes']+=$size;return;
+    }
+    if(!is_dir($path))return;
+    foreach(new FilesystemIterator($path,FilesystemIterator::SKIP_DOTS) as $item)maintenance_cleanup_entry($item->getPathname(),$result);
+    if(!rmdir($path))throw new UpdateException('Impossible de supprimer un ancien dossier de maintenance.');
+    $result['directories']++;
+}
+
+function maintenance_cleanup_storage(string $root): array
+{
+    $storage=rtrim($root,'/').'/storage';
+    if(!is_dir($storage)||!is_writable($storage))throw new UpdateException('Le dossier de stockage doit être accessible en écriture.');
+    $updates=$storage.'/updates';
+    if(!is_dir($updates)&&!mkdir($updates,0775,true)&&!is_dir($updates))throw new UpdateException('Le dossier des mises à jour ne peut pas être créé.');
+    if(is_link($updates))throw new UpdateException('Le dossier des mises à jour ne peut pas être un lien symbolique.');
+    $updateLock=fopen($updates.'/update.lock','c+');
+    if(!$updateLock||!flock($updateLock,LOCK_EX|LOCK_NB))throw new UpdateException('Une mise à jour est en cours : le nettoyage est momentanément indisponible.');
+    $migrationLock=fopen($storage.'/apr.sqlite.migration.lock','c+');
+    if(!$migrationLock||!flock($migrationLock,LOCK_EX|LOCK_NB)){
+        flock($updateLock,LOCK_UN);fclose($updateLock);
+        if(is_resource($migrationLock))fclose($migrationLock);
+        throw new UpdateException('Une migration de la base est en cours : le nettoyage est momentanément indisponible.');
+    }
+    $result=['files'=>0,'directories'=>0,'bytes'=>0];
+    try{
+        $backups=$storage.'/backups';
+        if(is_link($backups))throw new UpdateException('Le dossier des sauvegardes ne peut pas être un lien symbolique.');
+        if(is_dir($backups))foreach(new FilesystemIterator($backups,FilesystemIterator::SKIP_DOTS) as $item)maintenance_cleanup_entry($item->getPathname(),$result);
+        foreach(new FilesystemIterator($updates,FilesystemIterator::SKIP_DOTS) as $item){
+            if($item->getFilename()==='update.lock')continue;
+            maintenance_cleanup_entry($item->getPathname(),$result);
+        }
+        return $result;
+    }finally{
+        flock($migrationLock,LOCK_UN);fclose($migrationLock);
+        flock($updateLock,LOCK_UN);fclose($updateLock);
+    }
+}
+
+function maintenance_format_bytes(int $bytes): string
+{
+    if($bytes<1024)return $bytes.' o';
+    if($bytes<1024*1024)return number_format($bytes/1024,1,',','').' Ko';
+    if($bytes<1024*1024*1024)return number_format($bytes/(1024*1024),1,',','').' Mo';
+    return number_format($bytes/(1024*1024*1024),1,',','').' Go';
+}
+
 function maintenance_apply_release(PDO $pdo,string $root,array $manifest): array
 {
     $manifest=maintenance_validate_manifest($manifest);$root=rtrim($root,'/');$storage=$root.'/storage';
