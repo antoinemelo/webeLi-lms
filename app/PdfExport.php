@@ -21,7 +21,7 @@ function course_pdf_html(PDO $pdo, int $courseId, int $teacherId): string
     $query=$pdo->prepare('SELECT * FROM courses WHERE id=?');$query->execute([$courseId]);$course=$query->fetch(PDO::FETCH_ASSOC);if(!$course||!teacher_can_access_course($pdo,$courseId,$teacherId))throw new TransferException('Parcours introuvable.');
     $items=$pdo->prepare('SELECT pi.*,p.title,p.estimated_minutes FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.course_id=? ORDER BY pi.position');$items->execute([$courseId]);$rows='';
     foreach($items->fetchAll(PDO::FETCH_ASSOC) as $item){$rows.='<tr><td>'.(int)$item['position'].'</td><td><strong>'.e($item['title']).'</strong></td><td>'.e(pdf_date_fr($item['deadline'])).'</td><td>'.(int)$item['estimated_minutes'].' min</td><td>'.e(t($item['is_evaluation']?'Évaluation':'Étape')).'</td></tr>';}
-    $body='<header class="header"><div class="eyebrow">'.e(t('Parcours pédagogique')).'</div><h1>'.e($course['title']).'</h1><p class="muted">'.e($course['description']).'</p><div class="meta"><span class="pill">'.e(t('Code')).' '.e($course['code']).'</span><span class="pill">'.e(t($course['archived']?'Archivé':'Actif')).'</span></div></header><table><thead><tr><th>'.e(t('No étape')).'</th><th>'.e(t('Nom')).'</th><th>'.e(t('Échéance')).'</th><th>'.e(t('Durée')).'</th><th>'.e(t('Type')).'</th></tr></thead><tbody>'.$rows.'</tbody></table><div class="footer">Export liike · '.e(date('d/m/Y H:i')).'</div>';
+    $body='<header class="header"><div class="eyebrow">'.e(t('Parcours pédagogique')).'</div><h1>'.e($course['title']).'</h1><p class="muted">'.e($course['description']).'</p><div class="meta"><span class="pill">'.e(t('Code')).' '.e($course['code']).'</span>&nbsp;&nbsp;<span class="pill">'.e(t($course['archived']?'Archivé':'Actif')).'</span></div></header><table><thead><tr><th>'.e(t('No étape')).'</th><th>'.e(t('Nom')).'</th><th>'.e(t('Échéance')).'</th><th>'.e(t('Durée')).'</th><th>'.e(t('Type')).'</th></tr></thead><tbody>'.$rows.'</tbody></table><div class="footer">Export liike · '.e(date('d/m/Y H:i')).'</div>';
     return pdf_document(t('Parcours').' · '.$course['title'],$body,true);
 }
 
@@ -38,8 +38,8 @@ function pathway_page_pdf_html(PDO $pdo, int $itemId, int $teacherId): string
     $tags=$pdo->prepare('SELECT t.name FROM tags t JOIN page_tags pt ON pt.tag_id=t.id WHERE pt.page_id=? ORDER BY t.name');$tags->execute([$item['page_id']]);
     $objectives=$pdo->prepare('SELECT title FROM page_objectives WHERE page_id=? ORDER BY position,id');$objectives->execute([$item['page_id']]);
     $skills=$pdo->prepare('SELECT s.code,s.title FROM course_skills s JOIN item_skills i ON i.skill_id=s.id WHERE i.pathway_item_id=? ORDER BY s.position');$skills->execute([$itemId]);
-    $meta='<span class="pill">'.e(t('Étape :number',['number'=>(int)$item['position']])).'</span><span class="pill">'.e(t($item['is_evaluation']?'Évaluation':'Activité')).'</span><span class="pill">'.(int)$item['estimated_minutes'].' min</span><span class="pill">'.e(t('Échéance')).' '.e(pdf_date_fr($item['deadline'])).'</span><span class="pill">'.e(t($item['status']==='ready'?'Prête':'Brouillon')).'</span>';
-    foreach($tags->fetchAll(PDO::FETCH_COLUMN) as $tag)$meta.='<span class="pill">#'.e($tag).'</span>';
+    $meta='<span class="pill">'.e(t('Étape :number',['number'=>(int)$item['position']])).'</span>&nbsp;&nbsp;<span class="pill">'.e(t($item['is_evaluation']?'Évaluation':'Activité')).'</span>&nbsp;&nbsp;<span class="pill">'.(int)$item['estimated_minutes'].' min</span>&nbsp;&nbsp;<span class="pill">'.e(t('Échéance')).' '.e(pdf_date_fr($item['deadline'])).'</span>&nbsp;&nbsp;<span class="pill">'.e(t($item['status']==='ready'?'Prête':'Brouillon')).'</span>';
+    foreach($tags->fetchAll(PDO::FETCH_COLUMN) as $tag)$meta.='&nbsp;&nbsp;<span class="pill">#'.e($tag).'</span>';
     $body='<header class="header"><div class="eyebrow">'.e($item['course_title']).' · '.e($item['course_code']).'</div><h1>'.e($item['title']).'</h1><p class="muted">'.e($item['summary']).'</p><div class="meta">'.$meta.'</div></header>';
     if(trim((string)$item['instructions'])!=='')$body.='<div class="notice"><strong>'.e(t('Consigne propre au parcours')).'</strong><p>'.nl2br(e($item['instructions'])).'</p></div>';
     $objectiveRows=$objectives->fetchAll(PDO::FETCH_COLUMN);$skillRows=$skills->fetchAll(PDO::FETCH_ASSOC);
@@ -49,26 +49,59 @@ function pathway_page_pdf_html(PDO $pdo, int $itemId, int $teacherId): string
     $body.='<div class="footer">Export liike · '.e(date('d/m/Y H:i')).'</div>';return pdf_document($item['title'],$body,false);
 }
 
-function chromium_binary(): ?string
+function pdf_application_root(): string
 {
-    foreach([
-        '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome','/usr/bin/google-chrome-stable',
-        '/snap/bin/chromium','/opt/google/chrome/chrome',
-    ] as $candidate)if(is_executable($candidate))return $candidate;return null;
+    return is_file(APR_PUBLIC_ROOT.'/app/bootstrap.php')?APR_PUBLIC_ROOT:dirname(APR_PUBLIC_ROOT);
 }
 
-function render_pdf_file(string $html): string
+function load_pdf_engine(): void
 {
-    $chromium=chromium_binary();if(!$chromium||!function_exists('proc_open'))throw new TransferException('Le téléchargement PDF côté serveur nécessite Chromium. Utilisez l’aperçu imprimable.');
-    $directory=sys_get_temp_dir().'/elan-pdf-'.bin2hex(random_bytes(8));if(!mkdir($directory,0700,true))throw new TransferException('Le répertoire PDF temporaire ne peut pas être créé.');$htmlPath=$directory.'/document.html';$pdfPath=$directory.'/document.pdf';file_put_contents($htmlPath,$html);
-    $profilePath=$directory.'/chromium-profile';
-    $command=[$chromium,'--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--allow-file-access-from-files','--user-data-dir='.$profilePath,'--no-pdf-header-footer','--print-to-pdf='.$pdfPath,'file://'.$htmlPath];
-    $pipes=[];$process=proc_open($command,[1=>['pipe','w'],2=>['pipe','w']],$pipes);if(!is_resource($process))throw new TransferException('Chromium ne peut pas être démarré.');$stdout=stream_get_contents($pipes[1]);$stderr=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$status=proc_close($process);
-    if($status!==0||!is_file($pdfPath)||filesize($pdfPath)<5){@unlink($htmlPath);@unlink($pdfPath);throw new TransferException('La génération PDF a échoué. '.trim($stderr?:$stdout));}
-    @unlink($htmlPath);return $pdfPath;
+    if(!extension_loaded('mbstring')||!extension_loaded('gd'))throw new TransferException('Le moteur PDF intégré nécessite les extensions PHP mbstring et gd. Utilisez l’aperçu imprimable.');
+    if(!class_exists(\Mpdf\Mpdf::class,false)){
+        $autoload=pdf_application_root().'/vendor/autoload.php';
+        if(!is_file($autoload))throw new TransferException('Le moteur PDF intégré est absent. Utilisez l’aperçu imprimable.');
+        require_once $autoload;
+    }
+    if(!class_exists(\Mpdf\Mpdf::class))throw new TransferException('Le moteur PDF intégré ne peut pas être chargé. Utilisez l’aperçu imprimable.');
 }
 
-function send_pdf_download(string $html, string $filename): never
+function render_pdf_bytes(string $html,bool $landscape=false): string
 {
-    $pdfPath=render_pdf_file($html);header('Content-Type: application/pdf');header('Content-Disposition: attachment; filename="'.preg_replace('/[^A-Za-z0-9._-]/','-',basename($filename)).'"');header('Content-Length: '.filesize($pdfPath));header('Cache-Control: no-store');readfile($pdfPath);@unlink($pdfPath);exit;
+    load_pdf_engine();
+    $cache=pdf_application_root().'/storage/pdf-cache';
+    if(!is_dir($cache)&&!mkdir($cache,0770,true)&&!is_dir($cache))throw new TransferException('Le cache du moteur PDF ne peut pas être créé.');
+    try{
+        preg_match('/<title>(.*?)<\/title>/si',$html,$title);
+        preg_match('/<body[^>]*>(.*)<\/body>/si',$html,$body);
+        $pdf=new \Mpdf\Mpdf([
+            'mode'=>'utf-8',
+            'format'=>$landscape?'A4-L':'A4',
+            'tempDir'=>$cache,
+            'default_font'=>'dejavusans',
+            'margin_left'=>14,
+            'margin_right'=>14,
+            'margin_top'=>14,
+            'margin_bottom'=>14,
+        ]);
+        $pdf->SetTitle(strip_tags((string)($title?html_entity_decode($title[1],ENT_QUOTES|ENT_HTML5,'UTF-8'):'liike')));
+        $pdf->WriteHTML('body{color:#29273b;font-family:dejavusans;font-size:10pt;line-height:1.45}h1{margin:0 0 5mm;font-size:22pt;color:#29273b}h2{margin:7mm 0 2.5mm;font-size:15pt;color:#29273b}h3{margin:5mm 0 2mm;font-size:12pt}p{margin:1.5mm 0}.muted{color:#706e80}.header{margin-bottom:6mm;padding-bottom:4mm;border-bottom:1mm solid #6757df}.eyebrow{color:#6757df;font-size:8pt;font-weight:bold;letter-spacing:.7pt;text-transform:uppercase}.meta{margin-top:3mm}.pill{display:inline-block;margin:0 2mm 2mm 0;padding:1.3mm 2.3mm;background-color:#ece9ff;font-size:8pt}.notice{margin:4mm 0;padding:3mm;border-left:1mm solid #6757df;background-color:#f5f3ff}table{width:100%;border-collapse:collapse}thead{display:table-header-group}th,td{padding:2.5mm;border:.2mm solid #dcd9e5;text-align:left;vertical-align:top}th{background-color:#ece9ff;font-size:8pt;text-transform:uppercase}tr:nth-child(even){background-color:#fafafd}.content{margin:4mm 0;padding:4mm;border:.2mm solid #dedbe7;page-break-inside:avoid}.content img{max-width:100%;max-height:175mm}.content blockquote{margin:2mm 0;padding:2mm 3mm;border-left:1mm solid #6757df;background-color:#f5f3ff}.content pre{padding:3mm;background-color:#29273b;color:#fff;white-space:pre-wrap}.content code{font-family:dejavusansmono}.footer{margin-top:7mm;padding-top:3mm;border-top:.2mm solid #ddd;color:#777;font-size:7pt}',\Mpdf\HTMLParserMode::HEADER_CSS);
+        $pdfBody=preg_replace('/[\x{10000}-\x{10FFFF}]/u','',$body[1]??$html)??($body[1]??$html);
+        $pdf->WriteHTML($pdfBody,\Mpdf\HTMLParserMode::HTML_BODY);
+        $bytes=$pdf->Output('',\Mpdf\Output\Destination::STRING_RETURN);
+    }catch(Throwable $exception){
+        throw new TransferException('La génération PDF a échoué. '.$exception->getMessage(),0,$exception);
+    }
+    if(!str_starts_with($bytes,'%PDF-')||strlen($bytes)<1000)throw new TransferException('La génération PDF a produit un document invalide.');
+    return $bytes;
+}
+
+function send_pdf_download(string $html,string $filename,bool $landscape=false): never
+{
+    $bytes=render_pdf_bytes($html,$landscape);
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="'.preg_replace('/[^A-Za-z0-9._-]/','-',basename($filename)).'"');
+    header('Content-Length: '.strlen($bytes));
+    header('Cache-Control: private, no-store');
+    echo $bytes;
+    exit;
 }

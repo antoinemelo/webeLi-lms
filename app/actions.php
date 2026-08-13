@@ -426,7 +426,7 @@ function handle_action(string $action): never
         catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('pathway');}
     }
     if ($action === 'export_course_pdf' && $user['role'] === 'teacher') {
-        try{$courseId=(int)($_POST['course_id']??0);$course=one('SELECT title FROM courses WHERE id=?',[$courseId]);if(!$course||!teacher_can_access_course(db(),$courseId,(int)$user['id']))throw new TransferException('Parcours introuvable.');send_pdf_download(course_pdf_html(db(),$courseId,(int)$user['id']),'parcours-'.mb_strtolower((string)$course['title'],'UTF-8').'.pdf');}
+        try{$courseId=(int)($_POST['course_id']??0);$course=one('SELECT title FROM courses WHERE id=?',[$courseId]);if(!$course||!teacher_can_access_course(db(),$courseId,(int)$user['id']))throw new TransferException('Parcours introuvable.');send_pdf_download(course_pdf_html(db(),$courseId,(int)$user['id']),'parcours-'.mb_strtolower((string)$course['title'],'UTF-8').'.pdf',true);}
         catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('pathway');}
     }
     if ($action === 'export_pathway_page_pdf' && $user['role'] === 'teacher') {

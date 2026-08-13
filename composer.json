@@ -1,0 +1,11 @@
+{
+    "name": "webeli/liike",
+    "description": "Micro-CMS de parcours pédagogiques liike",
+    "type": "project",
+    "require": {
+        "php": "^8.2",
+        "ext-gd": "*",
+        "ext-mbstring": "*",
+        "mpdf/mpdf": "^8.2"
+    }
+}

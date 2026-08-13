@@ -54,6 +54,25 @@ if($view==='pdf-document'&&$user['role']==='teacher'){
     }catch(Throwable $exception){http_response_code(404);echo '<!doctype html><meta charset="utf-8"><p>'.e(t('Document introuvable.')).'</p>';}
     exit;
 }
+if($view==='pdf-download'&&$user['role']==='teacher'){
+    $courseId=0;
+    try{
+        $type=($_GET['type']??'course')==='item'?'item':'course';$id=(int)($_GET['id']??0);
+        if($type==='item'){
+            $context=one('SELECT p.title,pi.course_id FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
+            $courseId=(int)($context['course_id']??0);
+            if(!$context||!teacher_can_access_course(db(),$courseId,(int)$user['id']))throw new TransferException('Étape introuvable.');
+            send_pdf_download(pathway_page_pdf_html(db(),$id,(int)$user['id']),'etape-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf');
+        }
+        $context=one('SELECT id,title FROM courses WHERE id=?',[$id]);$courseId=(int)($context['id']??0);
+        if(!$context||!teacher_can_access_course(db(),$courseId,(int)$user['id']))throw new TransferException('Parcours introuvable.');
+        send_pdf_download(course_pdf_html(db(),$id,(int)$user['id']),'parcours-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf',true);
+    }catch(Throwable $exception){
+        http_response_code(503);header('Content-Type: text/html; charset=UTF-8');header('Cache-Control: private, no-store');
+        echo '<!doctype html><html lang="'.e(current_language()).'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.e(t('Export PDF indisponible')).'</title><body style="font:16px system-ui;max-width:42rem;margin:12vh auto;padding:1.5rem"><h1>'.e(t('Export PDF indisponible')).'</h1><p>'.e(import_failure_message($exception)).'</p><p><a href="'.e(route('pathway',$courseId?['course'=>$courseId]:[])).'">'.e(t('Retour au parcours')).'</a></p></body></html>';
+        exit;
+    }
+}
 $allowed = $user['role'] === 'teacher'
     ? ['teacher','student-detail','students','library','page-edit','pathway','pdf-preview','outbox','profile']
     : ['student','learn','competencies','rewards','profile','join'];

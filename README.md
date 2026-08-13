@@ -1,6 +1,6 @@
 # liike — micro-CMS de parcours pédagogiques
 
-liike est un prototype volontairement simple : PHP 8.2, SQLite et HTML/JS sans dépendance Composer. La présentation repose sur Bootstrap 5.3 et Bootstrap Icons, tous deux servis localement, complétés par un thème CSS léger propre aux composants pédagogiques. Il reprend de `/cms/dev` les idées utiles (contenus en blocs, taxonomies, contraintes SQLite et boîte d’événements), dans un projet beaucoup plus petit.
+liike est un prototype volontairement simple : PHP 8.2, SQLite et HTML/JS. La présentation repose sur Bootstrap 5.3 et Bootstrap Icons, tous deux servis localement, complétés par un thème CSS léger propre aux composants pédagogiques. Le moteur mPDF et ses dépendances Composer sont embarqués pour produire les documents PDF sans Chromium. Il reprend de `/cms/dev` les idées utiles (contenus en blocs, taxonomies, contraintes SQLite et boîte d’événements), dans un projet beaucoup plus petit.
 
 ## Documentation
 
