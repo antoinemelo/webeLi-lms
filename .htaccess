@@ -1,6 +1,6 @@
 DirectoryIndex index.php
 Options -Indexes
 
-<FilesMatch "^(README\.md|INSTANCE\.txt)$">
+<FilesMatch "^(README\.md|INSTANCE\.txt|VERSION|RELEASE\.json|\.git.*)$">
     Require all denied
 </FilesMatch>

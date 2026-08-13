@@ -87,11 +87,11 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,instructions) VALUES(?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,instructions,access_mode) VALUES(?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['instructions']]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['instructions'],$item['access_mode']]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();

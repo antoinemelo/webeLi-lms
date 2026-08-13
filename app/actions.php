@@ -457,6 +457,25 @@ function handle_action(string $action): never
         elseif($entity==='course'){$deleted=superadmin_delete_course(db(),$id);}
         flash($deleted?'Suppression superadmin terminée.':'Suppression refusée ou élément introuvable.',$deleted?'success':'error');redirect('admin');
     }
+    if ($action === 'superadmin_check_update' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
+        $status=maintenance_release_status(dirname(__DIR__),true);
+        if($status['error'])flash(t('Vérification impossible : :details',['details'=>$status['error']]),'error');
+        elseif($status['available'])flash(t('La version :version est disponible.',['version'=>$status['latest']]));
+        else flash('L’application utilise déjà la dernière version stable.');
+        redirect('admin');
+    }
+    if ($action === 'superadmin_apply_update' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
+        try{
+            $expected=trim((string)($_POST['expected_version']??''));$status=maintenance_release_status(dirname(__DIR__),true);$manifest=$status['manifest'];
+            if($status['error']||!is_array($manifest))throw new UpdateException((string)($status['error']?:'Aucune version stable ne peut être récupérée.'));
+            if($expected===''||!hash_equals($expected,(string)$manifest['version']))throw new UpdateException('La version disponible a changé. Vérifiez à nouveau les mises à jour.');
+            if(!$status['available'])throw new UpdateException('L’application utilise déjà la dernière version stable.');
+            @set_time_limit(120);ignore_user_abort(true);
+            $result=maintenance_apply_release(db(),dirname(__DIR__),$manifest);
+            flash(t('Mise à jour :version installée. Une sauvegarde a été créée.',['version'=>$result['version']]));
+        }catch(Throwable $exception){flash(t('Mise à jour impossible : :details',['details'=>$exception->getMessage()]),'error');}
+        redirect('admin');
+    }
     if (in_array($action, ['update_profile','update_teacher_profile'], true)) {
         $firstName = trim((string)($_POST['first_name'] ?? ''));
         $lastName = mb_strtoupper(trim((string)($_POST['last_name'] ?? '')), 'UTF-8');
@@ -535,8 +554,8 @@ function handle_action(string $action): never
         $item = one("SELECT pi.*,c.teacher_id,c.title AS course_title,p.title AS page_title,e.id AS enrollment_id,u.email AS teacher_email,u.language AS teacher_language
             FROM pathway_items pi JOIN courses c ON c.id=pi.course_id JOIN pages p ON p.id=pi.page_id
             JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active' JOIN users u ON u.id=c.teacher_id WHERE pi.id=?
-            AND (NOT EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id)
-              OR EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?))", [$user['id'],$itemId,$user['id']]);
+            AND (pi.access_mode='all'
+              OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))", [$user['id'],$itemId,$user['id']]);
         if (!$item) { flash('Étape introuvable.', 'error'); redirect('student'); }
         run('INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,updated_at)
             VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
@@ -556,7 +575,7 @@ function handle_action(string $action): never
         $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,p.title AS page_title,c.title AS course_title
             FROM enrollments e JOIN users s ON s.id=e.student_id JOIN pathway_items pi ON pi.id=? AND pi.course_id=e.course_id
             JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=e.course_id WHERE e.id=? AND e.status='active' AND s.account_status='active'
-            AND (NOT EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id) OR EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id))", [$itemId,$enrollmentId]);
+            AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id)))", [$itemId,$enrollmentId]);
         if (!$context || !teacher_can_access_course(db(),(int)$context['course_id'],(int)$user['id'])) { flash('Validation impossible.', 'error'); redirect('teacher'); }
         run('INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,teacher_note,teacher_validated_at,updated_at)
             VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
@@ -646,7 +665,7 @@ function handle_action(string $action): never
             db()->commit();
         } catch (Throwable $e) { db()->rollBack(); throw $e; }
         release_edit_locks(db(),(int)$user['id']);
-        $recipients=$changed?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active'",[$pageId]):[];
+        $recipients=$changed?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
         foreach($recipients as $recipient){$recipientLanguage=normalize_language((string)($recipient['language']??''))??'fr';enqueue('page.updated',$recipient['email'],t('Une ressource de votre parcours a changé',[],$recipientLanguage),t('La page « :page » vient d’être mise à jour.',['page'=>$title],$recipientLanguage));}
         flash($conflicts?t('Enregistrement partiel : :parts modifié(s) ailleurs ou verrouillé(s).',['parts'=>implode(', ',array_unique($conflicts))]):t($recipients?'Page enregistrée et notifications préparées.':'Page enregistrée.'),$conflicts?'error':'success');
         redirect('page-edit', ['id'=>$pageId]);
@@ -748,15 +767,16 @@ function handle_action(string $action): never
             if($deadlineInput!==''&&$deadline===null){flash('Saisissez la date au format jj/mm/aaaa.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             $revision=(int)($_POST['item_revision']??-1);
             if(!edit_lock_allows(db(),'pathway_item',$id,(int)$user['id'])||$revision!==(int)$item['revision']){flash('Cette étape a été modifiée ou est en cours d’édition par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            $accessMode=in_array($_POST['access_mode']??'all',['all','restricted','none'],true)?(string)$_POST['access_mode']:'all';
             $allowedStudents=[];
-            if(($_POST['access_mode']??'all')==='restricted'){
+            if($accessMode==='restricted'){
                 foreach(array_unique(array_map('intval',(array)($_POST['allowed_students']??[]))) as $studentId){
                     if(one("SELECT 1 FROM enrollments e JOIN users u ON u.id=e.student_id WHERE e.course_id=? AND e.student_id=? AND e.status='active' AND u.account_status='active'",[$item['course_id'],$studentId]))$allowedStudents[]=$studentId;
                 }
                 if(!$allowedStudents){flash('Sélectionnez au moins un élève pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
-            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,instructions=?,revision=revision+1 WHERE id=? AND revision=?');
-            $update->execute([$deadline,isset($_POST['is_evaluation'])?1:0,trim((string)$_POST['instructions']),$id,$revision]);
+            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,instructions=?,access_mode=?,revision=revision+1 WHERE id=? AND revision=?');
+            $update->execute([$deadline,isset($_POST['is_evaluation'])?1:0,trim((string)$_POST['instructions']),$accessMode,$id,$revision]);
             if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             run('DELETE FROM item_skills WHERE pathway_item_id=?',[$id]);
             foreach ((array)($_POST['skills']??[]) as $v) run('INSERT INTO item_skills SELECT ?,id FROM course_skills WHERE id=? AND course_id=?',[$id,(int)$v,$item['course_id']]);

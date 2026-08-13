@@ -15,6 +15,7 @@ require_once __DIR__ . '/PathwayService.php';
 require_once __DIR__ . '/CourseEnrollment.php';
 require_once __DIR__ . '/TransferService.php';
 require_once __DIR__ . '/AdminService.php';
+require_once __DIR__ . '/UpdateService.php';
 require_once __DIR__ . '/PdfExport.php';
 
 session_start();
@@ -253,8 +254,8 @@ function framework_progress(int $courseId, int $enrollmentId, string $kind): arr
             SUM(CASE WHEN p.teacher_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS teacher_done
             FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
             LEFT JOIN pathway_items visible ON visible.id=pi.id AND (
-                NOT EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id)
-                OR EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?))
+                visible.access_mode='all'
+                OR (visible.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?)))
             LEFT JOIN progress p ON p.pathway_item_id=visible.id AND p.enrollment_id=?
             WHERE pi.course_id=? GROUP BY lower(po.title) ORDER BY MIN(pi.position),po.title",[$studentId,$enrollmentId,$courseId]);
     }
@@ -271,8 +272,8 @@ function framework_progress(int $courseId, int $enrollmentId, string $kind): arr
         FROM $table f
         LEFT JOIN $link l ON l.$column=f.id
         LEFT JOIN pathway_items visible ON visible.id=l.pathway_item_id AND (
-            NOT EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id)
-            OR EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?))
+            visible.access_mode='all'
+            OR (visible.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?)))
         LEFT JOIN progress p ON p.pathway_item_id=visible.id AND p.enrollment_id=?
         WHERE f.course_id=? GROUP BY f.id ORDER BY f.position, f.id", [$studentId,$enrollmentId,$courseId]);
 }

@@ -149,6 +149,7 @@ CREATE TABLE pathway_items (
     deadline TEXT,
     is_evaluation INTEGER NOT NULL DEFAULT 0 CHECK(is_evaluation IN (0,1)),
     instructions TEXT NOT NULL DEFAULT '',
+    access_mode TEXT NOT NULL DEFAULT 'all' CHECK(access_mode IN ('all','restricted','none')),
     revision INTEGER NOT NULL DEFAULT 0,
     UNIQUE(course_id, position),
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,

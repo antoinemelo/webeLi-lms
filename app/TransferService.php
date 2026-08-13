@@ -83,7 +83,7 @@ function export_course_document(PDO $pdo, int $courseId, int $teacherId, bool $i
     $itemsQuery=$pdo->prepare('SELECT pi.*,p.reference AS page_reference,p.title AS page_title FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.course_id=? ORDER BY pi.position');$itemsQuery->execute([$courseId]);
     $items=[];
     foreach($itemsQuery->fetchAll(PDO::FETCH_ASSOC) as $item){
-        $exported=['page_reference'=>$item['page_reference'],'page_title'=>$item['page_title'],'position'=>(int)$item['position'],'deadline'=>$item['deadline'],'is_evaluation'=>(bool)$item['is_evaluation'],'instructions'=>$item['instructions']];
+        $exported=['page_reference'=>$item['page_reference'],'page_title'=>$item['page_title'],'position'=>(int)$item['position'],'deadline'=>$item['deadline'],'is_evaluation'=>(bool)$item['is_evaluation'],'instructions'=>$item['instructions'],'access_mode'=>$item['access_mode']];
         if($includeOptions){
             $skills=$pdo->prepare('SELECT s.code FROM course_skills s JOIN item_skills i ON i.skill_id=s.id WHERE i.pathway_item_id=? ORDER BY s.position');$skills->execute([$item['id']]);
             $exported['skills']=$skills->fetchAll(PDO::FETCH_COLUMN);
@@ -138,8 +138,8 @@ function import_course_document(PDO $pdo, array $document, int $teacherId, strin
         foreach($options['skills']??[] as $index=>$skill){if(!is_array($skill)||trim((string)($skill['code']??''))===''||trim((string)($skill['title']??''))==='')continue;$code=strtoupper(trim((string)$skill['code']));$insertSkill->execute([$courseId,$code,trim((string)$skill['title']),(string)($skill['description']??''),(int)($skill['position']??$index+1)]);$skillMap[$code]=(int)$pdo->lastInsertId();}
         $insertReward=$pdo->prepare('INSERT INTO reward_types(course_id,name,icon,color,default_points,active) VALUES(?,?,?,?,?,?)');
         foreach($options['rewards']??[] as $reward){if(!is_array($reward)||trim((string)($reward['name']??''))==='')continue;$insertReward->execute([$courseId,trim((string)$reward['name']),trim((string)($reward['icon']??''))?:'✨',trim((string)($reward['color']??''))?:'#6d5dfc',max(1,(int)($reward['default_points']??5)),!empty($reward['active'])?1:0]);}
-        $insertItem=$pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,instructions) VALUES(?,?,?,?,?,?)');$linkSkill=$pdo->prepare('INSERT INTO item_skills(pathway_item_id,skill_id) VALUES(?,?)');
-        foreach(array_values($items) as $index=>$item){$insertItem->execute([$courseId,$resolvedPages[$index],$index+1,$resetDeadlines?null:(trim((string)($item['deadline']??''))?:null),!empty($item['is_evaluation'])?1:0,(string)($item['instructions']??'')]);$itemId=(int)$pdo->lastInsertId();foreach((array)($item['skills']??[]) as $code)if(isset($skillMap[strtoupper((string)$code)]))$linkSkill->execute([$itemId,$skillMap[strtoupper((string)$code)]]);}
+        $insertItem=$pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,instructions,access_mode) VALUES(?,?,?,?,?,?,?)');$linkSkill=$pdo->prepare('INSERT INTO item_skills(pathway_item_id,skill_id) VALUES(?,?)');
+        foreach(array_values($items) as $index=>$item){$accessMode=in_array($item['access_mode']??'all',['all','restricted','none'],true)?(string)$item['access_mode']:'all';$insertItem->execute([$courseId,$resolvedPages[$index],$index+1,$resetDeadlines?null:(trim((string)($item['deadline']??''))?:null),!empty($item['is_evaluation'])?1:0,(string)($item['instructions']??''),$accessMode]);$itemId=(int)$pdo->lastInsertId();foreach((array)($item['skills']??[]) as $code)if(isset($skillMap[strtoupper((string)$code)]))$linkSkill->execute([$itemId,$skillMap[strtoupper((string)$code)]]);}
         $pdo->commit();return $courseId;
     }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }

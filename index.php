@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 $applicationRoot = is_file(__DIR__ . '/app/bootstrap.php') ? __DIR__ : dirname(__DIR__);
 
+if (is_file($applicationRoot . '/storage/maintenance.flag')) {
+    http_response_code(503);
+    header('Retry-After: 30');
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>liike · Maintenance</title><body style="font:16px system-ui;max-width:42rem;margin:12vh auto;padding:1.5rem"><h1>Mise à jour en cours</h1><p>liike sera de nouveau disponible dans quelques instants.</p></body></html>';
+    exit;
+}
+
 require_once $applicationRoot . '/app/bootstrap.php';
 require_once $applicationRoot . '/app/actions.php';
 require_once $applicationRoot . '/app/views.php';

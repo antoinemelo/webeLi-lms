@@ -172,6 +172,7 @@ final class Database
         $pdo->exec('UPDATE page_blocks SET updated_at=COALESCE(updated_at,CURRENT_TIMESTAMP)');
         $itemColumns=array_column($pdo->query('PRAGMA table_info(pathway_items)')->fetchAll(),'name');
         if(!in_array('revision',$itemColumns,true))$pdo->exec('ALTER TABLE pathway_items ADD COLUMN revision INTEGER NOT NULL DEFAULT 0');
+        if(!in_array('access_mode',$itemColumns,true))$pdo->exec("ALTER TABLE pathway_items ADD COLUMN access_mode TEXT NOT NULL DEFAULT 'all' CHECK(access_mode IN ('all','restricted','none'))");
 
         $pdo->exec('CREATE TABLE IF NOT EXISTS course_teachers (course_id INTEGER NOT NULL,teacher_id INTEGER NOT NULL,added_by INTEGER NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(course_id,teacher_id),FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE,FOREIGN KEY(added_by) REFERENCES users(id) ON DELETE RESTRICT)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS pathway_item_students (pathway_item_id INTEGER NOT NULL,student_id INTEGER NOT NULL,PRIMARY KEY(pathway_item_id,student_id),FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE,FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE)');

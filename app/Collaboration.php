@@ -116,8 +116,8 @@ function item_is_visible_to_student(PDO $pdo, int $itemId, int $studentId): bool
 {
     $query=$pdo->prepare("SELECT 1 FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
         JOIN courses c ON c.id=pi.course_id WHERE pi.id=? AND c.archived=0 AND (
-            NOT EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id)
-            OR EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?))");
+            pi.access_mode='all'
+            OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
     $query->execute([$studentId,$itemId,$studentId]);
     return (bool)$query->fetchColumn();
 }

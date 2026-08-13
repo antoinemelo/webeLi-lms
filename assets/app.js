@@ -174,6 +174,19 @@ if (libraryFilters) {
   });
 }
 
+document.querySelectorAll('.student-access').forEach((section) => {
+  const students = section.querySelector('[data-allowed-students]');
+  const radios = section.querySelectorAll('input[name="access_mode"]');
+  if (!students || !radios.length) return;
+  const syncStudentSelection = () => {
+    const restricted = section.querySelector('input[name="access_mode"]:checked')?.value === 'restricted';
+    students.hidden = !restricted;
+    students.querySelectorAll('input').forEach((input) => { input.disabled = !restricted; });
+  };
+  radios.forEach((radio) => radio.addEventListener('change', syncStudentSelection));
+  syncStudentSelection();
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
 }

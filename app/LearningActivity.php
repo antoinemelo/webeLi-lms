@@ -13,8 +13,8 @@ function record_learning_activity(PDO $pdo, int $studentId, int $itemId, string 
         JOIN users u ON u.id=e.student_id
         WHERE pi.id=? AND e.student_id=? AND e.status='active'
           AND c.archived=0 AND u.account_status='active'
-          AND (NOT EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id)
-            OR EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?))");
+          AND (pi.access_mode='all'
+            OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
     $allowed->execute([$itemId,$studentId,$studentId]);
     if (!$allowed->fetchColumn()) return false;
 
