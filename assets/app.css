@@ -195,6 +195,7 @@ button,a,summary{touch-action:manipulation}
 .metrics span{color:var(--muted);font-size:.78rem}
 .metrics b{font-size:1.8rem}
 .metrics .attention{border-color:#ecd99f;background:#fff8e5}
+.metrics .attention.complete{border-color:#b8dece;background:#e8f7f1}
 .student-table{overflow:hidden;border:1px solid var(--line);border-radius:1.2rem;background:#fff}
 .table-head,.student-row{display:grid;grid-template-columns:1.5fr 1fr .65fr .65fr 1.25rem;gap:1.25rem;align-items:center;padding:.8rem 1.1rem}
 .table-head{background:#fafafd;color:var(--muted);font-size:.72rem}
