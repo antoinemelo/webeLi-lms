@@ -6,7 +6,7 @@ require_once __DIR__.'/DatabaseMigrations.php';
 
 final class Database
 {
-    public const SCHEMA_VERSION = 6;
+    public const SCHEMA_VERSION = 7;
 
     public static function connect(string $root): PDO
     {

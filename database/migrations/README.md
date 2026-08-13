@@ -1,6 +1,6 @@
 # Migrations de la base
 
-Chaque évolution postérieure à la version 6 reçoit un fichier immuable nommé `NNN_description.php` et augmente `Database::SCHEMA_VERSION` ainsi que `PRAGMA user_version` dans `database/schema.sql`. Le schéma courant et les fichiers seed doivent également représenter directement le résultat final pour les nouvelles installations.
+Chaque évolution postérieure au socle historique version 6 reçoit un fichier immuable nommé `NNN_description.php` et augmente `Database::SCHEMA_VERSION` ainsi que `PRAGMA user_version` dans `database/schema.sql`. Le schéma courant et les fichiers seed doivent également représenter directement le résultat final pour les nouvelles installations.
 
 Le fichier retourne un tableau autonome :
 

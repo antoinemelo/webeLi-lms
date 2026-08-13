@@ -2,6 +2,27 @@
 
 declare(strict_types=1);
 
+function teacher_can_manage_student(PDO $pdo,int $studentId,int $teacherId,bool $superadmin=false): bool
+{
+    if($superadmin){$query=$pdo->prepare("SELECT 1 FROM users WHERE id=? AND role='student'");$query->execute([$studentId]);return (bool)$query->fetchColumn();}
+    $query=$pdo->prepare("SELECT 1 FROM users student WHERE student.id=? AND student.role='student' AND (
+        student.managed_by=? OR EXISTS(SELECT 1 FROM enrollments e JOIN courses c ON c.id=e.course_id
+          WHERE e.student_id=student.id AND (c.teacher_id=? OR EXISTS(SELECT 1 FROM course_teachers ct WHERE ct.course_id=c.id AND ct.teacher_id=?)))
+    )");
+    $query->execute([$studentId,$teacherId,$teacherId,$teacherId]);
+    return (bool)$query->fetchColumn();
+}
+
+function update_student_secondary_email(PDO $pdo,int $studentId,int $teacherId,bool $superadmin,string $email): string
+{
+    if(!teacher_can_manage_student($pdo,$studentId,$teacherId,$superadmin))return 'forbidden';
+    $email=mb_strtolower(trim($email),'UTF-8');
+    if($email!==''&&(mb_strlen($email)>254||!filter_var($email,FILTER_VALIDATE_EMAIL)))return 'invalid';
+    $statement=$pdo->prepare("UPDATE users SET secondary_email=? WHERE id=? AND role='student'");
+    $statement->execute([$email!==''?$email:null,$studentId]);
+    return 'updated';
+}
+
 function superadmin_delete_page(PDO $pdo, int $pageId): bool
 {
     $exists=$pdo->prepare('SELECT id FROM pages WHERE id=?');$exists->execute([$pageId]);if(!$exists->fetchColumn())return false;

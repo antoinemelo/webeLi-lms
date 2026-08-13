@@ -5,7 +5,7 @@ declare(strict_types=1);
 return static function(PDO $pdo): void {
     $required=[
         'schema_migrations'=>['version','name','checksum','applied_at'],
-        'users'=>['id','first_name','last_name','email','role','login_code','account_status','is_superadmin','language','managed_by'],
+        'users'=>['id','first_name','last_name','email','secondary_email','role','login_code','account_status','is_superadmin','language','managed_by'],
         'courses'=>['id','reference','title','code','teacher_id','archived'],
         'course_teachers'=>['course_id','teacher_id','added_by'],
         'enrollments'=>['id','course_id','student_id','status','archived_at'],

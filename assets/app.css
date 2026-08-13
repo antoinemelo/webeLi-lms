@@ -247,6 +247,9 @@ button,a,summary{touch-action:manipulation}
 .student-admin-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(21rem,.85fr);gap:1.5rem;align-items:start}
 .student-admin-layout.single{grid-template-columns:1fr}
 .student-admin-side{margin-top:0}
+.student-directory-tools{display:grid;grid-template-columns:minmax(18rem,1fr) minmax(10rem,.45fr) minmax(12rem,.55fr);gap:.55rem;margin:1rem 0}
+.student-directory-tools label{display:flex;align-items:center;padding-left:.75rem;border:1px solid var(--line);border-radius:.8rem;background:#fff;color:var(--muted)}
+.student-directory-tools input{width:100%;border:0;background:transparent}
 .directory-list{display:grid;gap:.55rem}
 .directory-list article{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center;padding:.85rem;border:1px solid var(--line);border-radius:1rem;background:#fff}
 .directory-identity{display:flex;min-width:0;flex-direction:column}
@@ -255,6 +258,10 @@ button,a,summary{touch-action:manipulation}
 .student-code{display:flex;flex-direction:column;padding:.45rem .7rem;border-radius:.7rem;background:var(--purple-soft);text-align:center}
 .student-code span{color:var(--muted);font-size:.6rem;text-transform:uppercase}
 .student-code b{color:var(--purple);letter-spacing:.1em}
+.student-private-contact{grid-column:1/-1;border-top:1px solid var(--line)}
+.student-private-contact>summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.65rem .15rem 0;list-style:none;color:var(--muted);font-size:.75rem;cursor:pointer}.student-private-contact>summary::-webkit-details-marker{display:none}.student-private-contact>summary small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.student-private-contact form{margin-top:.65rem;padding:.75rem;border-radius:.75rem;background:var(--canvas)}.student-private-contact .field{margin:0}
+.secondary-email-fields{display:flex;align-items:center;gap:.5rem}.secondary-email-fields input{min-width:0}.secondary-email-fields button{flex:none}
 .two-fields{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
 .course-check{width:100%}
 .course-check span{display:flex;align-items:center;gap:.5rem}
@@ -402,6 +409,7 @@ button,a,summary{touch-action:manipulation}
 .admin-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem}.admin-metrics div{display:flex;flex-direction:column;padding:1rem;border:1px solid var(--line);border-radius:1rem;background:#fff}.admin-metrics b{font-size:2rem}.admin-metrics span{color:var(--muted)}
 .maintenance-card{margin:1.5rem 0;padding:1.2rem;border:1px solid #cbc4fb;border-radius:1.1rem;background:linear-gradient(145deg,#fff 65%,var(--purple-soft))}.maintenance-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}.maintenance-heading h2{margin:0}.version-table{overflow:hidden;margin-bottom:1rem;border:1px solid var(--line);border-radius:.85rem;background:#fff}.version-table>div{display:grid;grid-template-columns:minmax(12rem,1fr) minmax(9rem,.6fr);gap:1rem;padding:.7rem .85rem;border-bottom:1px solid var(--line)}.version-table>div:last-child{border-bottom:0}.version-table span{color:var(--muted)}.version-table strong{text-align:right;overflow-wrap:anywhere}.maintenance-actions{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:.75rem}.maintenance-actions form{margin:0}
 .admin-section{margin-top:1.5rem}.admin-list{display:grid;gap:.5rem}.admin-list article{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 1rem;border:1px solid var(--line);border-radius:.9rem;background:#fff}.admin-list article>div{display:flex;min-width:0;flex-direction:column}.admin-list small,.admin-list em{overflow:hidden;color:var(--muted);font-size:.72rem;font-style:normal;text-overflow:ellipsis;white-space:nowrap}
+.admin-private-emails{display:grid;gap:.5rem}.admin-private-emails form{display:grid;grid-template-columns:minmax(12rem,.7fr) minmax(16rem,1fr) auto;gap:.65rem;align-items:end;padding:.75rem;border:1px solid var(--line);border-radius:.85rem;background:#fff}.admin-private-emails label{display:contents}.admin-private-emails label>span{display:flex;min-width:0;flex-direction:column}.admin-private-emails small{overflow:hidden;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:1050px){.student-profile-actions{grid-column:2 / -1;margin-top:.15rem;padding-top:1rem;padding-left:0;border-top:1px solid var(--line);border-left:0;justify-content:flex-start}.student-profile-actions .student-score{margin-left:auto}}
 @media (max-width:850px){.topbar{min-height:3.9rem;padding-inline:1rem}
 .profile-name,.desktop-nav{display:none}
@@ -413,6 +421,7 @@ button,a,summary{touch-action:manipulation}
 .bottom-nav .nav-link i{font-size:1.1rem;line-height:1}
 .bottom-nav .nav-link.active{background:var(--purple-soft);color:var(--purple)}
 .mastery-list,.detail-grid,.editor-layout,.pathway-layout,.student-admin-layout,.transfer-grid{grid-template-columns:1fr}
+.student-directory-tools{grid-template-columns:1fr 1fr}.student-search{grid-column:1/-1}.admin-private-emails form{grid-template-columns:1fr auto}.admin-private-emails label>span{grid-column:1/-1}
 .library-tools{grid-template-columns:1fr 1fr}.library-search{grid-column:1/-1}.archived-courses article{grid-template-columns:1fr auto}.archived-courses .course-copy{grid-column:1/-1;border-top:1px solid var(--line);border-left:0;padding-top:.8rem}.course-identity form{grid-template-columns:1fr}
 .detail-grid aside,.framework-panel,.student-admin-side{margin-top:0}
 .reward-types,.page-grid{grid-template-columns:repeat(2,1fr)}
@@ -487,6 +496,7 @@ h1{font-size:2.25rem}
 .directory-list article{grid-template-columns:auto 1fr}
 .version-table>div{grid-template-columns:1fr;gap:.15rem}.version-table strong{text-align:left}.maintenance-actions,.maintenance-actions form,.maintenance-actions button{width:100%}
 .student-code{grid-column:2;justify-self:start;flex-direction:row;align-items:center;gap:.5rem}
+.secondary-email-fields{align-items:stretch;flex-direction:column}.secondary-email-fields button{width:100%}
 .two-fields{grid-template-columns:1fr}
 .reward-form{grid-template-columns:1fr}
 .reward-form .points,.reward-message{grid-column:auto}

@@ -13,6 +13,7 @@ CREATE TABLE users (
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL CHECK(last_name = upper(last_name)),
     email TEXT NOT NULL UNIQUE,
+    secondary_email TEXT,
     role TEXT NOT NULL CHECK(role IN ('student', 'teacher')),
     initials TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT '#6d5dfc',
@@ -329,4 +330,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 6;
+PRAGMA user_version = 7;

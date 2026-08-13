@@ -904,6 +904,14 @@ function handle_action(string $action): never
             : 'Élève préinscrit à :count cours. Validation du courriel requise sous 15 minutes ; message placé dans la boîte d’envoi.', ['count'=>count($courseIds)]));
         redirect('students');
     }
+    if ($action === 'update_student_secondary_email' && $user['role'] === 'teacher') {
+        $studentId=(int)($_POST['student_id']??0);
+        $result=update_student_secondary_email(db(),$studentId,(int)$user['id'],(int)($user['is_superadmin']??0)===1,(string)($_POST['secondary_email']??''));
+        if($result==='updated')flash(t('Adresse électronique secondaire enregistrée.'));
+        elseif($result==='invalid')flash(t('Indiquez une adresse électronique secondaire valide.'),'error');
+        else flash(t('Vous ne pouvez pas modifier cette adresse électronique.'),'error');
+        redirect(((string)($_POST['return_view']??''))==='admin'?'admin':'students');
+    }
     if ($action === 'enroll_students' && $user['role'] === 'teacher') {
         $courseId=(int)($_POST['course_id']??0);
         $course=one('SELECT * FROM courses WHERE id=? AND teacher_id=?',[$courseId,$user['id']]);

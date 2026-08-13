@@ -187,6 +187,42 @@ if (libraryFilters) {
   });
 }
 
+const studentFilters = document.querySelector('[data-student-filters]');
+if (studentFilters) {
+  const fold = (value) => String(value || '').toLocaleLowerCase(locale).normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+  const applyStudentFilters = () => {
+    const search = fold(studentFilters.querySelector('[data-student-search]').value);
+    const group = studentFilters.querySelector('[data-student-group]').value;
+    const course = studentFilters.querySelector('[data-student-course]').value;
+    let visible = 0;
+    document.querySelectorAll('[data-student-card]').forEach((card) => {
+      const matches = (!search || fold(card.dataset.search).includes(search))
+        && (!group || card.dataset.group === group)
+        && (!course || card.dataset.courses.includes(` ${course} `));
+      card.hidden = !matches;
+      if (matches) visible++;
+    });
+    const count = document.querySelector('[data-student-count]');
+    if (count) count.textContent = ui('students', ':count élève(s) sur la plateforme').replace(':count', String(visible));
+    const empty = document.querySelector('[data-student-empty]');
+    if (empty) empty.hidden = visible !== 0;
+  };
+  studentFilters.querySelectorAll('input,select').forEach((control) => control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', applyStudentFilters));
+}
+
+document.querySelectorAll('[data-course-invitation]').forEach((invitation) => {
+  const select = invitation.querySelector('[data-invitation-course]');
+  const code = invitation.querySelector('[data-invitation-code]');
+  const link = invitation.querySelector('[data-invitation-link]');
+  const sync = () => {
+    const option = select?.selectedOptions[0];
+    if (code) code.value = option?.dataset.code || '';
+    if (link) link.value = option?.dataset.link || '';
+  };
+  select?.addEventListener('change', sync);
+  sync();
+});
+
 const pageEditor = document.querySelector('.editor-form');
 if (pageEditor) {
   let dirty = false;

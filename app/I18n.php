@@ -91,6 +91,7 @@ function js_i18n(): array
 {
     return [
         'pages' => t(':count page(s)'),
+        'students' => t(':count élève(s) sur la plateforme'),
         'confirm_page' => t('Écraser cette page et remplacer tous ses blocs et tags ?'),
         'confirm_course' => t('Écraser ce parcours ? Ses anciennes étapes, progressions et encouragements liés seront supprimés.'),
         'confirm_students' => t('Écraser, pour les élèves importés, leurs inscriptions à vos parcours ?'),
