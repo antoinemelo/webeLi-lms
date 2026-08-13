@@ -187,7 +187,7 @@ button,a,summary{touch-action:manipulation}
 .course-tabs i{width:.5rem;height:.5rem;border-radius:50%;background:var(--course)}
 .course-tabs small{grid-column:2}
 .course-tab-meta{display:flex;grid-column:2;align-items:center;justify-content:space-between;gap:.65rem;min-width:0}
-.course-waiting-badge{display:inline-grid;flex:none;width:1.45rem;height:1.45rem;place-items:center;border-radius:50%;background:#ffe2ad;color:#8a5200;font-size:.7rem;font-weight:850;line-height:1}
+.course-waiting-badge{display:inline-grid;flex:none;width:1.45rem;height:1.45rem;place-items:center;border:1px solid #ecd99f;border-radius:50%;background:#fff8e5;color:#8a5200;font-size:.7rem;font-weight:850;line-height:1}
 .course-tabs a.active{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-soft)}
 .course-tabs.compact a{display:flex;min-width:max-content;gap:.4rem}
 .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
