@@ -45,6 +45,8 @@ return [
     'En retard'=>['en'=>'Overdue','de'=>'Überfällig','it'=>'In ritardo','es'=>'Con retraso'],
     'Demain'=>['en'=>'Tomorrow','de'=>'Morgen','it'=>'Domani','es'=>'Mañana'],
     'À confirmer'=>['en'=>'To confirm','de'=>'Zu bestätigen','it'=>'Da confermare','es'=>'Por confirmar'],
+    ':count élève à confirmer'=>['en'=>':count student to confirm','de'=>':count lernende Person zu bestätigen','it'=>':count studente da confermare','es'=>':count alumno por confirmar'],
+    ':count élèves à confirmer'=>['en'=>':count students to confirm','de'=>':count Lernende zu bestätigen','it'=>':count studenti da confermare','es'=>':count alumnos por confirmar'],
     'À faire'=>['en'=>'To do','de'=>'Zu erledigen','it'=>'Da fare','es'=>'Por hacer'],
     'Je découvre'=>['en'=>'I am discovering','de'=>'Ich entdecke','it'=>'Sto scoprendo','es'=>'Estoy descubriendo'],
     'Découverte'=>['en'=>'Discovery','de'=>'Entdeckung','it'=>'Scoperta','es'=>'Descubrimiento'],
