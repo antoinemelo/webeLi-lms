@@ -593,7 +593,7 @@ return [
     'Version installée'=>['en'=>'Installed version','de'=>'Installierte Version','it'=>'Versione installata','es'=>'Versión instalada'],
     'Version installée de la base'=>['en'=>'Installed database version','de'=>'Installierte Datenbankversion','it'=>'Versione del database installata','es'=>'Versión instalada de la base de datos'],
     'Version des migrations de la base'=>['en'=>'Database migration version','de'=>'Version der Datenbankmigrationen','it'=>'Versione delle migrazioni del database','es'=>'Versión de las migraciones de la base de datos'],
-    'Version de base proposée par Git'=>['en'=>'Database version proposed by Git','de'=>'Von Git vorgeschlagene Datenbankversion','it'=>'Versione del database proposta da Git','es'=>'Versión de base de datos propuesta por Git'],
+    'Dernière version disponible pour la base'=>['en'=>'Latest database version available','de'=>'Neueste verfügbare Datenbankversion','it'=>'Ultima versione disponibile del database','es'=>'Última versión disponible de la base de datos'],
     'Dernière version stable disponible'=>['en'=>'Latest stable version available','de'=>'Neueste verfügbare stabile Version','it'=>'Ultima versione stabile disponibile','es'=>'Última versión estable disponible'],
     'Dernière vérification'=>['en'=>'Last check','de'=>'Letzte Überprüfung','it'=>'Ultima verifica','es'=>'Última comprobación'],
     'Vérification impossible : :details'=>['en'=>'Unable to check: :details','de'=>'Überprüfung nicht möglich: :details','it'=>'Verifica impossibile: :details','es'=>'No se pudo comprobar: :details'],
