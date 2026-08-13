@@ -261,6 +261,7 @@ button,a,summary{touch-action:manipulation}
 .student-private-contact{grid-column:1/-1;border-top:1px solid var(--line)}
 .student-private-contact>summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.65rem .15rem 0;list-style:none;color:var(--muted);font-size:.75rem;cursor:pointer}.student-private-contact>summary::-webkit-details-marker{display:none}.student-private-contact>summary small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .student-private-contact form{margin-top:.65rem;padding:.75rem;border-radius:.75rem;background:var(--canvas)}.student-private-contact .field{margin:0}
+.management-secondary-email .field{margin:0}
 .secondary-email-fields{display:flex;align-items:center;gap:.5rem}.secondary-email-fields input{min-width:0}.secondary-email-fields button{flex:none}
 .two-fields{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}
 .course-check{width:100%}
