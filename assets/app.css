@@ -182,12 +182,12 @@ button,a,summary{touch-action:manipulation}
 .teacher-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.8rem}
 .teacher-heading p{margin-bottom:0;color:var(--muted)}
 .teacher-heading.action-heading{display:block}.action-heading-copy{width:100%;min-width:0}.action-heading-title{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.action-heading-title h1{min-width:0;margin-bottom:.25rem;overflow-wrap:anywhere}
-.course-tabs{display:flex;gap:.6rem;overflow-x:auto;margin-bottom:1.25rem;padding-bottom:.35rem;scrollbar-width:thin}
-.course-tabs a{display:grid;min-width:13rem;grid-template-columns:.75rem 1fr;align-items:center;padding:.75rem;border:1px solid var(--line);border-radius:.9rem;background:#fff;font-weight:750}
+.course-tabs{display:flex;flex-wrap:wrap;gap:.6rem;overflow:visible;margin-bottom:1.25rem;padding-bottom:.35rem}
+.course-tabs a{display:grid;min-width:13rem;grid-template-columns:.75rem 1fr;gap:.4rem;align-items:center;padding:.75rem;border:1px solid var(--line);border-radius:.9rem;background:#fff;font-weight:750}
 .course-tabs i{width:.5rem;height:.5rem;border-radius:50%;background:var(--course)}
 .course-tabs small{grid-column:2}
 .course-tabs a.active{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-soft)}
-.course-tabs.compact a{display:flex;min-width:max-content}
+.course-tabs.compact a{display:flex;min-width:max-content;gap:.4rem}
 .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
 .metrics div{display:flex;flex-direction:column;padding:1.1rem;border:1px solid var(--line);border-radius:1.1rem;background:#fff}
 .metrics span{color:var(--muted);font-size:.78rem}
