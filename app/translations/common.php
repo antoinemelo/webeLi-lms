@@ -108,7 +108,7 @@ return [
     'Derniers encouragements'=>['en'=>'Latest rewards','de'=>'Neueste Belohnungen','it'=>'Ultime ricompense','es'=>'Últimas recompensas'],
     'Les encouragements de votre enseignant apparaîtront ici.'=>['en'=>'Encouragement from your teacher will appear here.','de'=>'Ermutigungen Ihrer Lehrperson erscheinen hier.','it'=>'Gli incoraggiamenti del docente appariranno qui.','es'=>'Los ánimos de tu docente aparecerán aquí.'],
     'Tableau de bord'=>['en'=>'Dashboard','de'=>'Dashboard','it'=>'Dashboard','es'=>'Panel de control'],
-    'Voici où en est votre classe aujourd’hui.'=>['en'=>'Here is how your class is doing today.','de'=>'So steht Ihre Klasse heute.','it'=>'Ecco a che punto è la classe oggi.','es'=>'Así está hoy tu clase.'],
+    'Voici où en sont les apprenants aujourd’hui.'=>['en'=>'Here is how the learners are doing today.','de'=>'So stehen die Lernenden heute.','it'=>'Ecco a che punto sono gli studenti oggi.','es'=>'Así están hoy los estudiantes.'],
     'Notifications'=>['en'=>'Notifications','de'=>'Benachrichtigungen','it'=>'Notifiche','es'=>'Notificaciones'],
     ':count élèves'=>['en'=>':count students','de'=>':count Lernende','it'=>':count studenti','es'=>':count estudiantes'],
     'Progression moyenne'=>['en'=>'Average progress','de'=>'Durchschnittlicher Fortschritt','it'=>'Progresso medio','es'=>'Progreso medio'],
