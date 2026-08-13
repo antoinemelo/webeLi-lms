@@ -1,0 +1,6 @@
+DirectoryIndex index.php
+Options -Indexes
+
+<FilesMatch "^(README\.md|INSTANCE\.txt)$">
+    Require all denied
+</FilesMatch>

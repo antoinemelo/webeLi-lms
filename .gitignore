@@ -1,0 +1,12 @@
+# Données propres à chaque instance : ne jamais les publier.
+/storage/*
+!/storage/.htaccess
+/uploads/*
+!/uploads/.htaccess
+!/uploads/fiche-observation.txt
+
+# Sauvegardes, journaux et fichiers locaux.
+*.backup
+*.log
+/.env
+/INSTANCE.txt
