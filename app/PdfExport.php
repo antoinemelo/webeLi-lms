@@ -51,12 +51,86 @@ function pathway_page_pdf_html(PDO $pdo, int $itemId, int $teacherId): string
 
 function chromium_binary(): ?string
 {
-    foreach(['/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'] as $candidate)if(is_executable($candidate))return $candidate;return null;
+    foreach([
+        '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome','/usr/bin/google-chrome-stable',
+        '/snap/bin/chromium','/opt/google/chrome/chrome',
+    ] as $candidate)if(is_executable($candidate))return $candidate;return null;
+}
+
+function pdf_plain_text(string $html): string
+{
+    $html=preg_replace('~<(style|script)[^>]*>.*?</\1>~is','',$html)??$html;
+    $html=preg_replace('~<li[^>]*>~i','- ',$html)??$html;
+    $html=preg_replace('~</t[dh]>~i',' | ',$html)??$html;
+    $html=preg_replace('~<(?:br\s*/?|/p|/div|/h[1-6]|/header|/section|/article|/tr|/li)[^>]*>~i',"\n",$html)??$html;
+    $text=html_entity_decode(strip_tags($html),ENT_QUOTES|ENT_HTML5,'UTF-8');
+    $text=str_replace(["\r\n","\r","\xC2\xA0"],["\n","\n",' '],$text);
+    $lines=[];
+    foreach(explode("\n",$text) as $source){
+        $source=trim((string)(preg_replace('/[ \t]+/u',' ',$source)??$source),' |');
+        if($source===''){if($lines&&end($lines)!=='')$lines[]='';continue;}
+        $lines[]=$source;
+    }
+    return trim(implode("\n",$lines));
+}
+
+function pdf_wrap_line(string $line, int $limit): array
+{
+    if($line==='')return [''];
+    $wrapped=[];$current='';
+    foreach(preg_split('/\s+/u',$line,-1,PREG_SPLIT_NO_EMPTY)?:[] as $word){
+        while(mb_strlen($word,'UTF-8')>$limit){
+            if($current!==''){$wrapped[]=$current;$current='';}
+            $wrapped[]=mb_substr($word,0,$limit,'UTF-8');
+            $word=mb_substr($word,$limit,null,'UTF-8');
+        }
+        $candidate=$current===''?$word:$current.' '.$word;
+        if(mb_strlen($candidate,'UTF-8')>$limit){$wrapped[]=$current;$current=$word;}else $current=$candidate;
+    }
+    if($current!==''||!$wrapped)$wrapped[]=$current;
+    return $wrapped;
+}
+
+function pdf_fallback_document(string $html): string
+{
+    $landscape=str_contains($html,'size:A4 landscape');
+    $width=$landscape?842:595;$height=$landscape?595:842;
+    $lineLimit=$landscape?132:88;$linesPerPage=$landscape?34:52;$lines=[];
+    foreach(explode("\n",pdf_plain_text($html)) as $line)foreach(pdf_wrap_line($line,$lineLimit) as $wrapped)$lines[]=$wrapped;
+    $pages=array_chunk($lines?:['Document vide'],$linesPerPage);
+    $objects=[1=>'<< /Type /Catalog /Pages 2 0 R >>',3=>'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'];
+    $pageRefs=[];
+    foreach($pages as $index=>$pageLines){
+        $pageId=4+$index*2;$contentId=$pageId+1;$pageRefs[]=$pageId.' 0 R';
+        $stream="BT\n/F1 10 Tf\n14 TL\n40 ".($height-45)." Td\n";
+        foreach($pageLines as $line){
+            $encoded=function_exists('iconv')?(string)iconv('UTF-8','Windows-1252//TRANSLIT//IGNORE',$line):preg_replace('/[^\x20-\x7E]/','?',$line);
+            $encoded=preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/','',$encoded)??'';
+            $encoded=strtr($encoded,['\\'=>'\\\\','('=>'\\(',')'=>'\\)']);
+            $stream.='('.$encoded.") Tj T*\n";
+        }
+        $stream.="ET\n";
+        $objects[$pageId]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '.$width.' '.$height.'] /Resources << /Font << /F1 3 0 R >> >> /Contents '.$contentId.' 0 R >>';
+        $objects[$contentId]='<< /Length '.strlen($stream)." >>\nstream\n".$stream.'endstream';
+    }
+    $objects[2]='<< /Type /Pages /Kids ['.implode(' ',$pageRefs).'] /Count '.count($pageRefs).' >>';
+    ksort($objects);$pdf="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";$offsets=[0=>0];
+    foreach($objects as $id=>$object){$offsets[$id]=strlen($pdf);$pdf.=$id." 0 obj\n".$object."\nendobj\n";}
+    $xref=strlen($pdf);$size=max(array_keys($objects))+1;$pdf.="xref\n0 $size\n0000000000 65535 f \n";
+    for($id=1;$id<$size;$id++)$pdf.=sprintf('%010d 00000 n ',(int)($offsets[$id]??0))."\n";
+    return $pdf.'trailer << /Size '.$size." /Root 1 0 R >>\nstartxref\n".$xref."\n%%EOF\n";
+}
+
+function render_pdf_fallback_file(string $html): string
+{
+    $path=tempnam(sys_get_temp_dir(),'lms-pdf-');
+    if($path===false||file_put_contents($path,pdf_fallback_document($html))===false)throw new TransferException('Le fichier PDF temporaire ne peut pas être créé.');
+    return $path;
 }
 
 function render_pdf_file(string $html): string
 {
-    $chromium=chromium_binary();if(!$chromium||!function_exists('proc_open'))throw new TransferException('Export PDF indisponible : Chromium ou proc_open manque sur le serveur.');
+    $chromium=chromium_binary();if(!$chromium||!function_exists('proc_open'))return render_pdf_fallback_file($html);
     $directory=sys_get_temp_dir().'/elan-pdf-'.bin2hex(random_bytes(8));if(!mkdir($directory,0700,true))throw new TransferException('Le répertoire PDF temporaire ne peut pas être créé.');$htmlPath=$directory.'/document.html';$pdfPath=$directory.'/document.pdf';file_put_contents($htmlPath,$html);
     $profilePath=$directory.'/chromium-profile';
     $command=[$chromium,'--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--allow-file-access-from-files','--user-data-dir='.$profilePath,'--no-pdf-header-footer','--print-to-pdf='.$pdfPath,'file://'.$htmlPath];
@@ -67,5 +141,5 @@ function render_pdf_file(string $html): string
 
 function send_pdf_download(string $html, string $filename): never
 {
-    $pdfPath=render_pdf_file($html);header('Content-Type: application/pdf');header('Content-Disposition: attachment; filename="'.preg_replace('/[^A-Za-z0-9._-]/','-',basename($filename)).'"');header('Content-Length: '.filesize($pdfPath));header('Cache-Control: no-store');readfile($pdfPath);exit;
+    $pdfPath=render_pdf_file($html);header('Content-Type: application/pdf');header('Content-Disposition: attachment; filename="'.preg_replace('/[^A-Za-z0-9._-]/','-',basename($filename)).'"');header('Content-Length: '.filesize($pdfPath));header('Cache-Control: no-store');readfile($pdfPath);@unlink($pdfPath);exit;
 }
