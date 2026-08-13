@@ -4,3 +4,5 @@
 - Bootstrap Icons 1.13.1 — licence MIT — <https://icons.getbootstrap.com/>
 
 Ces fichiers sont servis localement pour conserver une interface rapide et utilisable hors ligne. Les versions sont volontairement figées ; toute mise à jour doit être suivie d’un contrôle visuel mobile et d’un changement de version du cache dans `public/sw.js`.
+
+Ce dossier public fait toujours partie de l’application et des publications Git. Il est indépendant du dossier Composer `./vendor/` ou `../vendor/` utilisé côté PHP et ne doit pas y être déplacé.

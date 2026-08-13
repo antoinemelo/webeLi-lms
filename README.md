@@ -1,6 +1,6 @@
-# liike — micro-CMS de parcours pédagogiques
+# liike — CMS adapté aux parcours pédagogiques
 
-liike est un prototype volontairement simple : PHP 8.2, SQLite et HTML/JS. La présentation repose sur Bootstrap 5.3 et Bootstrap Icons, tous deux servis localement, complétés par un thème CSS léger propre aux composants pédagogiques. Le moteur mPDF installé sous `./vendor/` ou `../vendor/` produit les documents PDF sans Chromium ; ce dossier externe est exclu par défaut des instances et publications préparées, puis conservé lors des mises à jour Git. Il reprend de `/cms/dev` les idées utiles (contenus en blocs, taxonomies, contraintes SQLite et boîte d’événements), dans un projet beaucoup plus petit.
+Liike est un CMS pédagogique volontairement simple : PHP 8.2, SQLite et HTML/JS. La présentation repose sur Bootstrap 5.3 et Bootstrap Icons, servis localement, complétés par un thème CSS léger. Le moteur mPDF installé sous `./vendor/` ou `../vendor/` produit les documents PDF sans Chromium. Ce dossier de dépendances PHP est exclu par défaut des instances et publications préparées, puis conservé lors des mises à jour Git.
 
 ## Documentation
 
@@ -11,29 +11,9 @@ liike est un prototype volontairement simple : PHP 8.2, SQLite et HTML/JS. La pr
 - [Installation, exploitation et emails](docs/exploitation.md)
 - [Limites connues et prochaines étapes](docs/limitations-roadmap.md)
 
-## Démarrer
-
-Avec le serveur WebeLi commun :
-
-```bash
-cd /home/amelo/Documents/DEV/WebeLi/web/server
-./start.sh
-```
-
-Puis ouvrir `http://127.0.0.1:8080/lms/`.
-
-Pour lancer liike seul :
-
-```bash
-cd /home/amelo/Documents/DEV/WebeLi/web/lms/dev
-php -S 127.0.0.1:8098 -t public
-```
-
-Puis ouvrir `http://127.0.0.1:8098`. Dans les deux modes, la base `storage/apr.sqlite` et les données de démonstration sont créées automatiquement.
-
 ## Accès de démonstration
 
-Enseignante :
+Enseignante superadmin :
 
 ```text
 Identifiant : nora
@@ -70,6 +50,23 @@ python3 scripts/apr.py --profile blank --instance /tmp/liike-instance
 
 Le script prépare uniquement le dossier local. Il n’effectue aucun transfert FTP.
 Le dossier racine `vendor/` n’est pas copié par défaut. Il peut être installé manuellement à la racine de l’instance ou dans son répertoire parent. Pour l’embarquer exceptionnellement, ajouter `--include-vendor`.
+
+## Dépendances et répertoires `vendor`
+
+Deux emplacements portant le nom `vendor` ont des rôles différents :
+
+| Emplacement | Contenu | Publication Git |
+|---|---|---|
+| `./vendor/` ou `../vendor/` | dépendances PHP Composer, notamment mPDF | exclu par défaut |
+| `assets/vendor/` dans une instance, `public/assets/vendor/` en développement | Bootstrap et Bootstrap Icons servis au navigateur | toujours inclus |
+
+Pour installer mPDF à la racine de l’application :
+
+```bash
+composer install --no-dev --prefer-dist
+```
+
+Le dossier Composer complet peut aussi être placé dans le parent immédiat de l’application. Par exemple, une application installée sous `/lms/edu/` accepte `/lms/edu/vendor/` ou `/lms/vendor/`. Aucun répertoire nommé `/server` ou `/serveur` n’est requis, créé ou recherché. Le partage par le parent dépend uniquement des droits d’accès accordés à PHP par l’hébergement.
 
 ## Préparer une publication Git
 
