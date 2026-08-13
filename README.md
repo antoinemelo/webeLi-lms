@@ -1,6 +1,6 @@
 # liike — micro-CMS de parcours pédagogiques
 
-liike est un prototype volontairement simple : PHP 8.2, SQLite et HTML/JS. La présentation repose sur Bootstrap 5.3 et Bootstrap Icons, tous deux servis localement, complétés par un thème CSS léger propre aux composants pédagogiques. Le moteur mPDF installé sous `vendor/` produit les documents PDF sans Chromium ; ce dossier externe est conservé lors des mises à jour Git. Il reprend de `/cms/dev` les idées utiles (contenus en blocs, taxonomies, contraintes SQLite et boîte d’événements), dans un projet beaucoup plus petit.
+liike est un prototype volontairement simple : PHP 8.2, SQLite et HTML/JS. La présentation repose sur Bootstrap 5.3 et Bootstrap Icons, tous deux servis localement, complétés par un thème CSS léger propre aux composants pédagogiques. Le moteur mPDF installé sous `./vendor/` ou `../vendor/` produit les documents PDF sans Chromium ; ce dossier externe est exclu par défaut des instances et publications préparées, puis conservé lors des mises à jour Git. Il reprend de `/cms/dev` les idées utiles (contenus en blocs, taxonomies, contraintes SQLite et boîte d’événements), dans un projet beaucoup plus petit.
 
 ## Documentation
 
@@ -69,6 +69,7 @@ python3 scripts/apr.py --profile blank --instance /tmp/liike-instance
 ```
 
 Le script prépare uniquement le dossier local. Il n’effectue aucun transfert FTP.
+Le dossier racine `vendor/` n’est pas copié par défaut. Il peut être installé manuellement à la racine de l’instance ou dans son répertoire parent. Pour l’embarquer exceptionnellement, ajouter `--include-vendor`.
 
 ## Préparer une publication Git
 
@@ -88,7 +89,7 @@ python3 scripts/apr.py \
   --git-push
 ```
 
-`storage/apr.sqlite` et les fichiers propres à une installation sous `uploads/` sont ignorés et ne sont jamais ajoutés au dépôt. Une publication ultérieure conserve l’historique Git et s’arrête si le dépôt local contient des modifications non validées.
+`storage/apr.sqlite`, les fichiers propres à une installation sous `uploads/` et le dossier racine `vendor/` sont ignorés et ne sont jamais ajoutés au dépôt par défaut. Seule l’option explicite `--include-vendor` autorise son inclusion. Une publication ultérieure conserve l’historique Git et s’arrête si le dépôt local contient des modifications non validées.
 
 ## Ce qui est couvert
 

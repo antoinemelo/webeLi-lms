@@ -65,12 +65,21 @@ function pdf_application_root(): string
     return is_file(APR_PUBLIC_ROOT.'/app/bootstrap.php')?APR_PUBLIC_ROOT:dirname(APR_PUBLIC_ROOT);
 }
 
+function pdf_vendor_autoload_path(?string $applicationRoot=null): ?string
+{
+    $root=rtrim($applicationRoot??pdf_application_root(),'/\\');
+    foreach([$root.'/vendor/autoload.php',dirname($root).'/vendor/autoload.php'] as $candidate){
+        if(is_file($candidate))return $candidate;
+    }
+    return null;
+}
+
 function load_pdf_engine(): void
 {
     if(!extension_loaded('mbstring')||!extension_loaded('gd'))throw new TransferException('Le moteur PDF intégré nécessite les extensions PHP mbstring et gd. Utilisez l’aperçu imprimable.');
     if(!class_exists(\Mpdf\Mpdf::class,false)){
-        $autoload=pdf_application_root().'/vendor/autoload.php';
-        if(!is_file($autoload))throw new TransferException('Le moteur PDF intégré est absent. Utilisez l’aperçu imprimable.');
+        $autoload=pdf_vendor_autoload_path();
+        if($autoload===null)throw new TransferException('Le moteur PDF intégré est absent. Installez vendor/ à la racine de l’application ou dans son répertoire parent.');
         require_once $autoload;
     }
     if(!class_exists(\Mpdf\Mpdf::class))throw new TransferException('Le moteur PDF intégré ne peut pas être chargé. Utilisez l’aperçu imprimable.');

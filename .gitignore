@@ -4,6 +4,7 @@
 /uploads/*
 !/uploads/.htaccess
 !/uploads/fiche-observation.txt
+/vendor/
 
 # Sauvegardes, journaux et fichiers locaux.
 *.backup
