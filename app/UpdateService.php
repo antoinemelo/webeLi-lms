@@ -21,9 +21,9 @@ function maintenance_safe_release_path(string $path): bool
     return true;
 }
 
-function maintenance_preserved_external_path(string $path): bool
+function maintenance_preserved_external_path(string $path,bool $preserveVendor=true): bool
 {
-    return $path==='vendor'||str_starts_with($path,'vendor/');
+    return $preserveVendor&&($path==='vendor'||str_starts_with($path,'vendor/'));
 }
 
 function maintenance_validate_manifest(array $manifest): array
@@ -42,7 +42,9 @@ function maintenance_validate_manifest(array $manifest): array
         if(!is_string($path)||!maintenance_safe_release_path($path)||!is_string($hash)||!preg_match('/^[a-f0-9]{64}$/',$hash))throw new UpdateException('Le manifeste contient un chemin ou une empreinte invalide.');
     }
     foreach(['index.php','app/bootstrap.php','app/Database.php','database/schema.sql','VERSION'] as $required)if(!isset($files[$required]))throw new UpdateException('Le manifeste ne contient pas tous les fichiers indispensables.');
-    $manifest['version']=$version;$manifest['database_version']=$databaseVersion;$manifest['database_release_version']=$databaseReleaseVersion?:null;$manifest['files']=$files;
+    $preserve=$manifest['preserve_on_update']??['storage/apr.sqlite','uploads/','vendor/'];
+    if(!is_array($preserve)||array_values($preserve)!==$preserve||array_diff($preserve,['storage/apr.sqlite','uploads/','vendor/'])||!in_array('storage/apr.sqlite',$preserve,true)||!in_array('uploads/',$preserve,true))throw new UpdateException('La politique de préservation de la publication est invalide.');
+    $manifest['version']=$version;$manifest['database_version']=$databaseVersion;$manifest['database_release_version']=$databaseReleaseVersion?:null;$manifest['files']=$files;$manifest['preserve_on_update']=$preserve;
     return $manifest;
 }
 
@@ -156,7 +158,7 @@ function maintenance_extract_verified_release(string $archive,string $destinatio
     foreach($manifest['files'] as $relative=>$hash)if(!hash_equals($hash,hash_file('sha256',$releaseRoot.'/'.$relative)))throw new UpdateException('L’empreinte du fichier '.$relative.' est invalide.');
     $archiveManifest=(string)file_get_contents($releaseRoot.'/RELEASE.json');
     try{$decoded=json_decode($archiveManifest,true,512,JSON_THROW_ON_ERROR);$validated=maintenance_validate_manifest($decoded);}catch(Throwable){throw new UpdateException('Le manifeste inclus dans l’archive est invalide.');}
-    if($validated['version']!==$manifest['version']||$validated['database_version']!==$manifest['database_version']||$validated['database_release_version']!==$manifest['database_release_version']||$validated['files']!==$manifest['files'])throw new UpdateException('Le manifeste et l’archive ne désignent pas la même publication.');
+    if($validated['version']!==$manifest['version']||$validated['database_version']!==$manifest['database_version']||$validated['database_release_version']!==$manifest['database_release_version']||$validated['preserve_on_update']!==$manifest['preserve_on_update']||$validated['files']!==$manifest['files'])throw new UpdateException('Le manifeste et l’archive ne désignent pas la même publication.');
     return $releaseRoot;
 }
 
@@ -228,20 +230,20 @@ function maintenance_apply_release(PDO $pdo,string $root,array $manifest): array
     try{
         mkdir($work,0775,true);mkdir($extract,0775,true);mkdir($backup,0775,true);
         $manifestRaw=maintenance_http_get(LIIKE_RELEASE_MANIFEST_URL,2_000_000);$fresh=json_decode($manifestRaw,true,512,JSON_THROW_ON_ERROR);$fresh=maintenance_validate_manifest($fresh);
-        if($fresh['version']!==$manifest['version']||$fresh['database_version']!==$manifest['database_version']||$fresh['database_release_version']!==$manifest['database_release_version']||$fresh['files']!==$manifest['files'])throw new UpdateException('Une nouvelle publication est apparue : vérifiez à nouveau la version disponible.');
+        if($fresh['version']!==$manifest['version']||$fresh['database_version']!==$manifest['database_version']||$fresh['database_release_version']!==$manifest['database_release_version']||$fresh['preserve_on_update']!==$manifest['preserve_on_update']||$fresh['files']!==$manifest['files'])throw new UpdateException('Une nouvelle publication est apparue : vérifiez à nouveau la version disponible.');
         file_put_contents($archive,maintenance_http_get(LIIKE_RELEASE_ARCHIVE_URL,80_000_000,45));
         $releaseRoot=maintenance_extract_verified_release($archive,$extract,$manifest,$manifestRaw);
         $schemaSql=(string)file_get_contents($releaseRoot.'/database/schema.sql');
         if(!preg_match('/PRAGMA\s+user_version\s*=\s*(\d+)\s*;/i',$schemaSql,$schemaVersion)||((int)$schemaVersion[1])!==(int)$manifest['database_version'])throw new UpdateException('La version de base du schéma ne correspond pas au manifeste Git.');
         try{$databaseCompatibility=database_compatibility_contract($releaseRoot.'/database/compatibility.php');database_plan_packaged_migrations($pdo,$releaseRoot.'/database/migrations',(int)$manifest['database_version']);}catch(Throwable $exception){throw new UpdateException('La chaîne de migrations Git est incomplète : '.$exception->getMessage(),0,$exception);}
         maintenance_backup_database($pdo,$backup.'/apr.sqlite');
-        $oldManifest=maintenance_installed_manifest($root);$oldFiles=array_keys($oldManifest['files']??[]);$newFiles=array_keys($manifest['files']);$managed=array_values(array_unique(array_merge($oldFiles,$newFiles,['RELEASE.json'])));
-        foreach($managed as $relative){if(maintenance_preserved_external_path($relative)||(!maintenance_safe_release_path($relative)&&$relative!=='RELEASE.json'))continue;$target=$root.'/'.$relative;if(is_file($target)){$copy=$backup.'/code/'.$relative;$directory=dirname($copy);if(!is_dir($directory))mkdir($directory,0775,true);if(!copy($target,$copy))throw new UpdateException('La sauvegarde du code a échoué.');}}
+        $oldManifest=maintenance_installed_manifest($root);$oldFiles=array_keys($oldManifest['files']??[]);$newFiles=array_keys($manifest['files']);$managed=array_values(array_unique(array_merge($oldFiles,$newFiles,['RELEASE.json'])));$preserveVendor=in_array('vendor/',$manifest['preserve_on_update'],true);
+        foreach($managed as $relative){if(maintenance_preserved_external_path($relative,$preserveVendor)||(!maintenance_safe_release_path($relative)&&$relative!=='RELEASE.json'))continue;$target=$root.'/'.$relative;if(is_file($target)){$copy=$backup.'/code/'.$relative;$directory=dirname($copy);if(!is_dir($directory))mkdir($directory,0775,true);if(!copy($target,$copy))throw new UpdateException('La sauvegarde du code a échoué.');}}
         file_put_contents($backup.'/previous-files.json',json_encode($oldFiles,JSON_UNESCAPED_SLASHES));
         file_put_contents($storage.'/maintenance.flag',(string)time());
-        foreach($newFiles as $relative){$target=$root.'/'.$relative;$touched[]=$relative;maintenance_copy_file_atomic($releaseRoot.'/'.$relative,$target);}
+        foreach($newFiles as $relative){if(maintenance_preserved_external_path($relative,$preserveVendor))continue;$target=$root.'/'.$relative;$touched[]=$relative;maintenance_copy_file_atomic($releaseRoot.'/'.$relative,$target);}
         $touched[]='RELEASE.json';maintenance_copy_file_atomic($releaseRoot.'/RELEASE.json',$root.'/RELEASE.json');
-        foreach(array_diff($oldFiles,$newFiles) as $relative){if(!maintenance_preserved_external_path($relative)&&maintenance_safe_release_path($relative)&&is_file($root.'/'.$relative)){$touched[]=$relative;unlink($root.'/'.$relative);}}
+        foreach(array_diff($oldFiles,$newFiles) as $relative){if(!maintenance_preserved_external_path($relative,$preserveVendor)&&maintenance_safe_release_path($relative)&&is_file($root.'/'.$relative)){$touched[]=$relative;unlink($root.'/'.$relative);}}
         try{$databaseUpdate=database_apply_packaged_migrations($pdo,$releaseRoot.'/database/migrations',(int)$manifest['database_version'],$databaseCompatibility);}catch(Throwable $exception){throw new UpdateException('La migration automatique de la base a échoué : '.$exception->getMessage(),0,$exception);}
         @unlink(maintenance_cache_path($root));@unlink($storage.'/maintenance.flag');maintenance_remove_tree($work);flock($lockHandle,LOCK_UN);fclose($lockHandle);
         return ['version'=>$manifest['version'],'database'=>$databaseUpdate,'backup'=>$backup];
