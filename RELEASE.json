@@ -7,7 +7,7 @@
     ".gitignore": "12c636281ab2e339681ffbdeefe4e76727d269034d7bfa3d9b1d893f8336389e",
     ".htaccess": "37d58b2199e1628a72289b2dbe2bd28fa370f9b6e57926d5c1511091215a953b",
     "README.md": "4d9d157d00eca65b8340bc308ff7df75cdca58f430522314e535718279c9cccc",
-    "VERSION": "d1e4a9d2b74850d49d9433716c35c01a455fdcda9e2861d4286e45b712ed7112",
+    "VERSION": "47c9545e459ace71f86d7bcb1333f091a247edffd669c31b807a4b81d44759a9",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/AdminService.php": "d7cece0a55f662dd1103e4c07e593e87b2abbc1d330c9ccc2ebd48d13d5c1646",
     "app/Collaboration.php": "21afebc70d31724e0eba706aabac4df7ab7140cb01297485e66084362f29c271",
@@ -26,13 +26,13 @@
     "app/UpdateService.php": "ae5548fd9b38117d5cd70b0bd9dfdeb34e4025a7bb274d15a4041a20d5835632",
     "app/actions.php": "53e771c35d7ca6ecec51dcde794a8a6146efc8312a246c4063cde9227a94211a",
     "app/bootstrap.php": "189954a8bfc8628ffa49b34bdf208ca98e0fdb5bd44d739e4c7c836f02d5ba23",
-    "app/translations/common.php": "48a80f1a910ccd579fe8145027b5a894f930b1f3ba33f48fa1c79d959e170ea3",
+    "app/translations/common.php": "9b7b475bfa9b76bbfa80e3f25dbf635c69b4ff0188d7cccad175f827429ce6b7",
     "app/translations/de.php": "5f216338428b4c7211a2ac242dc8efdb9f2d3dc06adac5e1ac49c7864b267f7d",
     "app/translations/en.php": "8046ab1588f6bbf2315e57b04d2a706948f2b9d55a65453981703653f5f174be",
     "app/translations/es.php": "fca48160d1a9fc4b34e44380dae66016e197e4347996b3ae985325c79c88dbc4",
     "app/translations/it.php": "ea01e3b14d2d18fae657628c057e5a05e0f10d2e1b330e019605e28977817524",
-    "app/views.php": "bf481d4b9eff254890d8f8cbd90b72f867741407ea6580d6df6ec395d983b629",
-    "assets/app.css": "11c13b48622597da9fb5d276fab8fe24a9ab581fde6d4346d0055c68566ecda4",
+    "app/views.php": "ed49b72a8f240b062feccaf021fd06d349907a62dde6ed9e92afa0795cce6cf9",
+    "assets/app.css": "5d8531c7eb38a55e408d246f3cd08ace7d9d359e9e419f7089fdd0fc43380d4e",
     "assets/app.js": "613cea361c5cbb8d68610345265cb856a7f7f814f4b34a73557831727a6f4640",
     "assets/apple-touch-icon.png": "822a81419587af0f29c1d2e651659746d870f27f3c047d528c04511aa42d333a",
     "assets/field-notes.svg": "17e2824b4b3fb955c5501a9bf2d46eef12b66256efbbf2137f7be45c6a9307f4",
@@ -56,12 +56,12 @@
     "scripts/mail_outbox.php": "9e4a5f52d15856cf30b35c94e260c6ffcdac1c44d44dfdeb537932024ba50c7e",
     "scripts/purge_registrations.php": "278cf25a993c7c57cba7e4df761a54adb728814bcbeb637cc095097bcb45d646",
     "storage/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
-    "sw.js": "727f02f7e4d9d854ed20b52099680d7b83eb9cfd31267144e372226f63711cd4",
+    "sw.js": "b7dcc77c33e61531e5ad72bc3b4ea9788c4bedf2bfd6e8aa418db336a35b7c3e",
     "uploads/.htaccess": "eea47c349b4aa72d1f2328a1640d8f6455d2c8e96ff86a8908d140b98343e74f",
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-08-13T09:26:25+00:00",
+  "generated_at": "2026-08-13T09:45:56+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "mutable_paths": [
     "storage/",
@@ -72,5 +72,5 @@
     "uploads/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026.08.13.092625"
+  "version": "2026.08.13.094556"
 }

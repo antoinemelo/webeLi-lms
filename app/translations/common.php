@@ -503,6 +503,7 @@ return [
     'un autre enseignant'=>['en'=>'another teacher','de'=>'einer anderen Lehrperson','it'=>'un altro docente','es'=>'otro docente'],
     'Sélectionnez au moins un élève pour limiter l’accès à cette étape.'=>['en'=>'Select at least one student to restrict access to this step.','de'=>'Wählen Sie mindestens eine lernende Person aus, um den Zugriff auf diesen Schritt einzuschränken.','it'=>'Seleziona almeno uno studente per limitare l’accesso a questa tappa.','es'=>'Selecciona al menos un estudiante para limitar el acceso a esta etapa.'],
     'Accès à cette étape'=>['en'=>'Access to this step','de'=>'Zugriff auf diesen Schritt','it'=>'Accesso a questa tappa','es'=>'Acceso a esta etapa'],
+    'Accès restreint'=>['en'=>'Restricted access','de'=>'Eingeschränkter Zugriff','it'=>'Accesso limitato','es'=>'Acceso restringido'],
     'Tous les élèves inscrits'=>['en'=>'All enrolled students','de'=>'Alle eingeschriebenen Lernenden','it'=>'Tutti gli studenti iscritti','es'=>'Todos los estudiantes inscritos'],
     'Seulement les élèves sélectionnés'=>['en'=>'Selected students only','de'=>'Nur ausgewählte Lernende','it'=>'Solo gli studenti selezionati','es'=>'Solo los estudiantes seleccionados'],
     'Aucun élève'=>['en'=>'No students','de'=>'Keine Lernenden','it'=>'Nessuno studente','es'=>'Ningún estudiante'],
