@@ -754,11 +754,11 @@ function handle_action(string $action): never
 
     if($action==='update_course_identity'&&$user['role']==='teacher'){
         $courseId=(int)($_POST['course_id']??0);
-        $result=update_course_identity(db(),$courseId,(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['code']??''));
-        if($result==='updated')flash('Nom et code du parcours mis à jour.');
+        $result=update_course_identity(db(),$courseId,(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['code']??''),(string)($_POST['description']??''));
+        if($result==='updated')flash('Informations du parcours mises à jour.');
         elseif($result==='duplicate')flash('Ce code de parcours est déjà utilisé. Choisissez-en un autre.','error');
-        elseif($result==='invalid')flash('Le nom est requis. Le code doit contenir 3 à 40 caractères : lettres sans accent, chiffres, point, tiret ou soulignement.','error');
-        else flash('Seul le créateur du parcours peut modifier son nom et son code.','error');
+        elseif($result==='invalid')flash('Le nom est requis, la description est limitée à 2000 caractères et le code doit contenir 3 à 40 caractères valides.','error');
+        else flash('Seul le créateur du parcours peut modifier ses informations.','error');
         redirect('pathway',['course'=>$courseId]);
     }
 

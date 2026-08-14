@@ -25,17 +25,18 @@ function unique_course_code(PDO $pdo, string $sourceCode): string
 /**
  * @return 'updated'|'invalid'|'duplicate'|'forbidden'
  */
-function update_course_identity(PDO $pdo, int $courseId, int $teacherId, string $title, string $code): string
+function update_course_identity(PDO $pdo, int $courseId, int $teacherId, string $title, string $code, string $description): string
 {
     if(!teacher_owns_course($pdo,$courseId,$teacherId))return 'forbidden';
     $title=trim($title);
     $code=strtoupper(trim($code));
-    if($title===''||mb_strlen($title)>160||!preg_match('/^[A-Z0-9][A-Z0-9._-]{2,39}$/',$code))return 'invalid';
+    $description=trim($description);
+    if($title===''||mb_strlen($title)>160||mb_strlen($description)>2000||!preg_match('/^[A-Z0-9][A-Z0-9._-]{2,39}$/',$code))return 'invalid';
     $duplicate=$pdo->prepare('SELECT 1 FROM courses WHERE lower(code)=lower(?) AND id<>?');
     $duplicate->execute([$code,$courseId]);
     if($duplicate->fetchColumn())return 'duplicate';
-    $update=$pdo->prepare('UPDATE courses SET title=?,code=? WHERE id=? AND teacher_id=?');
-    $update->execute([$title,$code,$courseId,$teacherId]);
+    $update=$pdo->prepare('UPDATE courses SET title=?,code=?,description=? WHERE id=? AND teacher_id=?');
+    $update->execute([$title,$code,$description,$courseId,$teacherId]);
     return 'updated';
 }
 
