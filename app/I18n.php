@@ -104,5 +104,11 @@ function js_i18n(): array
         'lock_released' => t('Zone libérée'),
         'lock_resume' => t('Reprendre la modification'),
         'lock_error' => t('Impossible de réserver cette zone'),
+        'session_expired' => t('Votre session a expiré'),
+        'session_preserved' => t('Votre saisie reste affichée sur cette page. Reconnectez-vous dans un nouvel onglet, puis revenez ici pour reprendre sans perdre votre travail.'),
+        'session_reconnect' => t('Se reconnecter dans un nouvel onglet'),
+        'session_recheck' => t('J’ai rétabli ma session'),
+        'session_checking' => t('Vérification de la session…'),
+        'session_unavailable' => t('La validité de la session ne peut pas être vérifiée pour le moment.'),
     ];
 }

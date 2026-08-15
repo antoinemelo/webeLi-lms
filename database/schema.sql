@@ -165,6 +165,7 @@ CREATE TABLE pathway_items (
     position INTEGER NOT NULL,
     deadline TEXT,
     is_evaluation INTEGER NOT NULL DEFAULT 0 CHECK(is_evaluation IN (0,1)),
+    evaluation_weight REAL NOT NULL DEFAULT 1 CHECK(evaluation_weight IN (0.5,1,2,3,4)),
     instructions TEXT NOT NULL DEFAULT '',
     access_mode TEXT NOT NULL DEFAULT 'all' CHECK(access_mode IN ('all','restricted','none')),
     revision INTEGER NOT NULL DEFAULT 0,
@@ -230,6 +231,7 @@ CREATE TABLE progress (
     student_note TEXT NOT NULL DEFAULT '',
     student_validated_at TEXT,
     teacher_level INTEGER CHECK(teacher_level BETWEEN 0 AND 3),
+    evaluation_score REAL CHECK(evaluation_score BETWEEN 0 AND 10),
     teacher_note TEXT NOT NULL DEFAULT '',
     teacher_validated_at TEXT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -237,6 +239,41 @@ CREATE TABLE progress (
     FOREIGN KEY(enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE,
     FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE
 );
+
+CREATE TABLE student_private_notes (
+    student_id INTEGER NOT NULL,
+    pathway_item_id INTEGER NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(student_id, pathway_item_id),
+    FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE course_announcements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    created_by INTEGER,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0,1)),
+    FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE announcement_reads (
+    announcement_id INTEGER NOT NULL,
+    student_id INTEGER NOT NULL,
+    read_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(announcement_id, student_id),
+    FOREIGN KEY(announcement_id) REFERENCES course_announcements(id) ON DELETE CASCADE,
+    FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_student_private_notes_item ON student_private_notes(pathway_item_id);
+CREATE INDEX idx_course_announcements_course ON course_announcements(course_id, archived, created_at);
+CREATE INDEX idx_announcement_reads_student ON announcement_reads(student_id, announcement_id);
 
 CREATE TABLE learning_visits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -330,4 +367,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 7;
+PRAGMA user_version = 8;

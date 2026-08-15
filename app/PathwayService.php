@@ -59,7 +59,7 @@ function create_pathway(PDO $pdo, int $teacherId, string $title, string $code, s
         $insert->execute([new_entity_reference('COURSE'),$title,$code,$description,$teacherId,'#6d5dfc']);
         $courseId=(int)$pdo->lastInsertId();
         $reward=$pdo->prepare('INSERT INTO reward_types(course_id,name,icon,color,default_points) VALUES(?,?,?,?,?)');
-        foreach([['Persévérance','🌱',5],['Curiosité','🔎',5],['Entraide','🤝',10],['Travail soigné','✨',5]] as [$name,$icon,$points])$reward->execute([$courseId,$name,$icon,'#6d5dfc',$points]);
+        foreach([['Persévérance','🌱',1],['Curiosité','🔎',1],['Entraide','🤝',1],['Travail soigné','✨',1]] as [$name,$icon,$points])$reward->execute([$courseId,$name,$icon,'#6d5dfc',$points]);
         $pdo->commit();
         return ['status'=>'created','course_id'=>$courseId];
     }catch(Throwable $exception){
@@ -139,11 +139,11 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,instructions,access_mode) VALUES(?,?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight,instructions,access_mode) VALUES(?,?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['instructions'],$item['access_mode']]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['evaluation_weight']??1,$item['instructions'],$item['access_mode']]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();
@@ -199,4 +199,184 @@ function delete_unused_page(PDO $pdo, int $pageId, int $teacherId): bool
     $pdo->beginTransaction();
     try{$pdo->prepare("DELETE FROM collaboration_comments WHERE subject_type='page' AND subject_id=?")->execute([$pageId]);$pdo->prepare("DELETE FROM edit_locks WHERE entity_type='page_metadata' AND entity_id=?")->execute([$pageId]);$pdo->prepare("DELETE FROM edit_locks WHERE entity_type='page_block' AND entity_id IN (SELECT id FROM page_blocks WHERE page_id=?)")->execute([$pageId]);$delete=$pdo->prepare('DELETE FROM pages WHERE id=? AND owner_id=?');$delete->execute([$pageId,$teacherId]);$pdo->commit();return $delete->rowCount()===1;}
     catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
+}
+
+function normalize_evaluation_weight(mixed $value): ?float
+{
+    if(is_string($value))$value=str_replace(',','.',trim($value));
+    if(!is_numeric($value))return null;
+    $weight=(float)$value;
+    foreach([0.5,1.0,2.0,3.0,4.0] as $allowed){
+        if(abs($weight-$allowed)<0.00001)return $allowed;
+    }
+    return null;
+}
+
+function save_student_private_note(PDO $pdo, int $studentId, int $itemId, string $body): bool
+{
+    $body=trim($body);
+    if(mb_strlen($body)>10000)return false;
+    $access=$pdo->prepare("SELECT 1 FROM pathway_items pi
+        JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
+        WHERE pi.id=? AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
+    $access->execute([$studentId,$itemId,$studentId]);
+    if(!$access->fetchColumn())return false;
+    if($body===''){
+        $pdo->prepare('DELETE FROM student_private_notes WHERE student_id=? AND pathway_item_id=?')->execute([$studentId,$itemId]);
+        return true;
+    }
+    $pdo->prepare("INSERT INTO student_private_notes(student_id,pathway_item_id,body,updated_at)
+        VALUES(?,?,?,CURRENT_TIMESTAMP)
+        ON CONFLICT(student_id,pathway_item_id) DO UPDATE SET body=excluded.body,updated_at=CURRENT_TIMESTAMP")
+        ->execute([$studentId,$itemId,$body]);
+    return true;
+}
+
+function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId): array
+{
+    $context=$pdo->prepare("SELECT e.student_id FROM enrollments e WHERE e.id=? AND e.course_id=? AND e.status='active'");
+    $context->execute([$enrollmentId,$courseId]);
+    $studentId=(int)($context->fetchColumn()?:0);
+    if($studentId<1)return ['rows'=>[],'average'=>null,'graded'=>0,'total'=>0,'weight_total'=>0.0];
+    $query=$pdo->prepare("SELECT pi.id,pi.position,pi.deadline,pi.evaluation_weight,p.title,
+        pr.evaluation_score,pr.teacher_note,pr.teacher_validated_at
+        FROM pathway_items pi JOIN pages p ON p.id=pi.page_id
+        LEFT JOIN progress pr ON pr.pathway_item_id=pi.id AND pr.enrollment_id=?
+        WHERE pi.course_id=? AND pi.is_evaluation=1 AND (
+            pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+                SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))
+        ORDER BY pi.position,pi.id");
+    $query->execute([$enrollmentId,$courseId,$studentId]);
+    $rows=$query->fetchAll(PDO::FETCH_ASSOC);
+    $weighted=0.0;$weightTotal=0.0;$graded=0;
+    foreach($rows as &$row){
+        $row['evaluation_weight']=(float)$row['evaluation_weight'];
+        if($row['evaluation_score']!==null){
+            $row['evaluation_score']=(float)$row['evaluation_score'];
+            $weighted+=$row['evaluation_score']*$row['evaluation_weight'];
+            $weightTotal+=$row['evaluation_weight'];
+            $graded++;
+        }
+    }
+    unset($row);
+    return ['rows'=>$rows,'average'=>$weightTotal>0?$weighted/$weightTotal:null,'graded'=>$graded,'total'=>count($rows),'weight_total'=>$weightTotal];
+}
+
+function create_course_announcement(PDO $pdo, int $courseId, int $teacherId, string $title, string $body): ?int
+{
+    $title=trim($title);$body=trim($body);
+    if(!teacher_can_access_course($pdo,$courseId,$teacherId)||$title===''||$body===''||mb_strlen($title)>160||mb_strlen($body)>5000)return null;
+    $insert=$pdo->prepare('INSERT INTO course_announcements(course_id,created_by,title,body) VALUES(?,?,?,?)');
+    $insert->execute([$courseId,$teacherId,$title,$body]);
+    $announcementId=(int)$pdo->lastInsertId();
+    $pdo->prepare('INSERT OR IGNORE INTO announcement_reads(announcement_id,student_id,read_at) VALUES(?,?,CURRENT_TIMESTAMP)')->execute([$announcementId,$teacherId]);
+    return $announcementId;
+}
+
+function archive_course_announcement(PDO $pdo, int $announcementId, int $teacherId): ?int
+{
+    $query=$pdo->prepare('SELECT course_id FROM course_announcements WHERE id=? AND archived=0');
+    $query->execute([$announcementId]);$courseId=(int)($query->fetchColumn()?:0);
+    if($courseId<1||!teacher_can_access_course($pdo,$courseId,$teacherId))return null;
+    $pdo->prepare('UPDATE course_announcements SET archived=1 WHERE id=?')->execute([$announcementId]);
+    return $courseId;
+}
+
+function delete_course_announcement(PDO $pdo, int $announcementId, int $teacherId): ?int
+{
+    $query=$pdo->prepare('SELECT course_id FROM course_announcements WHERE id=?');
+    $query->execute([$announcementId]);$courseId=(int)($query->fetchColumn()?:0);
+    if($courseId<1||!teacher_can_access_course($pdo,$courseId,$teacherId))return null;
+    $pdo->prepare('DELETE FROM course_announcements WHERE id=?')->execute([$announcementId]);
+    return $courseId;
+}
+
+function course_announcements_for_student(PDO $pdo, int $courseId, int $studentId): array
+{
+    $access=$pdo->prepare("SELECT 1 FROM enrollments WHERE course_id=? AND student_id=? AND status='active'");
+    $access->execute([$courseId,$studentId]);
+    if(!$access->fetchColumn())return [];
+    $query=$pdo->prepare("SELECT a.*,u.name AS author_name,r.read_at
+        FROM course_announcements a LEFT JOIN users u ON u.id=a.created_by
+        LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=?
+        WHERE a.course_id=? AND a.archived=0 ORDER BY a.created_at DESC,a.id DESC");
+    $query->execute([$studentId,$courseId]);
+    return $query->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function unread_announcement_count(PDO $pdo, int $courseId, int $studentId): int
+{
+    return course_announcement_status($pdo,$courseId,$studentId)['unread'];
+}
+
+function course_announcement_status(PDO $pdo, int $courseId, int $studentId): array
+{
+    $query=$pdo->prepare("SELECT COUNT(a.id) AS total,
+        COUNT(CASE WHEN a.id IS NOT NULL AND r.announcement_id IS NULL THEN 1 END) AS unread
+        FROM enrollments e
+        LEFT JOIN course_announcements a ON a.course_id=e.course_id AND a.archived=0
+        LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=e.student_id
+        WHERE e.course_id=? AND e.student_id=? AND e.status='active'");
+    $query->execute([$courseId,$studentId]);$status=$query->fetch(PDO::FETCH_ASSOC)?:[];
+    return ['total'=>(int)($status['total']??0),'unread'=>(int)($status['unread']??0)];
+}
+
+function mark_course_announcements_read(PDO $pdo, int $courseId, int $studentId): bool
+{
+    $access=$pdo->prepare("SELECT 1 FROM enrollments WHERE course_id=? AND student_id=? AND status='active'");
+    $access->execute([$courseId,$studentId]);
+    if(!$access->fetchColumn())return false;
+    $pdo->prepare("INSERT OR IGNORE INTO announcement_reads(announcement_id,student_id,read_at)
+        SELECT id,?,CURRENT_TIMESTAMP FROM course_announcements WHERE course_id=? AND archived=0")
+        ->execute([$studentId,$courseId]);
+    return true;
+}
+
+function unread_announcements_for_user(PDO $pdo, int $userId): array
+{
+    $role=$pdo->prepare("SELECT role FROM users WHERE id=? AND account_status='active'");
+    $role->execute([$userId]);$role=(string)($role->fetchColumn()?:'');
+    if($role==='student'){
+        $query=$pdo->prepare("SELECT a.id,a.course_id,a.title,a.body,a.created_at,c.title AS course_title,u.name AS author_name
+            FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0
+            JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active'
+            LEFT JOIN users u ON u.id=a.created_by
+            LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=?
+            WHERE a.archived=0 AND r.announcement_id IS NULL ORDER BY a.created_at DESC,a.id DESC");
+        $query->execute([$userId,$userId]);
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    if($role==='teacher'){
+        $query=$pdo->prepare("SELECT a.id,a.course_id,a.title,a.body,a.created_at,c.title AS course_title,u.name AS author_name
+            FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0
+            LEFT JOIN users u ON u.id=a.created_by
+            LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=?
+            WHERE a.archived=0 AND r.announcement_id IS NULL AND (a.created_by IS NULL OR a.created_by<>?)
+              AND (c.teacher_id=? OR EXISTS(SELECT 1 FROM course_teachers ct WHERE ct.course_id=c.id AND ct.teacher_id=?))
+            ORDER BY a.created_at DESC,a.id DESC");
+        $query->execute([$userId,$userId,$userId,$userId]);
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    return [];
+}
+
+function mark_announcement_read_for_user(PDO $pdo, int $announcementId, int $userId): ?array
+{
+    $user=$pdo->prepare("SELECT role FROM users WHERE id=? AND account_status='active'");
+    $user->execute([$userId]);$role=(string)($user->fetchColumn()?:'');
+    if($role==='student'){
+        $query=$pdo->prepare("SELECT a.id,a.course_id FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0
+            JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active' WHERE a.id=? AND a.archived=0");
+        $query->execute([$userId,$announcementId]);
+    }elseif($role==='teacher'){
+        $query=$pdo->prepare("SELECT a.id,a.course_id FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0
+            WHERE a.id=? AND a.archived=0 AND (c.teacher_id=? OR EXISTS(
+                SELECT 1 FROM course_teachers ct WHERE ct.course_id=c.id AND ct.teacher_id=?))");
+        $query->execute([$announcementId,$userId,$userId]);
+    }else return null;
+    $announcement=$query->fetch(PDO::FETCH_ASSOC);
+    if(!$announcement)return null;
+    $pdo->prepare('INSERT OR IGNORE INTO announcement_reads(announcement_id,student_id,read_at) VALUES(?,?,CURRENT_TIMESTAMP)')->execute([$announcementId,$userId]);
+    return $announcement;
 }

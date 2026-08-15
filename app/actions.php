@@ -110,7 +110,7 @@ function verify_registration(string $token): never
             if ($activate->rowCount()===1 && $user['role'] === 'teacher') {
                 run('INSERT INTO courses(reference,title,code,description,teacher_id,accent) VALUES(?,?,?,?,?,?)', [new_entity_reference('COURSE'),$user['pending_course_title']?:'Mon premier cours','COURS-'.$user['id'],'Votre premier parcours pédagogique.',$user['id'],'#6d5dfc']);
                 $courseId = (int)db()->lastInsertId();
-                foreach ([['Persévérance','🌱',5],['Curiosité','🔎',5],['Entraide','🤝',10],['Travail soigné','✨',5]] as [$name,$icon,$points]) {
+                foreach ([['Persévérance','🌱',1],['Curiosité','🔎',1],['Entraide','🤝',1],['Travail soigné','✨',1]] as [$name,$icon,$points]) {
                     run('INSERT INTO reward_types(course_id,name,icon,color,default_points) VALUES(?,?,?,?,?)', [$courseId,$name,$icon,'#6d5dfc',$points]);
                 }
                 run('UPDATE users SET pending_course_title=NULL WHERE id=?', [$user['id']]);
@@ -569,7 +569,7 @@ function handle_action(string $action): never
         if (!$item) { flash('Étape introuvable.', 'error'); redirect('student'); }
         run("INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,updated_at)
             VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET student_level=excluded.student_level,student_note=excluded.student_note,student_validated_at=CURRENT_TIMESTAMP,teacher_level=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP",
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET student_level=excluded.student_level,student_note=excluded.student_note,student_validated_at=CURRENT_TIMESTAMP,teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP",
             [$item['enrollment_id'],$itemId,$level,trim((string)($_POST['note'] ?? ''))]);
         $teacherLanguage=normalize_language((string)($item['teacher_language']??''))??'fr';
         try{
@@ -580,19 +580,34 @@ function handle_action(string $action): never
         redirect('learn', ['item'=>$itemId]);
     }
 
+    if($action==='save_private_note'&&$user['role']==='student'){
+        $itemId=(int)($_POST['item_id']??0);
+        if(!save_student_private_note(db(),(int)$user['id'],$itemId,(string)($_POST['body']??''))){
+            flash('La note privée ne peut pas être enregistrée.','error');
+            redirect('student');
+        }
+        flash('Votre note privée a été enregistrée.');
+        redirect('learn',['item'=>$itemId]);
+    }
+
     if ($action === 'teacher_validate' && $user['role'] === 'teacher') {
         $enrollmentId = (int) $_POST['enrollment_id'];
         $itemId = (int) $_POST['item_id'];
-        $level = max(0, min(3, (int) $_POST['level']));
-        $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,p.title AS page_title,c.title AS course_title
+        $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,pi.is_evaluation,pi.evaluation_weight,p.title AS page_title,c.title AS course_title
             FROM enrollments e JOIN users s ON s.id=e.student_id JOIN pathway_items pi ON pi.id=? AND pi.course_id=e.course_id
             JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=e.course_id WHERE e.id=? AND e.status='active' AND s.account_status='active'
             AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id)))", [$itemId,$enrollmentId]);
         if (!$context || !teacher_can_access_course(db(),(int)$context['course_id'],(int)$user['id'])) { flash('Validation impossible.', 'error'); redirect('teacher'); }
-        run('INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,teacher_note,teacher_validated_at,updated_at)
-            VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,teacher_note=excluded.teacher_note,teacher_validated_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP',
-            [$enrollmentId,$itemId,$level,trim((string)($_POST['note'] ?? ''))]);
+        $isEvaluation=(bool)$context['is_evaluation'];$level=null;$score=null;
+        if($isEvaluation){
+            $rawScore=str_replace(',','.',trim((string)($_POST['score']??'')));
+            if($rawScore===''||!is_numeric($rawScore)||(float)$rawScore<0||(float)$rawScore>10){flash('La note doit être comprise entre 0 et 10.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
+            $score=round((float)$rawScore,2);
+        }else $level=max(0,min(3,(int)($_POST['level']??0)));
+        run('INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,updated_at)
+            VALUES(?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,teacher_note=excluded.teacher_note,teacher_validated_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP',
+            [$enrollmentId,$itemId,$level,$score,trim((string)($_POST['note'] ?? ''))]);
         $rewardId = (int) ($_POST['reward_type_id'] ?? 0);
         if ($rewardId > 0) {
             $reward = one('SELECT * FROM reward_types WHERE id=? AND course_id=? AND active=1', [$rewardId,$context['course_id']]);
@@ -606,8 +621,11 @@ function handle_action(string $action): never
         }
         $teacherNote = trim((string)($_POST['note'] ?? ''));
         $studentLanguage=normalize_language((string)($context['language']??''))??'fr';
-        enqueue('teacher.confirmed', $context['email'], t('Votre étape « :page » est confirmée',['page'=>$context['page_title']],$studentLanguage), t('Niveau confirmé : :level/3.',['level'=>$level],$studentLanguage).($teacherNote!==''?"\n\n".t('Note / Commentaire',[],$studentLanguage).' : '.$teacherNote:''));
-        flash(t($rewardId ? 'Niveau confirmé et encouragement attribué.' : 'Niveau confirmé.'));
+        $resultText=$isEvaluation
+            ?t('Note : :score/10 · pondération ×:weight.',['score'=>number_format((float)$score,2,',',''),'weight'=>number_format((float)$context['evaluation_weight'],1,',','')],$studentLanguage)
+            :t('Niveau confirmé : :level/3.',['level'=>$level],$studentLanguage);
+        enqueue('teacher.confirmed', $context['email'], t($isEvaluation?'Votre évaluation « :page » est notée':'Votre étape « :page » est confirmée',['page'=>$context['page_title']],$studentLanguage), $resultText.($teacherNote!==''?"\n\n".t('Note / Commentaire',[],$studentLanguage).' : '.$teacherNote:''));
+        flash(t($isEvaluation?($rewardId?'Évaluation notée et encouragement attribué.':'Évaluation notée.') : ($rewardId ? 'Niveau confirmé et encouragement attribué.' : 'Niveau confirmé.')));
         redirect('student-detail', ['enrollment'=>$enrollmentId]);
     }
 
@@ -697,6 +715,8 @@ function handle_action(string $action): never
         $courseId = (int)$_POST['course_id']; $pageId = (int)$_POST['page_id'];
         $deadlineInput=trim((string)($_POST['deadline']??''));$deadline=database_date_from_input($deadlineInput);
         if($deadlineInput!==''&&$deadline===null){flash('Saisissez la date au format jj/mm/aaaa.','error');redirect('pathway',['course'=>$courseId]);}
+        $isEvaluation=isset($_POST['is_evaluation'])?1:0;$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
+        if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$courseId]);}
         $course = one('SELECT * FROM courses WHERE id=?', [$courseId]);
         $page = one('SELECT id FROM pages WHERE id=? AND status=?', [$pageId,'ready']);
         if($course&&!teacher_can_access_course(db(),$courseId,(int)$user['id']))$course=null;
@@ -707,7 +727,7 @@ function handle_action(string $action): never
             else try{
                 db()->beginTransaction();
                 $position = (int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM pathway_items WHERE course_id=?',[$courseId])['n']);
-                run('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation) VALUES(?,?,?,?,?)', [$courseId,$pageId,$position,$deadline,isset($_POST['is_evaluation'])?1:0]);
+                run('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight) VALUES(?,?,?,?,?,?)', [$courseId,$pageId,$position,$deadline,$isEvaluation,$isEvaluation?$weight:1]);
                 db()->commit();flash('Page ajoutée au parcours.');
             }catch(Throwable $exception){if(db()->inTransaction())db()->rollBack();throw $exception;}
             finally{release_edit_locks(db(),(int)$user['id'],'course_structure',$courseId);}
@@ -798,9 +818,12 @@ function handle_action(string $action): never
                 }
                 if(!$allowedStudents){flash('Sélectionnez au moins un élève pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
-            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,instructions=?,access_mode=?,revision=revision+1 WHERE id=? AND revision=?');
-            $update->execute([$deadline,isset($_POST['is_evaluation'])?1:0,trim((string)$_POST['instructions']),$accessMode,$id,$revision]);
+            $isEvaluation=isset($_POST['is_evaluation'])?1:0;$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
+            if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,evaluation_weight=?,instructions=?,access_mode=?,revision=revision+1 WHERE id=? AND revision=?');
+            $update->execute([$deadline,$isEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$id,$revision]);
             if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            if($isEvaluation!==(int)$item['is_evaluation'])run("UPDATE progress SET teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$id]);
             run('DELETE FROM item_skills WHERE pathway_item_id=?',[$id]);
             foreach ((array)($_POST['skills']??[]) as $v) run('INSERT INTO item_skills SELECT ?,id FROM course_skills WHERE id=? AND course_id=?',[$id,(int)$v,$item['course_id']]);
             run('DELETE FROM pathway_item_students WHERE pathway_item_id=?',[$id]);
@@ -809,6 +832,22 @@ function handle_action(string $action): never
             flash('Étape mise à jour.');
             redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);
         }
+    }
+    if($action==='create_announcement'&&$user['role']==='teacher'){
+        $courseId=(int)($_POST['course_id']??0);
+        $created=create_course_announcement(db(),$courseId,(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['body']??''));
+        flash($created?'Annonce publiée.':'Le titre et le message de l’annonce sont obligatoires.',$created?'success':'error');
+        redirect('pathway',['course'=>$courseId]);
+    }
+    if($action==='archive_announcement'&&$user['role']==='teacher'){
+        $courseId=archive_course_announcement(db(),(int)($_POST['announcement_id']??0),(int)$user['id']);
+        flash($courseId?'Annonce retirée.':'Annonce introuvable.',$courseId?'success':'error');
+        redirect('pathway',$courseId?['course'=>$courseId]:[]);
+    }
+    if($action==='delete_announcement'&&$user['role']==='teacher'){
+        $courseId=delete_course_announcement(db(),(int)($_POST['announcement_id']??0),(int)$user['id']);
+        flash($courseId?'Annonce supprimée.':'Annonce introuvable.',$courseId?'success':'error');
+        redirect('pathway',$courseId?['course'=>$courseId]:[]);
     }
     if ($action === 'add_framework' && $user['role'] === 'teacher') {
         $courseId=(int)$_POST['course_id']; $kind='skill';

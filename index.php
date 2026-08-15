@@ -20,6 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['restart_login'])) {
     unset($_SESSION['login_teacher_id']);
 }
 
+if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
+    $sessionUser=actor();
+    http_response_code($sessionUser?200:401);
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Cache-Control: no-store, private');
+    echo json_encode(['authenticated'=>(bool)$sessionUser,'checked_at'=>time(),'csrf'=>$sessionUser?csrf_token():null],JSON_THROW_ON_ERROR);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     handle_action((string) ($_POST['action'] ?? ''));
@@ -45,6 +54,7 @@ if (!actor()) {
 }
 
 $user = require_actor();
+if((int)($_GET['announcement']??0)>0)mark_announcement_read_for_user(db(),(int)$_GET['announcement'],(int)$user['id']);
 $view = (string) ($_GET['view'] ?? ($user['role'] === 'teacher' ? 'teacher' : 'student'));
 if($view==='pdf-document'&&$user['role']==='teacher'){
     try{
@@ -75,10 +85,14 @@ if($view==='pdf-download'&&$user['role']==='teacher'){
 }
 $allowed = $user['role'] === 'teacher'
     ? ['teacher','student-detail','students','library','page-edit','pathway','pdf-preview','outbox','profile']
-    : ['student','learn','competencies','rewards','profile','join'];
+    : ['student','learn','competencies','announcements','rewards','profile','join'];
 if ($user['role'] === 'teacher' && (int)($user['is_superadmin'] ?? 0) === 1) $allowed[] = 'admin';
 if (!in_array($view, $allowed, true)) {
     $view = $user['role'] === 'teacher' ? 'teacher' : 'student';
+}
+if($view==='announcements'&&$user['role']==='student'&&(int)($_GET['announcement']??0)<1){
+    [, $announcementCourse]=student_context();
+    if($announcementCourse)mark_course_announcements_read(db(),(int)$announcementCourse['id'],(int)$user['id']);
 }
 
 render_app($view);

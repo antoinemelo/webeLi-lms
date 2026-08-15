@@ -124,11 +124,11 @@ INSERT INTO progress (enrollment_id,pathway_item_id,student_level,student_note,s
  (4,6,3,'',datetime('now','-1 day'),3,'',datetime('now'));
 
 INSERT INTO reward_types (id,course_id,name,icon,color,default_points) VALUES
- (1,1,'Persévérance','🌱','#2da58d',5),
- (2,1,'Curiosité','🔎','#6d5dfc',5),
- (3,1,'Entraide','🤝','#e49b35',10),
- (4,1,'Travail soigné','✨','#e45f86',5),
- (5,2,'Esprit critique','🧭','#4178d0',10);
+ (1,1,'Persévérance','🌱','#2da58d',1),
+ (2,1,'Curiosité','🔎','#6d5dfc',1),
+ (3,1,'Entraide','🤝','#e49b35',1),
+ (4,1,'Travail soigné','✨','#e45f86',1),
+ (5,2,'Esprit critique','🧭','#4178d0',1);
 
 INSERT INTO reward_awards (enrollment_id,pathway_item_id,reward_type_id,points,message,awarded_by,awarded_at) VALUES
  (1,1,2,5,'Tu as posé une excellente question.',1,datetime('now','-10 day')),

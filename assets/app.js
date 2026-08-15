@@ -22,6 +22,153 @@ const locale = document.body.dataset.language || 'fr';
 
 enhanceBootstrap();
 
+document.querySelector('.announcement-admin .section-title > button')?.remove();
+
+const sessionGuardEnabled = Boolean(document.body.dataset.csrf);
+if (sessionGuardEnabled) {
+  const SESSION_CHECK_URL = '?view=session-status';
+  const SESSION_CHECK_FRESHNESS = 300000;
+  let sessionState = 'valid';
+  let sessionCheckedAt = Date.now();
+  let sessionCheckPromise = null;
+  const approvedForms = new WeakSet();
+  const approvedActions = new WeakSet();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'session-guard-overlay';
+  overlay.hidden = true;
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'session-guard-title');
+  const card = document.createElement('section');
+  card.className = 'session-guard-card';
+  const icon = document.createElement('i');
+  icon.className = 'bi bi-shield-lock';
+  icon.setAttribute('aria-hidden', 'true');
+  const title = document.createElement('h2');
+  title.id = 'session-guard-title';
+  const explanation = document.createElement('p');
+  explanation.textContent = ui('session_preserved', 'Votre saisie reste affichée sur cette page. Reconnectez-vous dans un nouvel onglet, puis revenez ici pour reprendre sans perdre votre travail.');
+  const actions = document.createElement('div');
+  actions.className = 'session-guard-actions';
+  const reconnect = document.createElement('a');
+  reconnect.className = 'btn btn-dark';
+  reconnect.href = '?view=login';
+  reconnect.target = '_blank';
+  reconnect.rel = 'noopener';
+  reconnect.textContent = ui('session_reconnect', 'Se reconnecter dans un nouvel onglet');
+  const recheck = document.createElement('button');
+  recheck.className = 'btn btn-outline-secondary';
+  recheck.type = 'button';
+  recheck.dataset.sessionRecheck = '1';
+  recheck.textContent = ui('session_recheck', 'J’ai rétabli ma session');
+  const status = document.createElement('small');
+  status.className = 'session-guard-status';
+  status.setAttribute('role', 'status');
+  actions.append(reconnect, recheck);
+  card.append(icon, title, explanation, actions, status);
+  overlay.append(card);
+  document.body.append(overlay);
+
+  const showSessionGuard = (unavailable = false) => {
+    sessionState = unavailable ? 'unavailable' : 'expired';
+    title.textContent = unavailable
+      ? ui('session_unavailable', 'La validité de la session ne peut pas être vérifiée pour le moment.')
+      : ui('session_expired', 'Votre session a expiré');
+    status.textContent = '';
+    overlay.hidden = false;
+    recheck.focus();
+  };
+  const hideSessionGuard = () => {
+    overlay.hidden = true;
+    status.textContent = '';
+  };
+  const checkSession = async (force = false) => {
+    if (!force && sessionState === 'valid' && Date.now() - sessionCheckedAt < SESSION_CHECK_FRESHNESS) return true;
+    if (sessionCheckPromise) return sessionCheckPromise;
+    sessionCheckPromise = (async () => {
+      try {
+        const response = await fetch(SESSION_CHECK_URL, {
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const result = await response.json();
+        if (!response.ok || result.authenticated !== true) {
+          showSessionGuard(false);
+          return false;
+        }
+        if (typeof result.csrf === 'string' && result.csrf) {
+          document.body.dataset.csrf = result.csrf;
+          document.querySelectorAll('form[method="post"] input[name="token"]').forEach((token) => { token.value = result.csrf; });
+        }
+        sessionState = 'valid';
+        sessionCheckedAt = Date.now();
+        hideSessionGuard();
+        return true;
+      } catch (_) {
+        showSessionGuard(true);
+        return false;
+      } finally {
+        sessionCheckPromise = null;
+      }
+    })();
+    return sessionCheckPromise;
+  };
+  const isSensitiveAction = (element) => element?.matches?.(
+    '[data-bs-toggle="modal"],a[href*="view=page-edit"],a[href*="&edit="],a[href*="?edit="]',
+  );
+
+  recheck.addEventListener('click', async () => {
+    recheck.disabled = true;
+    status.textContent = ui('session_checking', 'Vérification de la session…');
+    await checkSession(true);
+    recheck.disabled = false;
+  });
+  document.addEventListener('focusin', (event) => {
+    if (!event.target.closest('form[method="post"]')) return;
+    if (sessionState === 'expired' || sessionState === 'unavailable') {
+      event.target.blur();
+      showSessionGuard(sessionState === 'unavailable');
+      return;
+    }
+    checkSession();
+  }, true);
+  document.addEventListener('click', async (event) => {
+    const action = event.target.closest('[data-bs-toggle="modal"],a[href*="view=page-edit"],a[href*="&edit="],a[href*="?edit="]');
+    if (!isSensitiveAction(action)) return;
+    if (approvedActions.has(action)) {
+      approvedActions.delete(action);
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (await checkSession(true)) {
+      approvedActions.add(action);
+      action.click();
+    }
+  }, true);
+  document.addEventListener('submit', async (event) => {
+    const form = event.target;
+    if (!form.matches?.('form[method="post"]')) return;
+    if (approvedForms.has(form)) {
+      approvedForms.delete(form);
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const submitter = event.submitter;
+    if (await checkSession(true)) {
+      approvedForms.add(form);
+      if (submitter && !submitter.disabled) form.requestSubmit(submitter);
+      else form.requestSubmit();
+    }
+  }, true);
+  const checkVisibleSession = () => { if (document.visibilityState === 'visible') checkSession(); };
+  window.addEventListener('focus', checkVisibleSession);
+  document.addEventListener('visibilitychange', checkVisibleSession);
+}
+
 document.querySelectorAll('input[type="date"]').forEach((input) => {
   const iso = input.value;
   input.type = 'text';
@@ -81,6 +228,8 @@ document.addEventListener('click', (event) => {
 
   const profile = document.querySelector('.profile-menu[open]');
   if (profile && !event.target.closest('.profile-menu')) profile.removeAttribute('open');
+  const announcements = document.querySelector('.global-announcement-menu[open]');
+  if (announcements && !event.target.closest('.global-announcement-menu')) announcements.removeAttribute('open');
 });
 
 let lockSubmissionInProgress = false;
@@ -258,6 +407,59 @@ document.querySelectorAll('.student-access').forEach((section) => {
   };
   radios.forEach((radio) => radio.addEventListener('change', syncStudentSelection));
   syncStudentSelection();
+});
+
+document.querySelectorAll('[data-evaluation-toggle]').forEach((toggle) => {
+  const form = toggle.closest('form');
+  const weight = form?.querySelector('[data-evaluation-weight]');
+  if (!weight) return;
+  const syncEvaluationWeight = () => { weight.hidden = !toggle.checked; };
+  toggle.addEventListener('change', syncEvaluationWeight);
+  syncEvaluationWeight();
+});
+
+document.querySelectorAll('[data-page-picker]').forEach((picker) => {
+  const select = picker.querySelector('[data-page-picker-select]');
+  const fallback = picker.querySelector('.page-picker-fallback');
+  const enhanced = picker.querySelector('[data-page-picker-enhanced]');
+  const search = picker.querySelector('[data-page-picker-search]');
+  const empty = picker.querySelector('[data-page-picker-empty]');
+  const results = Array.from(picker.querySelectorAll('[data-page-picker-result]'));
+  if (!select || !enhanced || !search) return;
+  fallback.hidden = true;
+  enhanced.hidden = false;
+  const fold = (value) => String(value || '').toLocaleLowerCase(locale).normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+  let chosenPageId = '';
+  const selectPage = (id, collapse = false) => {
+    select.value = String(id);
+    results.forEach((result) => {
+      const selected = result.dataset.pageId === String(id);
+      result.classList.toggle('selected', selected);
+      result.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      if (collapse) result.hidden = !selected;
+    });
+    if (collapse) {
+      chosenPageId = String(id);
+      search.value = '';
+      if (empty) empty.hidden = true;
+    }
+  };
+  const filterPages = () => {
+    const query = fold(search.value);
+    let visible = 0;
+    results.forEach((result) => {
+      const matches = chosenPageId !== ''
+        ? result.dataset.pageId === chosenPageId
+        : query !== '' && fold(result.dataset.pageSearchText).includes(query);
+      result.hidden = !matches;
+      if (matches) visible++;
+    });
+    if (empty) empty.hidden = chosenPageId !== '' || query === '' || visible !== 0;
+  };
+  results.forEach((result) => result.addEventListener('click', () => selectPage(result.dataset.pageId, true)));
+  search.addEventListener('input', () => { chosenPageId = ''; filterPages(); });
+  selectPage(select.value);
+  filterPages();
 });
 
 if ('serviceWorker' in navigator) {
