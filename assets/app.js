@@ -366,6 +366,8 @@ if (studentFilters) {
     if (empty) empty.hidden = visible !== 0;
   };
   studentFilters.querySelectorAll('input,select').forEach((control) => control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', applyStudentFilters));
+  const selectedStudent = document.querySelector('[data-student-card-selected]');
+  if (selectedStudent) requestAnimationFrame(() => selectedStudent.scrollIntoView({ block: 'center' }));
 }
 
 document.querySelectorAll('[data-course-invitation]').forEach((invitation) => {

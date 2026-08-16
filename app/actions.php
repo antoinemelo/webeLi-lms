@@ -930,7 +930,8 @@ function handle_action(string $action): never
         if($result==='updated')flash(t('Adresse électronique secondaire enregistrée.'));
         elseif($result==='invalid')flash(t('Indiquez une adresse électronique secondaire valide.'),'error');
         else flash(t('Vous ne pouvez pas modifier cette adresse électronique.'),'error');
-        redirect(((string)($_POST['return_view']??''))==='admin'?'admin':'students');
+        $returnView=((string)($_POST['return_view']??''))==='admin'?'admin':'students';
+        redirect($returnView,$returnView==='students'?['student'=>$studentId]:[]);
     }
     if ($action === 'enroll_students' && $user['role'] === 'teacher') {
         $courseId=(int)($_POST['course_id']??0);
@@ -964,7 +965,7 @@ function handle_action(string $action): never
             run("UPDATE enrollments SET status='archived',archived_at=CURRENT_TIMESTAMP WHERE id=?",[$enrollmentId]);
             flash('La participation est archivée ; son historique est conservé.');
         } elseif($operation==='reactivate'){
-            if($enrollment['account_status']!=='active'){ flash('Réactivez d’abord le compte de l’élève.','error'); redirect('students'); }
+            if($enrollment['account_status']!=='active'){ flash('Réactivez d’abord le compte de l’élève.','error'); redirect('students',['student'=>(int)$enrollment['student_id']]); }
             run("UPDATE enrollments SET status='active',archived_at=NULL WHERE id=?",[$enrollmentId]);
             flash('La participation est réactivée.');
         } elseif($operation==='delete'){
@@ -972,7 +973,7 @@ function handle_action(string $action): never
             run('DELETE FROM enrollments WHERE id=?',[$enrollmentId]);
             flash('La participation et son historique dans ce cours ont été supprimés définitivement.');
         }
-        redirect('students');
+        redirect('students',['student'=>(int)$enrollment['student_id']]);
     }
     if ($action === 'manage_student_account' && $user['role'] === 'teacher') {
         $studentId=(int)($_POST['student_id']??0);
@@ -981,8 +982,8 @@ function handle_action(string $action): never
         $owned=(int)(one('SELECT COUNT(*) AS n FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.student_id=? AND c.teacher_id=?',[$studentId,$user['id']])['n']??0);
         $other=(int)(one('SELECT COUNT(*) AS n FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.student_id=? AND c.teacher_id<>?',[$studentId,$user['id']])['n']??0);
         $isManager=$student&&(int)($student['managed_by']??0)===(int)$user['id'];
-        if(!$student || (!$isManager&&$owned===0)){ flash('Vous ne pouvez gérer que les comptes dont vous êtes responsable ou inscrits à l’un de vos cours.','error'); redirect('students'); }
-        if($other>0){ flash('Ce compte appartient aussi à un cours d’un autre enseignant et ne peut pas être archivé ou supprimé ici.','error'); redirect('students'); }
+        if(!$student || (!$isManager&&$owned===0)){ flash('Vous ne pouvez gérer que les comptes dont vous êtes responsable ou inscrits à l’un de vos cours.','error'); redirect('students',['student'=>$studentId]); }
+        if($other>0){ flash('Ce compte appartient aussi à un cours d’un autre enseignant et ne peut pas être archivé ou supprimé ici.','error'); redirect('students',['student'=>$studentId]); }
         if($operation==='archive'){
             run("UPDATE users SET account_status='archived',student_session_token_hash=NULL,student_session_seen_at=NULL WHERE id=?",[$studentId]);
             run("UPDATE enrollments SET status='archived',archived_at=CURRENT_TIMESTAMP WHERE student_id=?",[$studentId]);
@@ -995,7 +996,7 @@ function handle_action(string $action): never
             run('DELETE FROM users WHERE id=?',[$studentId]);
             flash('Le compte élève et toutes ses données ont été supprimés définitivement.');
         }
-        redirect('students');
+        redirect('students',$operation==='delete'?[]:['student'=>$studentId]);
     }
     if ($action === 'validate_student_email' && $user['role'] === 'teacher') {
         purge_expired_registrations();
@@ -1005,7 +1006,7 @@ function handle_action(string $action): never
         $isManager=$student&&(int)($student['managed_by']??0)===(int)$user['id'];
         if(!$student||(!$isManager&&$owned===0)){
             flash('Vous ne pouvez valider que le courriel d’un élève dont vous êtes responsable ou inscrit à l’un de vos cours.','error');
-            redirect('students');
+            redirect('students',['student'=>$studentId]);
         }
         run("UPDATE users SET account_status='active',email_verified_at=CURRENT_TIMESTAMP,verification_token_hash=NULL,verification_expires_at=NULL WHERE id=? AND account_status='pending'",[$studentId]);
         run("DELETE FROM notification_outbox WHERE event='account.verification' AND recipient=?",[$student['email']]);
@@ -1014,7 +1015,7 @@ function handle_action(string $action): never
             t("Bonjour :name,\n\nVotre enseignant a validé votre compte. Vous pouvez vous connecter avec le code :code.",['name'=>$student['first_name'],'code'=>$student['login_code']],$studentLanguage));
         try_send_outbox($messageId);
         flash('Le courriel de l’élève a été validé et son compte est maintenant actif.');
-        redirect('students');
+        redirect('students',['student'=>$studentId]);
     }
     flash('Action non disponible.', 'error');
     redirect($user['role']==='teacher'?'teacher':'student');
