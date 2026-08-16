@@ -25,6 +25,288 @@ enhanceBootstrap();
 const installedPwa = window.matchMedia('(display-mode: standalone)').matches
   || window.matchMedia('(display-mode: fullscreen)').matches
   || window.navigator.standalone === true;
+
+if (installedPwa) {
+  const pdfLinks = Array.from(document.querySelectorAll('.reader-pdf-download'));
+  if (pdfLinks.length > 0) {
+    let pdfJsPromise = null;
+    let overlay = null;
+    let pages = null;
+    let loading = null;
+    let message = null;
+    let status = null;
+    let title = null;
+    let closeButton = null;
+    let shareButton = null;
+    let downloadLink = null;
+    let retryButton = null;
+    let currentLink = null;
+    let currentFile = null;
+    let objectUrl = null;
+    let loadingTask = null;
+    let pdfDocument = null;
+    let fetchController = null;
+    let requestNumber = 0;
+    let viewerHistoryActive = false;
+
+    const progressLabel = (current, total) => ui('pdf_progress', 'Page :current sur :total')
+      .replace(':current', String(current))
+      .replace(':total', String(total));
+
+    const loadPdfJs = () => {
+      if (!pdfJsPromise) {
+        pdfJsPromise = import('./vendor/pdfjs/pdf.min.mjs').then((pdfjs) => {
+          pdfjs.GlobalWorkerOptions.workerSrc = new URL('assets/vendor/pdfjs/pdf.worker.min.mjs', document.baseURI).href;
+          return pdfjs;
+        });
+      }
+      return pdfJsPromise;
+    };
+
+    const releasePdf = () => {
+      fetchController?.abort();
+      fetchController = null;
+      try {
+        if (pdfDocument) pdfDocument.destroy();
+        else loadingTask?.destroy();
+      } catch (_) {
+        // The viewer is already closing; PDF.js may have released the worker first.
+      }
+      loadingTask = null;
+      pdfDocument = null;
+      currentFile = null;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+      pages?.replaceChildren();
+    };
+
+    const closeViewer = () => {
+      if (!overlay || overlay.hidden) return;
+      requestNumber++;
+      releasePdf();
+      overlay.hidden = true;
+      document.documentElement.classList.remove('pwa-pdf-open');
+      const link = currentLink;
+      currentLink = null;
+      link?.focus({ preventScroll: true });
+    };
+
+    const requestClose = () => {
+      if (viewerHistoryActive) {
+        window.history.back();
+        return;
+      }
+      closeViewer();
+    };
+
+    const createViewer = () => {
+      overlay = document.createElement('section');
+      overlay.className = 'pwa-pdf-viewer';
+      overlay.hidden = true;
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'pwa-pdf-title');
+
+      const toolbar = document.createElement('header');
+      toolbar.className = 'pwa-pdf-toolbar';
+
+      closeButton = document.createElement('button');
+      closeButton.className = 'pwa-pdf-close';
+      closeButton.type = 'button';
+      closeButton.setAttribute('aria-label', ui('pdf_close', 'Fermer l’aperçu PDF'));
+      closeButton.title = ui('pdf_close', 'Fermer l’aperçu PDF');
+      const closeIcon = document.createElement('i');
+      closeIcon.className = 'bi bi-x-lg';
+      closeIcon.setAttribute('aria-hidden', 'true');
+      closeButton.append(closeIcon);
+
+      const heading = document.createElement('div');
+      heading.className = 'pwa-pdf-heading';
+      const eyebrow = document.createElement('span');
+      eyebrow.textContent = ui('pdf_preview', 'Aperçu PDF');
+      title = document.createElement('h2');
+      title.id = 'pwa-pdf-title';
+      status = document.createElement('small');
+      status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
+      heading.append(eyebrow, title, status);
+
+      const actions = document.createElement('div');
+      actions.className = 'pwa-pdf-actions';
+      shareButton = document.createElement('button');
+      shareButton.className = 'pwa-pdf-action';
+      shareButton.type = 'button';
+      shareButton.hidden = true;
+      shareButton.setAttribute('aria-label', ui('pdf_share', 'Partager ou enregistrer'));
+      shareButton.title = ui('pdf_share', 'Partager ou enregistrer');
+      const shareIcon = document.createElement('i');
+      shareIcon.className = 'bi bi-share';
+      shareIcon.setAttribute('aria-hidden', 'true');
+      shareButton.append(shareIcon);
+
+      downloadLink = document.createElement('a');
+      downloadLink.className = 'pwa-pdf-action';
+      downloadLink.hidden = true;
+      downloadLink.setAttribute('aria-label', ui('pdf_download', 'Télécharger le PDF'));
+      downloadLink.title = ui('pdf_download', 'Télécharger le PDF');
+      const downloadIcon = document.createElement('i');
+      downloadIcon.className = 'bi bi-download';
+      downloadIcon.setAttribute('aria-hidden', 'true');
+      downloadLink.append(downloadIcon);
+      actions.append(shareButton, downloadLink);
+      toolbar.append(closeButton, heading, actions);
+
+      const viewport = document.createElement('div');
+      viewport.className = 'pwa-pdf-viewport';
+      viewport.dataset.noPullRefresh = '1';
+      loading = document.createElement('div');
+      loading.className = 'pwa-pdf-loading';
+      loading.setAttribute('role', 'status');
+      const spinner = document.createElement('span');
+      spinner.setAttribute('aria-hidden', 'true');
+      const loadingText = document.createElement('b');
+      loadingText.textContent = ui('pdf_loading', 'Chargement du PDF…');
+      loading.append(spinner, loadingText);
+      message = document.createElement('div');
+      message.className = 'pwa-pdf-message';
+      message.hidden = true;
+      const errorIcon = document.createElement('i');
+      errorIcon.className = 'bi bi-file-earmark-x';
+      errorIcon.setAttribute('aria-hidden', 'true');
+      const errorText = document.createElement('p');
+      errorText.textContent = ui('pdf_error', 'Impossible d’afficher le PDF.');
+      retryButton = document.createElement('button');
+      retryButton.className = 'btn btn-outline-secondary';
+      retryButton.type = 'button';
+      retryButton.textContent = ui('retry', 'Réessayer');
+      message.append(errorIcon, errorText, retryButton);
+      pages = document.createElement('div');
+      pages.className = 'pwa-pdf-pages';
+      viewport.append(loading, message, pages);
+      overlay.append(toolbar, viewport);
+      document.body.append(overlay);
+
+      closeButton.addEventListener('click', requestClose);
+      retryButton.addEventListener('click', () => { if (currentLink) openPdf(currentLink, false); });
+      shareButton.addEventListener('click', async () => {
+        if (!currentFile || !navigator.share) return;
+        try {
+          await navigator.share({ files: [currentFile], title: title.textContent || currentFile.name });
+        } catch (error) {
+          if (error?.name !== 'AbortError') downloadLink.click();
+        }
+      });
+    };
+
+    const responseFilename = (response, fallback) => {
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      if (utf8) {
+        try { return decodeURIComponent(utf8[1]); } catch (_) { /* Use the regular filename. */ }
+      }
+      const regular = disposition.match(/filename="?([^";]+)"?/i);
+      return regular?.[1] || fallback;
+    };
+
+    const renderPdf = async (blob, ownRequest) => {
+      const pdfjs = await loadPdfJs();
+      if (ownRequest !== requestNumber) return;
+      loadingTask = pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) });
+      pdfDocument = await loadingTask.promise;
+      const total = pdfDocument.numPages;
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      for (let number = 1; number <= total; number++) {
+        if (ownRequest !== requestNumber) return;
+        status.textContent = progressLabel(number, total);
+        const page = await pdfDocument.getPage(number);
+        const original = page.getViewport({ scale: 1 });
+        const availableWidth = Math.max(280, Math.min(920, pages.clientWidth - 24));
+        const viewport = page.getViewport({ scale: availableWidth / original.width });
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2.5);
+        const sheet = document.createElement('figure');
+        sheet.className = 'pwa-pdf-page';
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', progressLabel(number, total));
+        sheet.append(canvas);
+        pages.append(sheet);
+        await page.render({
+          canvasContext: canvas.getContext('2d', { alpha: false }),
+          transform: outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
+          viewport,
+        }).promise;
+        page.cleanup();
+        if (number === 1 && ownRequest === requestNumber) loading.hidden = true;
+      }
+      if (ownRequest === requestNumber) loading.hidden = true;
+    };
+
+    const openPdf = async (link, addHistory = true) => {
+      if (!overlay) createViewer();
+      releasePdf();
+      const ownRequest = ++requestNumber;
+      currentLink = link;
+      title.textContent = link.dataset.pdfTitle || ui('pdf_preview', 'Aperçu PDF');
+      status.textContent = '';
+      pages.replaceChildren();
+      message.hidden = true;
+      loading.hidden = false;
+      shareButton.hidden = true;
+      downloadLink.hidden = true;
+      overlay.hidden = false;
+      document.documentElement.classList.add('pwa-pdf-open');
+      closeButton.focus({ preventScroll: true });
+      if (addHistory && !viewerHistoryActive) {
+        const previous = window.history.state && typeof window.history.state === 'object' ? window.history.state : {};
+        window.history.pushState({ ...previous, pwaPdfViewer: true }, '', window.location.href);
+        viewerHistoryActive = true;
+      }
+      fetchController = new AbortController();
+      try {
+        const response = await fetch(link.href, {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/pdf' },
+          signal: fetchController.signal,
+        });
+        if (!response.ok) throw new Error(`PDF ${response.status}`);
+        const blob = await response.blob();
+        if (ownRequest !== requestNumber) return;
+        const filename = responseFilename(response, 'etape.pdf');
+        objectUrl = URL.createObjectURL(blob);
+        downloadLink.href = objectUrl;
+        downloadLink.download = filename;
+        downloadLink.hidden = false;
+        currentFile = new File([blob], filename, { type: 'application/pdf' });
+        shareButton.hidden = !(navigator.share && navigator.canShare?.({ files: [currentFile] }));
+        await renderPdf(blob, ownRequest);
+      } catch (error) {
+        if (ownRequest !== requestNumber || error?.name === 'AbortError') return;
+        loading.hidden = true;
+        status.textContent = '';
+        message.hidden = false;
+      }
+    };
+
+    pdfLinks.forEach((link) => link.addEventListener('click', (event) => {
+      event.preventDefault();
+      openPdf(link);
+    }));
+    window.addEventListener('popstate', () => {
+      if (!overlay || overlay.hidden || !viewerHistoryActive) return;
+      viewerHistoryActive = false;
+      closeViewer();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && overlay && !overlay.hidden) requestClose();
+    });
+  }
+}
+
 if (installedPwa && window.navigator.maxTouchPoints > 0) {
   const PULL_REFRESH_THRESHOLD = 96;
   let pullStartX = 0;
