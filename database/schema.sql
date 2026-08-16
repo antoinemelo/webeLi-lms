@@ -379,9 +379,10 @@ CREATE INDEX idx_edit_locks_expiry ON edit_locks(expires_at);
 
 CREATE TRIGGER limit_pending_registrations
 BEFORE INSERT ON users
-WHEN NEW.account_status='pending' AND (SELECT COUNT(*) FROM users WHERE account_status='pending')>=10
+WHEN NEW.account_status='pending' AND NEW.managed_by IS NULL
+  AND (SELECT COUNT(*) FROM users WHERE account_status='pending' AND managed_by IS NULL)>=10
 BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 9;
+PRAGMA user_version = 10;

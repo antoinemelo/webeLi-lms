@@ -33,17 +33,6 @@ function import_failure_message(Throwable $exception): string
     return t($message);
 }
 
-function reserve_imported_accounts(int $count): bool
-{
-    if($count<=0)return true;$ipHash=hash('sha256',(string)($_SERVER['REMOTE_ADDR']??'unknown'));
-    $ipAttempts=(int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE ip_hash=? AND attempted_at>=datetime('now','-15 minutes')",[$ipHash])['n']??0);
-    $hour=(int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 hour')")['n']??0);
-    $day=(int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 day')")['n']??0);
-    $pending=(int)(one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending'")['n']??0);
-    $allowed=$ipAttempts+$count<=REGISTRATION_IP_ATTEMPTS_15_MINUTES&&$hour+$count<=REGISTRATION_ACCEPTED_PER_HOUR&&$day+$count<=REGISTRATION_ACCEPTED_PER_DAY&&$pending+$count<=REGISTRATION_PENDING_LIMIT;
-    $insert=db()->prepare('INSERT INTO registration_attempts(ip_hash,accepted) VALUES(?,?)');for($i=0;$i<$count;$i++)$insert->execute([$ipHash,$allowed?1:0]);return $allowed;
-}
-
 function registration_guard(string $role): void
 {
     $ipHash = hash('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
@@ -443,12 +432,12 @@ function handle_action(string $action): never
     }
     if ($action === 'import_students' && $user['role'] === 'teacher') {
         try{
-            $document=uploaded_json('import_file');$validated=validate_students_document(db(),$document,(int)$user['id']);$newCount=0;
-            foreach($validated as $student)if(!one('SELECT id FROM users WHERE lower(email)=?',[$student['email']]))$newCount++;
-            if(!reserve_imported_accounts($newCount))throw new TransferException('Import arrêté : le plafond de créations ou de comptes en attente serait dépassé.');
-            $result=import_students_document(db(),$document,(int)$user['id'],($_POST['mode']??'update')==='overwrite'?'overwrite':'update');
-            foreach($result['created'] as $created)issue_account_verification((int)$created['id'],$created['email'],$created['first_name'],$created['code'],$created['language']??current_language());
-            flash(t(':processed élève(s) importé(s), dont :created nouveau(x) compte(s) à valider par courriel.',['processed'=>$result['processed'],'created'=>count($result['created'])]));redirect('students');
+            $document=uploaded_json('import_file');
+            $requireEmailVerification=($_POST['account_activation']??'email')!=='immediate';
+            $result=import_students_document(db(),$document,(int)$user['id'],($_POST['mode']??'update')==='overwrite'?'overwrite':'update',$requireEmailVerification);
+            if($requireEmailVerification){foreach($result['created'] as $created)issue_account_verification((int)$created['id'],$created['email'],$created['first_name'],$created['code'],$created['language']??current_language());flash(t(':processed élève(s) importé(s), dont :created nouveau(x) compte(s) à valider par courriel.',['processed'=>$result['processed'],'created'=>count($result['created'])]));}
+            else flash(t(':processed élève(s) importé(s), dont :activated compte(s) activé(s) immédiatement.',['processed'=>$result['processed'],'activated'=>$result['activated']]));
+            redirect('students');
         }catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('students');}
     }
     if ($action === 'superadmin_delete' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
@@ -920,17 +909,6 @@ function handle_action(string $action): never
             flash('Un cours sélectionné n’est pas disponible.', 'error');
             redirect('students');
         }
-        $ipHash = hash('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-        $ipAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE ip_hash=? AND attempted_at>=datetime('now','-15 minutes')", [$ipHash])['n'] ?? 0);
-        $globalAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 hour')")['n'] ?? 0);
-        $dailyAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 day')")['n'] ?? 0);
-        $pendingAccounts = (int)(one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending'")['n'] ?? 0);
-        $creationAllowed = registration_is_allowed('',10,$ipAttempts,$globalAttempts,$dailyAttempts,$pendingAccounts);
-        run('INSERT INTO registration_attempts(ip_hash,accepted) VALUES(?,?)', [$ipHash,$creationAllowed?1:0]);
-        if (!$creationAllowed) {
-            flash('Le plafond de créations est atteint. Attendez les validations ou expirations avant une nouvelle création.', 'error');
-            redirect('students');
-        }
         $initials = mb_strtoupper(mb_substr($firstName,0,1).mb_substr($compactLastName,0,1),'UTF-8');
         $colors = ['#ef6a8a','#2da58d','#e49b35','#4178d0','#7f62d9'];
         db()->beginTransaction();
@@ -939,14 +917,7 @@ function handle_action(string $action): never
             $studentId=(int)db()->lastInsertId();
             foreach($courseIds as $courseId) run('INSERT INTO enrollments(course_id,student_id) VALUES(?,?)',[$courseId,$studentId]);
             db()->commit();
-        } catch(Throwable $e) {
-            db()->rollBack();
-            if (is_pending_registration_limit($e)) {
-                flash('Le plafond de comptes en attente est atteint. Attendez leur validation ou leur expiration avant une nouvelle création.', 'error');
-                redirect('students');
-            }
-            throw $e;
-        }
+        } catch(Throwable $e) {db()->rollBack();throw $e;}
         $sent=issue_account_verification($studentId,$email,$firstName,$code,current_language());
         flash(t($sent
             ? 'Élève préinscrit à :count cours. Validation du courriel requise sous 15 minutes ; message envoyé.'

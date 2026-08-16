@@ -8,7 +8,7 @@ Le lien **S’inscrire** ouvre une page distincte pour les élèves et les ensei
 
 Les identifiants sont vérifiés sans distinction de casse. Si le code proposé existe déjà, liike ajoute automatiquement un chiffre supérieur à zéro : `LIROS`, `LIROS1`, `LIROS2`, etc.
 
-Un courriel contient ensuite un lien d’activation valable **15 minutes**. Avant le clic, le compte ne peut pas se connecter. Une inscription non validée est supprimée automatiquement à expiration. Toutes les voies de création, y compris l’annuaire enseignant, partagent les mêmes plafonds : nombre de tentatives par adresse réseau, 10 inscriptions acceptées par heure, 30 par jour et 10 comptes simultanément en attente. Le formulaire public impose en plus un bref délai humain et utilise un champ-piège invisible aux visiteurs.
+Un courriel contient ensuite un lien d’activation valable **15 minutes**. Avant le clic, le compte ne peut pas se connecter. Une inscription non validée est supprimée automatiquement à expiration. Le formulaire public applique des plafonds par adresse réseau, par heure, par jour et sur le nombre de comptes publics simultanément en attente ; il impose aussi un bref délai humain et utilise un champ-piège invisible aux visiteurs. Les créations et imports effectués depuis l’espace d’un enseignant authentifié ne sont pas soumis à ces plafonds anti-robot.
 
 ### Enseignant
 
@@ -208,7 +208,12 @@ Le menu à trois points de **Gestion du parcours** donne directement accès à l
 
 Le bouton à trois points situé à droite du titre **Élèves & inscriptions** regroupe le nouvel accès, l’inscription groupée et l’import/export des élèves dans des fenêtres dédiées. L’import/export contient les profils et leurs inscriptions aux parcours de l’enseignant. Aucun mot de passe, jeton ou secret de session n’est exporté.
 
-Le mode **Modifier/créer** conserve les autres inscriptions existantes. Le mode **Écraser** remplace, pour chaque élève importé, ses inscriptions aux parcours de l’enseignant. Un parcours référencé mais absent bloque entièrement l’import. Tout nouvel élève importé reste en attente et doit valider son courriel dans les 15 minutes.
+Le mode **Modifier/créer** conserve les autres inscriptions existantes. Le mode **Écraser** remplace, pour chaque élève importé, ses inscriptions aux parcours de l’enseignant. Un parcours référencé mais absent bloque entièrement l’import. Un fichier peut contenir au maximum **500 élèves** et peser jusqu’à **25 Mo**.
+
+L’option **Activation des nouveaux comptes** propose deux comportements :
+
+- **Validation par courriel par chaque élève**, sélectionnée par défaut, laisse chaque nouveau compte en attente pendant 15 minutes ;
+- **Activation immédiate par l’enseignant** rend les nouveaux comptes actifs et utilisables dès la fin de l’import, après une confirmation supplémentaire. Elle active aussi un compte encore en attente s’il avait déjà été créé et était géré par ce même enseignant. Elle ne réactive jamais un compte archivé ou géré par une autre personne.
 
 ### Mettre à jour l’application
 

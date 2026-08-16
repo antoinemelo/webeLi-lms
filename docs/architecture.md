@@ -94,13 +94,13 @@ Les trois formats portent `version: 1` et un discriminant : `liike.page`, `liike
 
 Un document de parcours ne transporte jamais les pages. Avant une copie ou un écrasement, le service résout toutes les `page_reference` dans la bibliothèque de l’enseignant. La transaction ne commence qu’après cette validation complète. Les documents d’élèves appliquent la même règle aux références de parcours.
 
-L’écrasement d’un parcours remplace sa définition et supprime donc les progressions liées aux anciennes étapes. La copie reçoit une nouvelle référence et ne reprend ni inscriptions, ni progressions. L’import d’une page peut recréer ses pièces jointes locales embarquées en Base64.
+L’écrasement d’un parcours remplace sa définition et supprime donc les progressions liées aux anciennes étapes. La copie reçoit une nouvelle référence et ne reprend ni inscriptions, ni progressions. L’import d’une page peut recréer ses pièces jointes locales embarquées en Base64. L’import JSON des élèves accepte au maximum 500 fiches et 25 Mo. Pour les nouveaux comptes, il choisit entre l’état `pending` avec validation par courriel et l’état `active` attribué immédiatement par l’enseignant authentifié. Dans ce second cas, `email_verified_at` reste vide afin de ne pas présenter l’adresse comme vérifiée.
 
 ## PDF
 
 `PdfExport.php` construit un document HTML autonome avec styles d’impression, puis le convertit directement avec mPDF, sans processus système. Le chargeur cherche l’autoload Composer sous `./vendor/`, puis sous `../vendor/` ; aucun autre chemin ou nom de répertoire n’est implicite. Le parcours utilise une page A4 paysage et la fiche détaillée une page A4 portrait. Les images locales sont converties en URI `data:` afin que le rendu ne dépende pas du serveur HTTP ni d’une session. L’aperçu HTML imprimable reste disponible en complément du téléchargement PDF natif.
 
-Tous les nouveaux comptes restent `pending` jusqu’au clic sur le lien reçu par courriel, qu’ils proviennent du formulaire public ou de l’annuaire enseignant. Le jeton n’est stocké que sous forme de hash et expire après 15 minutes. La purge s’exécute à chaque requête et par tâche cron chaque minute. Toutes les voies de création partagent les plafonds de 5 tentatives par IP sur 15 minutes, 10 acceptations globales par heure, 30 par jour et 10 comptes simultanément en attente ; ce dernier plafond est aussi imposé par un trigger SQLite.
+Tous les nouveaux comptes restent `pending` jusqu’au clic sur le lien reçu par courriel, qu’ils proviennent du formulaire public ou de l’annuaire enseignant. Le jeton n’est stocké que sous forme de hash et expire après 15 minutes. La purge s’exécute à chaque requête et par tâche cron chaque minute. L’inscription publique est limitée à 5 tentatives par IP sur 15 minutes, 10 acceptations globales par heure, 30 par jour et 10 comptes publics simultanément en attente ; ce dernier plafond est aussi imposé par un trigger SQLite. Les créations et imports réalisés par un enseignant authentifié sont identifiés par `managed_by` et ne consomment pas ces plafonds anti-robot.
 
 Le code élève est calculé en Unicode après suppression de tous les espaces du nom :
 

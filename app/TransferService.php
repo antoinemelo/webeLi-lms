@@ -166,18 +166,20 @@ function validate_students_document(PDO $pdo, array $document, int $teacherId): 
     return $validated;
 }
 
-function import_students_document(PDO $pdo, array $document, int $teacherId, string $mode): array
+function import_students_document(PDO $pdo, array $document, int $teacherId, string $mode, bool $requireEmailVerification=true): array
 {
-    $students=validate_students_document($pdo,$document,$teacherId);$newUsers=[];$pdo->beginTransaction();
+    $students=validate_students_document($pdo,$document,$teacherId);$newUsers=[];$activated=0;$pdo->beginTransaction();
     try{
         $find=$pdo->prepare('SELECT * FROM users WHERE lower(email)=?');$update=$pdo->prepare('UPDATE users SET name=?,first_name=?,last_name=?,initials=?,class_group=?,phone=?,language=COALESCE(?,language) WHERE id=? AND role=?');
-        $insert=$pdo->prepare("INSERT INTO users(name,first_name,last_name,email,role,initials,color,class_group,phone,login_code,language,account_status,created_at,managed_by) VALUES(?,?,?,?,'student',?,?,?,?,?,?,'pending',CURRENT_TIMESTAMP,?)");
+        $insert=$pdo->prepare("INSERT INTO users(name,first_name,last_name,email,role,initials,color,class_group,phone,login_code,language,account_status,created_at,managed_by) VALUES(?,?,?,?,'student',?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)");
+        $activate=$pdo->prepare("UPDATE users SET account_status='active',email_verified_at=NULL,verification_token_hash=NULL,verification_expires_at=NULL WHERE id=? AND role='student' AND account_status='pending' AND managed_by=?");
+        $deleteVerification=$pdo->prepare("DELETE FROM notification_outbox WHERE event='account.verification' AND recipient=?");
         foreach($students as $student){$find->execute([$student['email']]);$existing=$find->fetch(PDO::FETCH_ASSOC);if($existing&&$existing['role']!=='student')throw new TransferException('Le courriel '.$student['email'].' appartient à un enseignant.');$compactLast=preg_replace('/\s+/u','',$student['last_name'])??'';$initials=mb_strtoupper(mb_substr($student['first_name'],0,1).mb_substr($compactLast,0,1),'UTF-8');
-            if($existing){$studentId=(int)$existing['id'];$update->execute([$student['first_name'].' '.$student['last_name'],$student['first_name'],$student['last_name'],$initials,trim((string)($student['class_group']??'')),trim((string)($student['phone']??''))?:null,$student['language'],$studentId,'student']);}
-            else{$base=trim((string)($student['login_code']??''))?:student_code($student['first_name'],$student['last_name']);$code=unique_login_code($base,true);$colors=['#ef6a8a','#2da58d','#e49b35','#4178d0','#7f62d9'];$insert->execute([$student['first_name'].' '.$student['last_name'],$student['first_name'],$student['last_name'],$student['email'],$initials,$colors[abs(crc32($student['email']))%count($colors)],trim((string)($student['class_group']??'')),trim((string)($student['phone']??''))?:null,$code,$student['language'],$teacherId]);$studentId=(int)$pdo->lastInsertId();$newUsers[]=['id'=>$studentId,'email'=>$student['email'],'first_name'=>$student['first_name'],'code'=>$code,'language'=>$student['language']];}
+            if($existing){$studentId=(int)$existing['id'];$update->execute([$student['first_name'].' '.$student['last_name'],$student['first_name'],$student['last_name'],$initials,trim((string)($student['class_group']??'')),trim((string)($student['phone']??''))?:null,$student['language'],$studentId,'student']);if(!$requireEmailVerification){$activate->execute([$studentId,$teacherId]);if($activate->rowCount()===1){$deleteVerification->execute([$student['email']]);$activated++;}}}
+            else{$base=trim((string)($student['login_code']??''))?:student_code($student['first_name'],$student['last_name']);$code=unique_login_code($base,true);$colors=['#ef6a8a','#2da58d','#e49b35','#4178d0','#7f62d9'];$status=$requireEmailVerification?'pending':'active';$insert->execute([$student['first_name'].' '.$student['last_name'],$student['first_name'],$student['last_name'],$student['email'],$initials,$colors[abs(crc32($student['email']))%count($colors)],trim((string)($student['class_group']??'')),trim((string)($student['phone']??''))?:null,$code,$student['language'],$status,$teacherId]);$studentId=(int)$pdo->lastInsertId();$newUsers[]=['id'=>$studentId,'email'=>$student['email'],'first_name'=>$student['first_name'],'code'=>$code,'language'=>$student['language']];if(!$requireEmailVerification)$activated++;}
             if($mode==='overwrite'){$delete=$pdo->prepare('DELETE FROM enrollments WHERE student_id=? AND course_id IN (SELECT id FROM courses WHERE teacher_id=?)');$delete->execute([$studentId,$teacherId]);}
             $enroll=$pdo->prepare("INSERT INTO enrollments(course_id,student_id,status,archived_at) VALUES(?,?,?,CASE WHEN ?='archived' THEN CURRENT_TIMESTAMP ELSE NULL END) ON CONFLICT(course_id,student_id) DO UPDATE SET status=excluded.status,archived_at=excluded.archived_at");foreach($student['resolved_courses'] as $course)$enroll->execute([$course['id'],$studentId,$course['status'],$course['status']]);
         }
-        $pdo->commit();return ['processed'=>count($students),'created'=>$newUsers];
+        $pdo->commit();return ['processed'=>count($students),'created'=>$newUsers,'activated'=>$activated];
     }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }

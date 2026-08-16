@@ -517,6 +517,12 @@ document.querySelectorAll('form[method="post"]').forEach((form) => form.addEvent
   if (!window.confirm(messages[action])) event.preventDefault();
 }));
 
+document.querySelectorAll('[data-student-import]').forEach((form) => form.addEventListener('submit', (event) => {
+  if (event.defaultPrevented) return;
+  if (form.querySelector('[name="account_activation"]')?.value !== 'immediate') return;
+  if (!window.confirm(form.dataset.immediateConfirm || '')) event.preventDefault();
+}));
+
 document.querySelectorAll('[data-password-toggle]').forEach((button) => button.addEventListener('click', () => {
   const input = button.closest('.password-input')?.querySelector('input');
   if (!input) return;
