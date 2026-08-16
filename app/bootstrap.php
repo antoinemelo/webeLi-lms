@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/I18n.php';
 require_once __DIR__ . '/Markdown.php';
+require_once __DIR__ . '/Qcm.php';
 require_once __DIR__ . '/MailDelivery.php';
 require_once __DIR__ . '/RegistrationPolicy.php';
 require_once __DIR__ . '/PasswordReset.php';

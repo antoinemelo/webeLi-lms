@@ -94,6 +94,7 @@ python3 scripts/apr.py \
 - recherche de pages par texte, statut, tags et objectifs ;
 - import/export JSON des pages, parcours et élèves ;
 - blocs Markdown, image, fichier et iframe, avec import local ;
+- QCM formatifs intégrés au Markdown, avec choix simple ou multiple et score agrégé ;
 - catégories par tags ;
 - connexion enseignante protégée et codes personnels élèves ;
 - inscription publique des élèves et enseignants, avec suffixe numérique en cas d’identifiant déjà utilisé ;

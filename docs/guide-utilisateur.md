@@ -144,8 +144,20 @@ En ouvrant un élève, l’enseignant peut :
 La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilisées dans un parcours. Une page possède :
 
 - un titre, un résumé, un statut et une durée estimée ;
-- zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture** et **Exercice** ;
+- zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
 - une suite ordonnée de blocs Markdown, image, fichier ou iframe.
+
+Un QCM formatif s’insère directement dans un bloc Markdown :
+
+```markdown
+:::qcm
+# Question
+[v] Réponse juste
+[x] Réponse fausse
+:::
+```
+
+Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]` utilisent des cases à cocher. Chaque question vaut le même poids et n’est réussie que si toutes ses réponses justes sont cochées sans réponse fausse. La catégorie **QCM** est ajoutée automatiquement à la page. L’élève voit son résultat et peut recommencer. L’enseignant voit uniquement le pourcentage de chaque élève dans son profil et la moyenne du groupe par étape dans le tableau de bord, jamais les réponses choisies.
 
 La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
 

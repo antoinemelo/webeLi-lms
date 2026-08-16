@@ -232,6 +232,15 @@ document.addEventListener('click', (event) => {
   if (announcements && !event.target.closest('.global-announcement-menu')) announcements.removeAttribute('open');
 });
 
+const syncQcmAuthoringHelp = (select) => {
+  const help = select.closest('.block-editor')?.querySelector('.qcm-authoring-help');
+  if (help) help.hidden = select.value !== 'markdown';
+};
+document.querySelectorAll('[data-block-type]').forEach(syncQcmAuthoringHelp);
+document.addEventListener('change', (event) => {
+  if (event.target.matches?.('[data-block-type]')) syncQcmAuthoringHelp(event.target);
+});
+
 let lockSubmissionInProgress = false;
 document.addEventListener('submit', (event) => {
   if (event.target.matches?.('[data-edit-lock]') || event.target.querySelector?.('[data-edit-lock]')) lockSubmissionInProgress = true;

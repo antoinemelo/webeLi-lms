@@ -72,6 +72,7 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
         }
         $insertObjective=$pdo->prepare('INSERT INTO page_objectives(page_id,title,description,position) VALUES(?,?,?,?)');$seenObjectives=[];
         foreach(array_values($objectives) as $index=>$objective){$name=trim((string)$objective['title']);$key=mb_strtolower($name,'UTF-8');if(isset($seenObjectives[$key]))continue;$seenObjectives[$key]=true;$insertObjective->execute([$pageId,$name,trim((string)($objective['description']??'')),$index+1]);}
+        Qcm::syncPageTag($pdo,$pageId);
         $pdo->commit(); return $pageId;
     }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }

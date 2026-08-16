@@ -75,7 +75,7 @@ Contenu à compléter avant utilisation.','',1);
 
 INSERT INTO tags (id,name,color) VALUES
  (1,'Démarrage','#e8e5ff'),(2,'Méthode','#dff5ef'),(3,'Activité','#fff0cf'),(4,'Évaluation','#ffe1e9'),(5,'Médias','#dceeff'),
- (6,'Lecture','#e4efff'),(7,'Exercice','#f1e6ff');
+ (6,'Lecture','#e4efff'),(7,'Exercice','#f1e6ff'),(8,'QCM','#dff5ef');
 INSERT INTO page_tags VALUES (1,1),(2,2),(2,3),(3,2),(3,3),(4,3),(5,4),(6,5),(7,3);
 
 INSERT INTO page_objectives (page_id,title,description,position) VALUES

@@ -19,6 +19,7 @@ return static function(PDO $pdo): void {
         'student_private_notes'=>['student_id','pathway_item_id','body','updated_at'],
         'course_announcements'=>['id','course_id','created_by','title','body','created_at','archived'],
         'announcement_reads'=>['announcement_id','student_id','read_at'],
+        'qcm_attempts'=>['student_id','pathway_item_id','page_block_id','qcm_key','score_percent','correct_questions','total_questions','attempt_count','answered_at'],
         'course_skills'=>['id','course_id','code','title'],
         'item_skills'=>['pathway_item_id','skill_id'],
         'reward_types'=>['id','course_id','name','default_points','active'],

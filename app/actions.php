@@ -590,6 +590,15 @@ function handle_action(string $action): never
         redirect('learn',['item'=>$itemId]);
     }
 
+    if($action==='submit_qcm'&&$user['role']==='student'){
+        $itemId=(int)($_POST['item_id']??0);$blockId=(int)($_POST['block_id']??0);$key=trim((string)($_POST['qcm_key']??''));
+        $result=Qcm::submit(db(),(int)$user['id'],$itemId,$blockId,$key,(array)($_POST['answers']??[]));
+        if($result['status']==='saved')flash(t('QCM enregistré : :score %.',['score'=>number_format((float)$result['score'],0,',','')]));
+        elseif($result['status']==='changed')flash(t('Le QCM a changé. Rechargez la page et réessayez.'),'error');
+        else flash(t('Ce QCM n’est pas disponible.'),'error');
+        header('Location: '.route('learn',['item'=>$itemId]).'#qcm-'.rawurlencode($key));exit;
+    }
+
     if ($action === 'teacher_validate' && $user['role'] === 'teacher') {
         $enrollmentId = (int) $_POST['enrollment_id'];
         $itemId = (int) $_POST['item_id'];
@@ -683,7 +692,7 @@ function handle_action(string $action): never
                     if(!edit_lock_allows(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}
                     $update=db()->prepare('UPDATE page_blocks SET type=?,body=?,caption=?,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND page_id=? AND revision=?');
                     $update->execute([$type,$body,$caption,$user['id'],$blockId,$pageId,$revision]);
-                    if($update->rowCount()===1)$changed=true;else $conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);
+                    if($update->rowCount()===1){Qcm::syncAttemptsForBlock(db(),$blockId,$type==='markdown'?$body:'');$changed=true;}else $conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);
                 }elseif($body!==''){
                     $position=(int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM page_blocks WHERE page_id=?',[$pageId])['n']??1);
                     run('INSERT INTO page_blocks(page_id,type,body,caption,position,updated_by) VALUES(?,?,?,?,?,?)',[$pageId,$type,$body,$caption,$position,$user['id']]);$changed=true;
@@ -691,6 +700,7 @@ function handle_action(string $action): never
             }
             $deletedIds=(array)($_POST['deleted_block_id']??[]);$deletedRevisions=(array)($_POST['deleted_block_revision']??[]);
             foreach($deletedIds as $i=>$deletedId){$blockId=(int)$deletedId;$revision=(int)($deletedRevisions[$i]??-1);$stored=one('SELECT position,revision FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);if(!$stored)continue;if(!edit_lock_allows(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}$delete=db()->prepare('DELETE FROM page_blocks WHERE id=? AND page_id=? AND revision=?');$delete->execute([$blockId,$pageId,$revision]);if($delete->rowCount()===1)$changed=true;}
+            Qcm::syncPageTag(db(),$pageId);
             if($changed)run('UPDATE pages SET updated_at=CURRENT_TIMESTAMP,updated_by=? WHERE id=?',[$user['id'],$pageId]);
             db()->commit();
         } catch (Throwable $e) { db()->rollBack(); throw $e; }

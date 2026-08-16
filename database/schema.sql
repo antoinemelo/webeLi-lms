@@ -271,9 +271,26 @@ CREATE TABLE announcement_reads (
     FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE qcm_attempts (
+    student_id INTEGER NOT NULL,
+    pathway_item_id INTEGER NOT NULL,
+    page_block_id INTEGER NOT NULL,
+    qcm_key TEXT NOT NULL,
+    score_percent REAL NOT NULL CHECK(score_percent BETWEEN 0 AND 100),
+    correct_questions INTEGER NOT NULL CHECK(correct_questions >= 0),
+    total_questions INTEGER NOT NULL CHECK(total_questions > 0 AND correct_questions <= total_questions),
+    attempt_count INTEGER NOT NULL DEFAULT 1 CHECK(attempt_count > 0),
+    answered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(student_id,pathway_item_id,page_block_id,qcm_key),
+    FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE,
+    FOREIGN KEY(page_block_id) REFERENCES page_blocks(id) ON DELETE CASCADE
+);
+
 CREATE INDEX idx_student_private_notes_item ON student_private_notes(pathway_item_id);
 CREATE INDEX idx_course_announcements_course ON course_announcements(course_id, archived, created_at);
 CREATE INDEX idx_announcement_reads_student ON announcement_reads(student_id, announcement_id);
+CREATE INDEX idx_qcm_attempts_student_item ON qcm_attempts(student_id,pathway_item_id,answered_at DESC);
 
 CREATE TABLE learning_visits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -367,4 +384,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 8;
+PRAGMA user_version = 9;

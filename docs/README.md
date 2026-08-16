@@ -14,7 +14,7 @@ liike organise des contenus pédagogiques réutilisables dans des parcours propr
 
 ## Périmètre actuel
 
-Le prototype couvre la bibliothèque de pages, les blocs, les tags, les parcours par cours, les échéances, les évaluations, les objectifs, les compétences, la double validation 0–3, les rewards cumulés, les notifications différées et une interface mobile/PWA.
+Le prototype couvre la bibliothèque de pages, les blocs, les tags, les QCM formatifs Markdown, les parcours par cours, les échéances, les évaluations, les objectifs, les compétences, la double validation 0–3, les rewards cumulés, les notifications différées et une interface mobile/PWA.
 
 Le projet ne fournit et ne requiert aucun répertoire `/server` ou `/serveur`. Le guide d’exploitation documente le démarrage PHP autonome, les deux formes d’arborescence et les emplacements possibles des dépendances Composer.
 
