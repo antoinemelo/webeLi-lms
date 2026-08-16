@@ -116,13 +116,29 @@ function page_objectives(PDO $pdo, int $pageId): array
     return $query->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function pathway_alphabetical_key(string $value): string
+{
+    $normalized=class_exists('Normalizer')?Normalizer::normalize($value,Normalizer::FORM_D):$value;
+    if(!is_string($normalized))$normalized=$value;
+    $withoutMarks=preg_replace('/\p{Mn}+/u','',$normalized);
+    return mb_strtolower(is_string($withoutMarks)?$withoutMarks:$normalized,'UTF-8');
+}
+
+function pathway_natural_compare(string $left, string $right): int
+{
+    $comparison=strnatcmp(pathway_alphabetical_key($left),pathway_alphabetical_key($right));
+    return $comparison!==0?$comparison:strnatcasecmp($left,$right);
+}
+
 function pathway_objectives(PDO $pdo, int $courseId): array
 {
     $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count
         FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
-        WHERE pi.course_id=? GROUP BY lower(po.title) ORDER BY MIN(pi.position),po.title");
+        WHERE pi.course_id=? GROUP BY lower(po.title)");
     $query->execute([$courseId]);
-    return $query->fetchAll(PDO::FETCH_ASSOC);
+    $objectives=$query->fetchAll(PDO::FETCH_ASSOC);
+    usort($objectives,fn(array $left,array $right): int=>pathway_natural_compare((string)$left['title'],(string)$right['title']));
+    return $objectives;
 }
 
 function pathway_sidebar_skills(PDO $pdo, int $courseId): array
@@ -134,7 +150,7 @@ function pathway_sidebar_skills(PDO $pdo, int $courseId): array
         FROM course_skills s
         LEFT JOIN item_skills i ON i.skill_id=s.id
         LEFT JOIN pathway_items pi ON pi.id=i.pathway_item_id
-        WHERE s.course_id=? GROUP BY s.id ORDER BY s.position,s.id");
+        WHERE s.course_id=? GROUP BY s.id");
     $query->execute([$courseId]);
     $skills=[];
     foreach($query->fetchAll(PDO::FETCH_ASSOC) as $skill){
@@ -145,6 +161,7 @@ function pathway_sidebar_skills(PDO $pdo, int $courseId): array
         $skill['access_visibility']=$open===0&&$restricted>0?'restricted':'open';
         $skills[]=$skill;
     }
+    usort($skills,fn(array $left,array $right): int=>pathway_natural_compare((string)$left['code'],(string)$right['code']));
     return $skills;
 }
 

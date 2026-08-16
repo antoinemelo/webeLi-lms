@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "1aa1702c3f9f9db7df1dab369dee76f49c349324afb9b4916a53152bed625f52",
-    "VERSION": "62f833226decac2ca00ef4ceb5b6a223017fab4246b75910f7bcf67bdb38f498",
+    "VERSION": "5088171540d8552e9e901bcdb4a46f84abd0d4119a6093b590d423723c3ba30b",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/AdminService.php": "663082fbc4bf6a97f8ef277f45ff98a19b7ec0c2b5fc0e1489a5a0b8e71349bd",
     "app/Collaboration.php": "811ca1b200f96d169875c153f546cc1717c55f31590d64d0629ba1db5255de9b",
@@ -21,7 +21,7 @@
     "app/MailDelivery.php": "7926c87944fc84ded5a745d02bf92179a982fffa7caf9a5097b2291ea8895246",
     "app/Markdown.php": "c5927a3edd9e9a5d08d3e1950fc7c6d4b6799d61195cec8a12b9c18167582bfd",
     "app/PasswordReset.php": "fab494843ab4d73800d3e6e466c0ab9e798516f9022723030729f90df9c03da4",
-    "app/PathwayService.php": "a302ea7e3ac9a30a04e2b94e9c278b66eba23fdf651f822cb6c5beb4df34930f",
+    "app/PathwayService.php": "f7cd4f64f84949c5397fa56cad47e08a300b8c9e08ef28e3f25e372f6536587e",
     "app/PdfExport.php": "006532ce82187e5cb7d7085a56deb7b40348eb4fa106b0fac39052c2bb392784",
     "app/Qcm.php": "dbf3ae462b6c62e55ac60006d60bf44abb1cf977a800a15922f2fe37209f908b",
     "app/RegistrationPolicy.php": "57494fe6398a9b8e2a3810db5bc47ef9cc2b4bcff3d41dc32df723c059c40861",
@@ -84,7 +84,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-08-16T17:14:24+00:00",
+  "generated_at": "2026-08-16T17:44:56+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "mutable_paths": [
     "storage/",
@@ -96,5 +96,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q3.38"
+  "version": "2026Q3.39"
 }
