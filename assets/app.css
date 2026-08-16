@@ -132,6 +132,12 @@ button,a,summary{touch-action:manipulation}
 .content-block blockquote >:last-child{margin-bottom:0}
 .content-block code{padding:.12rem .32rem;border-radius:.3rem;background:#eae9f0}
 .content-block pre{overflow:auto;padding:1.1rem;border-radius:.9rem;background:var(--ink);color:#fff}
+.markdown-table-wrap{max-width:100%;overflow-x:auto;margin:1.25rem 0;border:1px solid var(--line);border-radius:.85rem;background:#fff;box-shadow:0 5px 18px rgb(41 39 59 / 6%)}
+.markdown-table{width:100%;min-width:32rem;border-collapse:collapse;font-size:.92rem}
+.markdown-table th,.markdown-table td{padding:.7rem .8rem;border-right:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.markdown-table th:last-child,.markdown-table td:last-child{border-right:0}.markdown-table tbody tr:last-child td{border-bottom:0}
+.markdown-table th{background:var(--purple-soft);color:var(--ink);font-weight:750}.markdown-table tbody tr:nth-child(even){background:#fafafd}
+.markdown-table p{margin:0}.markdown-table code{white-space:nowrap}
 .content-block figure{margin:0}
 .content-block figure img{width:100%;border-radius:1.1rem}
 .content-block figcaption{margin-top:.5rem;color:var(--muted);font-size:.78rem;text-align:center}

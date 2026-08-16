@@ -23,7 +23,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 | Chemin | Rôle |
 |---|---|
 | `app/Database.php` | ouverture et initialisation automatique de SQLite |
-| `app/Markdown.php` | sous-ensemble Markdown sans dépendance |
+| `app/Markdown.php` | sous-ensemble Markdown sans dépendance : titres, listes imbriquées, citations, code, liens et tableaux alignés |
 | `app/RegistrationPolicy.php` | plafonds anti-abus et purge des comptes non validés |
 | `app/LearningActivity.php` | temps actif par page, rapports enseignants et rétention d’un mois |
 | `app/PathwayService.php` | copie de parcours, retrait d’étape et suppression sûre de page |

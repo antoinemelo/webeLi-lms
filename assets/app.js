@@ -252,7 +252,7 @@ const lockScopes = (key) => Array.from(document.querySelectorAll('[data-edit-loc
 const setLockState = (key, state, owner = '') => {
   lockScopes(key).forEach((scope) => {
     scope.querySelectorAll('[data-lock-status]').forEach((status) => {
-      status.textContent = state === 'held' ? ui('lock_active', 'Zone réservée pour votre modification')
+      status.textContent = state === 'held' ? ui('lock_active', 'Zone réservée')
         : state === 'blocked' ? ui('locked_by', 'Modification en cours par :name').replace(':name', owner || '—')
           : state === 'released' ? ui('lock_released', 'Zone libérée') : '';
       status.classList.toggle('blocked', state === 'blocked');

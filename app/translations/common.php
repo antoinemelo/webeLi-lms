@@ -505,7 +505,7 @@ return [
     'Bloc :number'=>['en'=>'Block :number','de'=>'Block :number','it'=>'Blocco :number','es'=>'Bloque :number'],
     'Enregistrement partiel : :parts modifié(s) ailleurs ou verrouillé(s).'=>['en'=>'Partial save: :parts were changed elsewhere or locked.','de'=>'Teilweise gespeichert: :parts wurden andernorts geändert oder gesperrt.','it'=>'Salvataggio parziale: :parts sono stati modificati altrove o bloccati.','es'=>'Guardado parcial: :parts se modificaron en otro lugar o están bloqueados.'],
     'Modification en cours par :name'=>['en'=>'Being edited by :name','de'=>'Wird von :name bearbeitet','it'=>'In modifica da parte di :name','es'=>'En edición por :name'],
-    'Zone réservée pour votre modification'=>['en'=>'Area reserved for your edit','de'=>'Bereich für Ihre Bearbeitung reserviert','it'=>'Area riservata alla tua modifica','es'=>'Zona reservada para tu edición'],
+    'Zone réservée'=>['en'=>'Area reserved','de'=>'Bereich reserviert','it'=>'Area riservata','es'=>'Zona reservada'],
     'Zone libérée'=>['en'=>'Area released','de'=>'Bereich freigegeben','it'=>'Area liberata','es'=>'Zona liberada'],
     'Reprendre la modification'=>['en'=>'Resume editing','de'=>'Bearbeitung fortsetzen','it'=>'Riprendi la modifica','es'=>'Reanudar la edición'],
     'Impossible de réserver cette zone'=>['en'=>'Unable to reserve this area','de'=>'Dieser Bereich kann nicht reserviert werden','it'=>'Impossibile riservare questa area','es'=>'No se puede reservar esta zona'],

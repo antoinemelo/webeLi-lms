@@ -147,6 +147,17 @@ La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilis�
 - zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
 - une suite ordonnée de blocs Markdown, image, fichier ou iframe.
 
+Les tableaux utilisent la syntaxe Markdown à barres verticales. Les deux-points de la ligne de séparation règlent l’alignement des colonnes :
+
+```markdown
+| Élève | Travail rendu | Score |
+| :--- | :---: | ---: |
+| Lina | Oui | 8 |
+| Sam | En cours | 6 |
+```
+
+Ils s’adaptent à l’écran avec un défilement horizontal sur mobile et sont repris avec leurs en-têtes et alignements dans les exports PDF. Pour écrire une barre verticale dans une cellule, utiliser `\|` ou la placer dans du code inline, par exemple `` `A|B` ``.
+
 Un QCM formatif s’insère directement dans un bloc Markdown :
 
 ```markdown

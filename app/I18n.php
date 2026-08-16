@@ -100,7 +100,7 @@ function js_i18n(): array
         'teacher_placeholder' => t('Ex. nora'),
         'student_placeholder' => t('Ex. LIROS'),
         'locked_by' => t('Modification en cours par :name'),
-        'lock_active' => t('Zone réservée pour votre modification'),
+        'lock_active' => t('Zone réservée'),
         'lock_released' => t('Zone libérée'),
         'lock_resume' => t('Reprendre la modification'),
         'lock_error' => t('Impossible de réserver cette zone'),
