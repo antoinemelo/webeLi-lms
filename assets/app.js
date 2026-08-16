@@ -366,6 +366,24 @@ if (studentFilters) {
     if (empty) empty.hidden = visible !== 0;
   };
   studentFilters.querySelectorAll('input,select').forEach((control) => control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', applyStudentFilters));
+  document.querySelectorAll('[data-student-card] form').forEach((form) => form.addEventListener('submit', () => {
+    const values = {
+      return_search: studentFilters.querySelector('[data-student-search]').value,
+      return_group: studentFilters.querySelector('[data-student-group]').value,
+      return_course: studentFilters.querySelector('[data-student-course]').value,
+    };
+    Object.entries(values).forEach(([name, value]) => {
+      let input = form.querySelector(`input[name="${name}"]`);
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        form.append(input);
+      }
+      input.value = value;
+    });
+  }));
+  applyStudentFilters();
   const selectedStudent = document.querySelector('[data-student-card-selected]');
   if (selectedStudent) requestAnimationFrame(() => selectedStudent.scrollIntoView({ block: 'center' }));
 }
