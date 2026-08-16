@@ -91,6 +91,12 @@ function edit_lock_allows(PDO $pdo, string $type, int $entityId, int $teacherId,
     return $lock!==false && (int)$lock['teacher_id']===$teacherId && hash_equals((string)$lock['owner_token'],edit_lock_owner_token($sessionToken));
 }
 
+function edit_lock_claim_for_save(PDO $pdo, string $type, int $entityId, int $teacherId, ?string $sessionToken=null): bool
+{
+    if(edit_lock_allows($pdo,$type,$entityId,$teacherId,$sessionToken))return true;
+    return (bool)(acquire_edit_lock($pdo,$type,$entityId,$teacherId,$sessionToken)['ok']??false);
+}
+
 function release_edit_locks(PDO $pdo, int $teacherId, ?string $type=null, ?int $entityId=null, ?string $sessionToken=null): void
 {
     $ownerToken=edit_lock_owner_token($sessionToken);

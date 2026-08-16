@@ -659,7 +659,7 @@ function handle_action(string $action): never
                 $metadataChanged=$title!==$storedPage['title']||$summary!==$storedPage['summary']||$status!==$storedPage['status']||$minutes!==(int)$storedPage['estimated_minutes']||$storedTags!==$submittedTags||$storedObjectives!==$pageObjectives;
                 if($metadataChanged){
                     $revision=(int)($_POST['page_revision']??-1);
-                    if(edit_lock_allows(db(),'page_metadata',$pageId,(int)$user['id'])&&$revision===(int)$storedPage['revision']){
+                    if(edit_lock_claim_for_save(db(),'page_metadata',$pageId,(int)$user['id'])&&$revision===(int)$storedPage['revision']){
                         $update=db()->prepare('UPDATE pages SET title=?,summary=?,status=?,estimated_minutes=?,updated_at=CURRENT_TIMESTAMP,updated_by=?,revision=revision+1 WHERE id=? AND revision=?');
                         $update->execute([$title,$summary,$status,$minutes,$user['id'],$pageId,$revision]);
                         if($update->rowCount()===1){run('DELETE FROM page_tags WHERE page_id=?',[$pageId]);foreach($tagIds as $tagId)run('INSERT OR IGNORE INTO page_tags VALUES(?,?)',[$pageId,$tagId]);run('DELETE FROM page_objectives WHERE page_id=?',[$pageId]);foreach($pageObjectives as $position=>$objective)run('INSERT INTO page_objectives(page_id,title,description,position) VALUES(?,?,?,?)',[$pageId,$objective['title'],$objective['description'],$position+1]);$changed=true;}
@@ -691,7 +691,7 @@ function handle_action(string $action): never
                     $stored=one('SELECT * FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);
                     if(!$stored){$conflicts[]=t('Bloc introuvable');continue;}
                     if($type===$stored['type']&&$body===$stored['body']&&$caption===$stored['caption'])continue;
-                    if(!edit_lock_allows(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}
+                    if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}
                     $update=db()->prepare('UPDATE page_blocks SET type=?,body=?,caption=?,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND page_id=? AND revision=?');
                     $update->execute([$type,$body,$caption,$user['id'],$blockId,$pageId,$revision]);
                     if($update->rowCount()===1){Qcm::syncAttemptsForBlock(db(),$blockId,$type==='markdown'?$body:'');$changed=true;}else $conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);
@@ -701,7 +701,7 @@ function handle_action(string $action): never
                 }
             }
             $deletedIds=(array)($_POST['deleted_block_id']??[]);$deletedRevisions=(array)($_POST['deleted_block_revision']??[]);
-            foreach($deletedIds as $i=>$deletedId){$blockId=(int)$deletedId;$revision=(int)($deletedRevisions[$i]??-1);$stored=one('SELECT position,revision FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);if(!$stored)continue;if(!edit_lock_allows(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}$delete=db()->prepare('DELETE FROM page_blocks WHERE id=? AND page_id=? AND revision=?');$delete->execute([$blockId,$pageId,$revision]);if($delete->rowCount()===1)$changed=true;}
+            foreach($deletedIds as $i=>$deletedId){$blockId=(int)$deletedId;$revision=(int)($deletedRevisions[$i]??-1);$stored=one('SELECT position,revision FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);if(!$stored)continue;if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}$delete=db()->prepare('DELETE FROM page_blocks WHERE id=? AND page_id=? AND revision=?');$delete->execute([$blockId,$pageId,$revision]);if($delete->rowCount()===1)$changed=true;}
             Qcm::syncPageTag(db(),$pageId);
             if($changed)run('UPDATE pages SET updated_at=CURRENT_TIMESTAMP,updated_by=? WHERE id=?',[$user['id'],$pageId]);
             db()->commit();
@@ -821,7 +821,7 @@ function handle_action(string $action): never
             $deadlineInput=trim((string)($_POST['deadline']??''));$deadline=database_date_from_input($deadlineInput);
             if($deadlineInput!==''&&$deadline===null){flash('Saisissez la date au format jj/mm/aaaa.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             $revision=(int)($_POST['item_revision']??-1);
-            if(!edit_lock_allows(db(),'pathway_item',$id,(int)$user['id'])||$revision!==(int)$item['revision']){flash('Cette étape a été modifiée ou est en cours d’édition par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            if(!edit_lock_claim_for_save(db(),'pathway_item',$id,(int)$user['id'])||$revision!==(int)$item['revision']){flash('Cette étape a été modifiée ou est en cours d’édition par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             $accessMode=in_array($_POST['access_mode']??'all',['all','restricted','none'],true)?(string)$_POST['access_mode']:'all';
             $allowedStudents=[];
             if($accessMode==='restricted'){
