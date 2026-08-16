@@ -353,6 +353,7 @@ button,a,summary{touch-action:manipulation}
 .file-upload input{display:block;width:100%;margin-top:.3rem}
 .add-block{width:100%;border-style:dashed !important;background:transparent !important;color:var(--ink) !important}
 .settings-card{height:max-content}
+.settings-card-heading{display:flex;min-height:2rem;align-items:flex-start;justify-content:space-between;gap:.55rem;margin-bottom:.65rem}.settings-card-heading h2{min-width:0;margin:0;line-height:2rem}.settings-lock-controls{display:flex;min-width:0;align-items:center;justify-content:flex-end;gap:.4rem}.settings-lock-controls .edit-lock-status{text-align:right}.settings-lock-controls .release-edit-lock{margin:0;flex:0 0 auto;font-size:.68rem}
 .danger-zone{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid #efb7c3;border-radius:1rem;background:#fff7f9}
 .danger-zone h2,.danger-zone p{margin:0}.danger-zone p{color:var(--muted);font-size:.82rem}
 .settings-card fieldset,.item-settings fieldset{margin:1.2rem 0;padding:0;border:0}
