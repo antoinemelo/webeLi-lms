@@ -42,6 +42,11 @@ final class Markdown
             }
             if ($inCode) { $code[] = $line; continue; }
             if (trim($line) === '') { $flushParagraph(); $flushList(); $flushQuote(); continue; }
+            if (preg_match('/^<div\s+style\s*=\s*(["\'])\s*page-break-after\s*:\s*always\s*;?\s*\1\s*>\s*<\/div\s*>$/i', trim($line))) {
+                $flushParagraph(); $flushList(); $flushQuote();
+                $out[] = '<div class="markdown-page-break" aria-hidden="true"></div>';
+                continue;
+            }
             $tableHeader=self::splitTableRow($line);
             $tableDefinition=$lineIndex+1<$lineCount&&$tableHeader!==null
                 ?self::tableAlignments($lines[$lineIndex+1],count($tableHeader))
@@ -58,7 +63,13 @@ final class Markdown
                 $lineIndex=$cursor-1;
                 continue;
             }
-            if (preg_match('/^(#{1,4})\s+(.+)$/', trim($line), $m)) {
+            $horizontalRule=preg_replace('/\s+/','',trim($line))??'';
+            if (preg_match('/^(?:-{3,}|\*{3,}|_{3,})$/', $horizontalRule)) {
+                $flushParagraph(); $flushList(); $flushQuote();
+                $out[] = '<hr class="markdown-separator">';
+                continue;
+            }
+            if (preg_match('/^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/', trim($line), $m)) {
                 $flushParagraph(); $flushList(); $flushQuote();
                 $n = strlen($m[1]); $out[] = "<h$n>" . self::inline($m[2]) . "</h$n>"; continue;
             }

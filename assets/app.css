@@ -125,10 +125,13 @@ button,a,summary{touch-action:manipulation}
 .chip,.chips span{border:0;background:var(--tag,var(--purple-soft))}
 .chip.skill,.chips .skill{background:#ddf4ed;color:#1f6f5a}
 .content-block{margin:1.9rem 0;font-size:1.04rem}
-.content-block h1,.content-block h2,.content-block h3{margin:1.65em 0 .6em;letter-spacing:-.02em}
+.content-block h1,.content-block h2,.content-block h3,.content-block h4,.content-block h5,.content-block h6{margin:1.65em 0 .6em;letter-spacing:-.02em}
 .content-block h1{font-size:2rem}
 .content-block h2{font-size:1.5rem}
+.content-block h3{font-size:1.25rem}.content-block h4{font-size:1.1rem}.content-block h5{font-size:1rem}.content-block h6{font-size:.9rem}
 .content-block p,.content-block li{line-height:1.75}
+.markdown-separator{margin:2rem 0;border:0;border-top:1px solid var(--line);opacity:1}
+.markdown-page-break{height:0;margin:2rem 0;border-top:1px dashed var(--line)}
 .content-block blockquote{margin:1.5rem 0;padding:1rem 1.25rem;border-left:4px solid var(--purple);border-radius:0 .9rem .9rem 0;background:var(--purple-soft)}
 .content-block blockquote >:last-child{margin-bottom:0}
 .content-block code{padding:.12rem .32rem;border-radius:.3rem;background:#eae9f0}
@@ -140,6 +143,7 @@ button,a,summary{touch-action:manipulation}
 .markdown-table th:last-child,.markdown-table td:last-child{border-right:0}.markdown-table tbody tr:last-child td{border-bottom:0}
 .markdown-table th{background:var(--purple-soft);color:var(--ink);font-weight:750}.markdown-table tbody tr:nth-child(even){background:#fafafd}
 .markdown-table p{margin:0}.markdown-table code{white-space:nowrap}
+@media print{.markdown-page-break{height:0;margin:0;border:0;break-after:page;page-break-after:always}}
 .content-block figure{margin:0}
 .content-block figure img{width:100%;border-radius:1.1rem}
 .content-block figcaption{margin-top:.5rem;color:var(--muted);font-size:.78rem;text-align:center}

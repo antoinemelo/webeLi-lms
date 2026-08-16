@@ -147,6 +147,14 @@ La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilis�
 - zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
 - une suite ordonnée de blocs Markdown, image, fichier ou iframe.
 
+Les titres Markdown sont disponibles du niveau `#` au niveau `######`. Une ligne contenant `---` produit un séparateur horizontal. Pour commencer la suite du contenu sur une nouvelle page dans l’export PDF, placer cette instruction sur sa propre ligne :
+
+```html
+<div style="page-break-after: always;"></div>
+```
+
+Dans la page Web, ce saut est indiqué par un trait discret. Seule cette instruction HTML précise est acceptée ; les autres balises restent affichées comme du texte afin de protéger le contenu.
+
 Les tableaux utilisent la syntaxe Markdown à barres verticales. Les deux-points de la ligne de séparation règlent l’alignement des colonnes :
 
 ```markdown
