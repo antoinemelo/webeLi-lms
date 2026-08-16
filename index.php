@@ -64,22 +64,6 @@ if($view==='pdf-document'&&$user['role']==='teacher'){
     }catch(Throwable $exception){http_response_code(404);echo '<!doctype html><meta charset="utf-8"><p>'.e(t('Document introuvable.')).'</p>';}
     exit;
 }
-if($view==='pdf-file'&&$user['role']==='student'){
-    try{
-        $id=(int)($_GET['id']??0);
-        if(($_GET['type']??'item')!=='item'||!item_is_visible_to_student(db(),$id,(int)$user['id']))throw new TransferException('Étape introuvable.');
-        $context=one('SELECT p.title FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
-        if(!$context)throw new TransferException('Étape introuvable.');
-        $html=student_pathway_page_pdf_html(db(),$id,(int)$user['id']);
-        $filename='etape-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf';
-        if((int)($_GET['download']??0)===1)send_pdf_download($html,$filename);
-        send_pdf_inline($html,$filename);
-    }catch(Throwable $exception){
-        http_response_code(404);header('Content-Type: text/html; charset=UTF-8');header('Cache-Control: private, no-store');
-        echo '<!doctype html><meta charset="utf-8"><p>'.e(import_failure_message($exception)).'</p>';
-        exit;
-    }
-}
 if($view==='pdf-download'){
     $courseId=0;
     try{
@@ -89,7 +73,7 @@ if($view==='pdf-download'){
             $context=one('SELECT p.title,pi.course_id FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
             $courseId=(int)($context['course_id']??0);
             if(!$context)throw new TransferException('Étape introuvable.');
-            render_student_pdf_viewer($id,(string)$context['title']);
+            send_pdf_download(student_pathway_page_pdf_html(db(),$id,(int)$user['id']),'etape-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf');
         }
         if($user['role']!=='teacher')throw new TransferException('Document introuvable.');
         if($type==='item'){
