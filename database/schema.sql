@@ -311,7 +311,7 @@ CREATE TABLE reward_types (
     name TEXT NOT NULL,
     icon TEXT NOT NULL DEFAULT '✨',
     color TEXT NOT NULL DEFAULT '#6d5dfc',
-    default_points INTEGER NOT NULL DEFAULT 5 CHECK(default_points > 0),
+    default_points INTEGER NOT NULL DEFAULT 1 CHECK(default_points BETWEEN -100 AND 100 AND default_points <> 0),
     active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
     UNIQUE(course_id, name),
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -322,7 +322,7 @@ CREATE TABLE reward_awards (
     enrollment_id INTEGER NOT NULL,
     pathway_item_id INTEGER NOT NULL,
     reward_type_id INTEGER NOT NULL,
-    points INTEGER NOT NULL CHECK(points > 0),
+    points INTEGER NOT NULL CHECK(points BETWEEN -100 AND 100 AND points <> 0),
     message TEXT NOT NULL DEFAULT '',
     awarded_by INTEGER NOT NULL,
     awarded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -385,4 +385,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 10;
+PRAGMA user_version = 11;

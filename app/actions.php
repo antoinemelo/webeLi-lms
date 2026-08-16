@@ -623,11 +623,11 @@ function handle_action(string $action): never
         if ($rewardId > 0) {
             $reward = one('SELECT * FROM reward_types WHERE id=? AND course_id=? AND active=1', [$rewardId,$context['course_id']]);
             if ($reward) {
-                $points = max(1, min(100, (int)($_POST['points'] ?? $reward['default_points'])));
+                $points = normalize_reward_points($_POST['points'] ?? $reward['default_points'],(int)$reward['default_points']);
                 $message = trim((string)($_POST['reward_message'] ?? ''));
                 run('INSERT INTO reward_awards(enrollment_id,pathway_item_id,reward_type_id,points,message,awarded_by) VALUES(?,?,?,?,?,?)', [$enrollmentId,$itemId,$rewardId,$points,$message,$user['id']]);
                 $studentLanguage=normalize_language((string)($context['language']??''))??'fr';
-                enqueue('reward.awarded', $context['email'], $reward['icon'].' '.t('Un encouragement pour votre travail',[],$studentLanguage), $reward['name']." · +$points ".t('points',[],$studentLanguage)."\n".$message);
+                enqueue('reward.awarded', $context['email'], $reward['icon'].' '.t('Un encouragement pour votre travail',[],$studentLanguage), $reward['name'].' · '.format_signed_points($points).' '.t('points',[],$studentLanguage)."\n".$message);
             }
         }
         $teacherNote = trim((string)($_POST['note'] ?? ''));
@@ -887,7 +887,7 @@ function handle_action(string $action): never
     if ($action === 'add_reward_type' && $user['role'] === 'teacher') {
         $courseId=(int)$_POST['course_id'];
         if (teacher_can_access_course(db(),$courseId,(int)$user['id'])) {
-            run('INSERT INTO reward_types(course_id,name,icon,color,default_points,active) VALUES(?,?,?,?,?,1) ON CONFLICT(course_id,name) DO UPDATE SET icon=excluded.icon,default_points=excluded.default_points,active=1',[$courseId,trim((string)$_POST['name']),trim((string)$_POST['icon'])?:'✨','#6d5dfc',max(1,(int)$_POST['default_points'])]);
+            run('INSERT INTO reward_types(course_id,name,icon,color,default_points,active) VALUES(?,?,?,?,?,1) ON CONFLICT(course_id,name) DO UPDATE SET icon=excluded.icon,default_points=excluded.default_points,active=1',[$courseId,trim((string)$_POST['name']),trim((string)$_POST['icon'])?:'✨','#6d5dfc',normalize_reward_points($_POST['default_points']??1)]);
             flash('Type d’encouragement ajouté.');
         }
         redirect('pathway',['course'=>$courseId]);

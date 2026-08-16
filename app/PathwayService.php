@@ -130,13 +130,27 @@ function pathway_natural_compare(string $left, string $right): int
     return $comparison!==0?$comparison:strnatcasecmp($left,$right);
 }
 
+function normalize_reward_points(mixed $value, int $fallback = 1): int
+{
+    $fallback=max(-100,min(100,$fallback));if($fallback===0)$fallback=1;
+    if(!is_numeric($value))return $fallback;
+    $points=max(-100,min(100,(int)$value));
+    return $points===0?$fallback:$points;
+}
+
+function format_signed_points(int $points): string
+{
+    return $points>0?'+'.$points:($points<0?'−'.abs($points):'0');
+}
+
 function pathway_objectives(PDO $pdo, int $courseId): array
 {
-    $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count
+    $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count,GROUP_CONCAT(DISTINCT pi.position) AS item_positions
         FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
         WHERE pi.course_id=? GROUP BY lower(po.title)");
     $query->execute([$courseId]);
     $objectives=$query->fetchAll(PDO::FETCH_ASSOC);
+    foreach($objectives as &$objective){$positions=array_values(array_unique(array_map('intval',explode(',',(string)$objective['item_positions']))));sort($positions,SORT_NUMERIC);$objective['item_positions']=$positions;}unset($objective);
     usort($objectives,fn(array $left,array $right): int=>pathway_natural_compare((string)$left['title'],(string)$right['title']));
     return $objectives;
 }
