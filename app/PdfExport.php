@@ -148,3 +148,15 @@ function send_pdf_download(string $html,string $filename,bool $landscape=false):
     echo $bytes;
     exit;
 }
+
+function send_pdf_inline(string $html,string $filename,bool $landscape=false): never
+{
+    $bytes=render_pdf_bytes($html,$landscape);
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="'.preg_replace('/[^A-Za-z0-9._-]/','-',basename($filename)).'"');
+    header('Content-Length: '.strlen($bytes));
+    header('Cache-Control: private, no-store');
+    header('X-Content-Type-Options: nosniff');
+    echo $bytes;
+    exit;
+}

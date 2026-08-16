@@ -710,7 +710,8 @@ function handle_action(string $action): never
         $recipients=$changed?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
         foreach($recipients as $recipient){$recipientLanguage=normalize_language((string)($recipient['language']??''))??'fr';enqueue('page.updated',$recipient['email'],t('Une ressource de votre parcours a changé',[],$recipientLanguage),t('La page « :page » vient d’être mise à jour.',['page'=>$title],$recipientLanguage));}
         flash($conflicts?t('Enregistrement partiel : :parts modifié(s) ailleurs ou verrouillé(s).',['parts'=>implode(', ',array_unique($conflicts))]):t($recipients?'Page enregistrée et notifications préparées.':'Page enregistrée.'),$conflicts?'error':'success');
-        redirect('page-edit', ['id'=>$pageId]);
+        $returnCourseId=page_pathway_return_course(db(),$pageId,(int)$user['id'],(int)($_POST['return_course']??0));
+        redirect('page-edit', $returnCourseId?['id'=>$pageId,'course'=>$returnCourseId]:['id'=>$pageId]);
     }
 
     if ($action === 'delete_page' && $user['role'] === 'teacher') {
@@ -813,6 +814,13 @@ function handle_action(string $action): never
         }
         flash($item?'La structure du parcours est momentanément verrouillée par un autre enseignant.':'Étape introuvable.','error');
         redirect('pathway',$item?['course'=>$item['course_id']]:[]);
+    }
+    if($action==='reorder_pathway_item'&&$user['role']==='teacher'){
+        $result=reorder_pathway_item(db(),(int)($_POST['item_id']??0),(int)($_POST['position']??0),(int)$user['id']);
+        if($result['status']==='updated')flash(t('Ordre du parcours mis à jour.'));
+        elseif($result['status']==='locked')flash(t('La structure du parcours est momentanément verrouillée par un autre enseignant.'),'error');
+        elseif(in_array($result['status'],['invalid','missing'],true))flash(t('Position d’étape invalide.'),'error');
+        redirect('pathway',$result['course_id']?['course'=>$result['course_id']]:[]);
     }
     if ($action === 'update_pathway_item' && $user['role'] === 'teacher') {
         $id=(int)$_POST['item_id'];

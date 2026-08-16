@@ -178,7 +178,7 @@ Un QCM formatif s’insère directement dans un bloc Markdown :
 
 Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]` utilisent des cases à cocher. Chaque question vaut le même poids et n’est réussie que si toutes ses réponses justes sont cochées sans réponse fausse. La catégorie **QCM** est ajoutée automatiquement à la page. L’élève voit son résultat et peut recommencer. L’enseignant voit uniquement le pourcentage de chaque élève dans son profil et la moyenne du groupe par étape dans le tableau de bord, jamais les réponses choisies.
 
-La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
+La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
 
 Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent visibles dans une barre persistante au-dessus des réglages pendant le défilement des blocs. Enregistrer une page déjà utilisée prépare un email pour chaque élève concerné. Une page en brouillon ou hors parcours reste invisible dans le chemin de travail des élèves.
 
@@ -197,9 +197,10 @@ L’import se lance depuis **Bibliothèque** avec deux modes :
 
 Dans **Parcours**, l’enseignant sélectionne un cours. Le bouton à trois points situé à droite du titre regroupe notamment la gestion de l’équipe enseignante dans une fenêtre dédiée. L’enseignant peut ensuite :
 
-- ajoute une page prête ;
+- ajouter une page prête ;
+- ouvrir directement son contenu avec **Éditer**, puis revenir au parcours d’origine avec **Parcours →** dans l’en-tête de l’éditeur ;
 - modifie le nom du parcours et son code unique d’invitation ;
-- change l’ordre avec les flèches ;
+- changer l’ordre en saisissant directement le numéro d’une étape ou en faisant glisser ce numéro à la position voulue, à la souris comme au tactile ;
 - fixe une échéance ;
 - marque une étape comme évaluation ;
 - ajoute une consigne propre au cours ;

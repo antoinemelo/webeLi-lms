@@ -7,7 +7,7 @@ const enhanceBootstrap = (root = document) => {
 
   root.querySelectorAll('select').forEach((select) => select.classList.add('form-select'));
   root.querySelectorAll('textarea').forEach((textarea) => textarea.classList.add('form-control'));
-  root.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not(.title-input):not(.summary-input)')
+  root.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not(.title-input):not(.summary-input):not(.pathway-position-input)')
     .forEach((input) => input.classList.add('form-control'));
 };
 
@@ -285,15 +285,6 @@ document.addEventListener('click', (event) => {
   if (announcements && !event.target.closest('.global-announcement-menu')) announcements.removeAttribute('open');
 });
 
-const syncQcmAuthoringHelp = (select) => {
-  const help = select.closest('.block-editor')?.querySelector('.qcm-authoring-help');
-  if (help) help.hidden = select.value !== 'markdown';
-};
-document.querySelectorAll('[data-block-type]').forEach(syncQcmAuthoringHelp);
-document.addEventListener('change', (event) => {
-  if (event.target.matches?.('[data-block-type]')) syncQcmAuthoringHelp(event.target);
-});
-
 let lockSubmissionInProgress = false;
 document.addEventListener('submit', (event) => {
   if (event.target.matches?.('[data-edit-lock]') || event.target.querySelector?.('[data-edit-lock]')) lockSubmissionInProgress = true;
@@ -305,9 +296,10 @@ const lockScopes = (key) => Array.from(document.querySelectorAll('[data-edit-loc
 const setLockState = (key, state, owner = '') => {
   lockScopes(key).forEach((scope) => {
     scope.querySelectorAll('[data-lock-status]').forEach((status) => {
-      status.textContent = state === 'held' ? ui('lock_active', 'Zone réservée')
+      const isPrimary = status.hasAttribute('data-lock-status-primary');
+      status.textContent = state === 'held' ? (isPrimary ? ui('lock_active', 'Zone réservée') : '')
         : state === 'blocked' ? ui('locked_by', 'Modification en cours par :name').replace(':name', owner || '—')
-          : state === 'released' ? ui('lock_released', 'Zone libérée') : '';
+          : state === 'released' && isPrimary ? ui('lock_released', 'Zone libérée') : '';
       status.classList.toggle('blocked', state === 'blocked');
     });
     scope.querySelectorAll('[data-release-edit-lock]').forEach((button) => {
@@ -340,7 +332,8 @@ const editLockRequest = async (scope) => {
     lockScopes(key).forEach((part) => part.querySelectorAll('[data-lock-status]').forEach((status) => { status.textContent = ui('lock_error', 'Impossible de réserver cette zone'); }));
   }
 };
-document.querySelectorAll('[data-edit-lock]').forEach((scope) => scope.addEventListener('focusin', () => {
+document.querySelectorAll('[data-edit-lock]').forEach((scope) => scope.addEventListener('focusin', (event) => {
+  if (event.target.closest('[data-no-edit-lock]')) return;
   if (!heldEditLocks.has(lockKey(scope))) editLockRequest(scope);
 }));
 document.querySelectorAll('[data-release-edit-lock]').forEach((button) => button.addEventListener('click', async () => {
@@ -458,17 +451,99 @@ const pageEditor = document.querySelector('.editor-form');
 if (pageEditor) {
   let dirty = false;
   let submitting = false;
-  const markDirty = () => { dirty = true; };
+  const unsavedIndicator = pageEditor.querySelector('[data-unsaved-indicator]');
+  const setDirty = (value) => {
+    dirty = value;
+    if (unsavedIndicator) unsavedIndicator.classList.toggle('visible', value);
+  };
+  const markDirty = () => setDirty(true);
   pageEditor.addEventListener('input', markDirty);
   pageEditor.addEventListener('change', markDirty);
   pageEditor.addEventListener('click', (event) => {
     if (event.target.closest('[data-add-block],[data-remove-block],[data-add-page-objective],[data-remove-page-objective]')) markDirty();
   });
-  pageEditor.addEventListener('submit', () => { submitting = true; dirty = false; });
+  pageEditor.querySelectorAll('[data-comment-jump]').forEach((link) => link.addEventListener('click', (event) => {
+    const target = document.querySelector(link.getAttribute('href'));
+    if (!target) return;
+    event.preventDefault();
+    target.scrollIntoView({ block: 'start' });
+  }));
+  pageEditor.addEventListener('submit', () => {
+    if (window.location.hash.startsWith('#collaboration-comments-')) {
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
+    }
+    submitting = true;
+    setDirty(false);
+  });
   window.addEventListener('beforeunload', (event) => {
     if (!dirty || submitting) return;
     event.preventDefault();
     event.returnValue = '';
+  });
+}
+
+const pathwaySortable = document.querySelector('[data-pathway-sortable]');
+if (pathwaySortable) {
+  const rows = () => Array.from(pathwaySortable.children).filter((child) => child.matches?.('[data-pathway-row]'));
+  const clearDropMarkers = () => rows().forEach((row) => row.classList.remove('pathway-drop-before', 'pathway-drop-after'));
+
+  pathwaySortable.querySelectorAll('[data-pathway-position-form]').forEach((form) => {
+    const input = form.querySelector('[data-pathway-drag-handle]');
+    const row = form.closest('[data-pathway-row]');
+    if (!input || !row) return;
+    const initialPosition = Number(row.dataset.position || input.value);
+
+    input.addEventListener('change', () => {
+      const target = Number.parseInt(input.value, 10);
+      const maximum = Number.parseInt(input.max, 10);
+      if (!Number.isInteger(target) || target < 1 || target > maximum) { input.value = String(initialPosition); return; }
+      if (target !== initialPosition) form.requestSubmit();
+    });
+
+    let gesture = null;
+    input.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      gesture = { pointerId: event.pointerId, startY: event.clientY, target: initialPosition, active: false };
+      input.setPointerCapture?.(event.pointerId);
+    });
+    input.addEventListener('pointermove', (event) => {
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      if (!gesture.active && Math.abs(event.clientY - gesture.startY) < 8) return;
+      if (!gesture.active) {
+        gesture.active = true;
+        row.classList.add('pathway-dragging');
+        pathwaySortable.classList.add('pathway-sorting');
+      }
+      event.preventDefault();
+      clearDropMarkers();
+      const candidates = rows().filter((candidate) => candidate !== row);
+      let target = candidates.length + 1;
+      for (let index = 0; index < candidates.length; index++) {
+        const bounds = candidates[index].getBoundingClientRect();
+        if (event.clientY < bounds.top + bounds.height / 2) { target = index + 1; break; }
+      }
+      gesture.target = target;
+      if (target <= candidates.length) candidates[target - 1].classList.add('pathway-drop-before');
+      else candidates[candidates.length - 1]?.classList.add('pathway-drop-after');
+      if (event.clientY < 72) window.scrollBy(0, -14);
+      else if (event.clientY > window.innerHeight - 72) window.scrollBy(0, 14);
+    });
+    const finishGesture = (event, cancelled = false) => {
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      const target = gesture.target;
+      const active = gesture.active;
+      gesture = null;
+      row.classList.remove('pathway-dragging');
+      pathwaySortable.classList.remove('pathway-sorting');
+      clearDropMarkers();
+      try { input.releasePointerCapture?.(event.pointerId); } catch (_) { /* already released */ }
+      if (!cancelled && active && target !== initialPosition) {
+        input.value = String(target);
+        form.requestSubmit();
+      }
+    };
+    input.addEventListener('pointerup', (event) => finishGesture(event));
+    input.addEventListener('pointercancel', (event) => finishGesture(event, true));
   });
 }
 
