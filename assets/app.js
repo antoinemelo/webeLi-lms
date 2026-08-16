@@ -22,6 +22,59 @@ const locale = document.body.dataset.language || 'fr';
 
 enhanceBootstrap();
 
+const installedPwa = window.matchMedia('(display-mode: standalone)').matches
+  || window.matchMedia('(display-mode: fullscreen)').matches
+  || window.navigator.standalone === true;
+if (installedPwa && window.navigator.maxTouchPoints > 0) {
+  const PULL_REFRESH_THRESHOLD = 96;
+  let pullStartX = 0;
+  let pullStartY = 0;
+  let pullDistance = 0;
+  let pullTracking = false;
+
+  const pageIsAtTop = () => (document.scrollingElement?.scrollTop || window.scrollY || 0) <= 0;
+  const hasScrollableParent = (target) => {
+    let element = target instanceof Element ? target : null;
+    while (element && element !== document.body) {
+      const overflowY = window.getComputedStyle(element).overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll') && element.scrollHeight > element.clientHeight + 1) return true;
+      element = element.parentElement;
+    }
+    return false;
+  };
+  const cancelPull = () => {
+    pullTracking = false;
+    pullDistance = 0;
+  };
+
+  document.addEventListener('touchstart', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (event.touches.length !== 1 || !pageIsAtTop() || document.querySelector('.modal.show,.offcanvas.show')) return;
+    if (target?.closest('input,textarea,select,button,a,summary,label,[contenteditable],[data-no-pull-refresh]')) return;
+    if (hasScrollableParent(target)) return;
+    pullStartX = event.touches[0].clientX;
+    pullStartY = event.touches[0].clientY;
+    pullDistance = 0;
+    pullTracking = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (event) => {
+    if (!pullTracking || event.touches.length !== 1) return;
+    const deltaX = Math.abs(event.touches[0].clientX - pullStartX);
+    const deltaY = event.touches[0].clientY - pullStartY;
+    if (!pageIsAtTop() || deltaY <= 0 || deltaX > deltaY * 0.6) { cancelPull(); return; }
+    pullDistance = deltaY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (!pullTracking) return;
+    const shouldRefresh = pageIsAtTop() && pullDistance >= PULL_REFRESH_THRESHOLD;
+    cancelPull();
+    if (shouldRefresh) window.location.reload();
+  }, { passive: true });
+  document.addEventListener('touchcancel', cancelPull, { passive: true });
+}
+
 document.querySelector('.announcement-admin .section-title > button')?.remove();
 
 const sessionGuardEnabled = Boolean(document.body.dataset.csrf);

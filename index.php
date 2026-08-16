@@ -64,10 +64,18 @@ if($view==='pdf-document'&&$user['role']==='teacher'){
     }catch(Throwable $exception){http_response_code(404);echo '<!doctype html><meta charset="utf-8"><p>'.e(t('Document introuvable.')).'</p>';}
     exit;
 }
-if($view==='pdf-download'&&$user['role']==='teacher'){
+if($view==='pdf-download'){
     $courseId=0;
     try{
         $type=($_GET['type']??'course')==='item'?'item':'course';$id=(int)($_GET['id']??0);
+        if($user['role']==='student'){
+            if($type!=='item'||!item_is_visible_to_student(db(),$id,(int)$user['id']))throw new TransferException('Étape introuvable.');
+            $context=one('SELECT p.title,pi.course_id FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
+            $courseId=(int)($context['course_id']??0);
+            if(!$context)throw new TransferException('Étape introuvable.');
+            send_pdf_download(student_pathway_page_pdf_html(db(),$id,(int)$user['id']),'etape-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf');
+        }
+        if($user['role']!=='teacher')throw new TransferException('Document introuvable.');
         if($type==='item'){
             $context=one('SELECT p.title,pi.course_id FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
             $courseId=(int)($context['course_id']??0);
@@ -79,7 +87,8 @@ if($view==='pdf-download'&&$user['role']==='teacher'){
         send_pdf_download(course_pdf_html(db(),$id,(int)$user['id']),'parcours-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf',true);
     }catch(Throwable $exception){
         http_response_code(503);header('Content-Type: text/html; charset=UTF-8');header('Cache-Control: private, no-store');
-        echo '<!doctype html><html lang="'.e(current_language()).'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.e(t('Export PDF indisponible')).'</title><body style="font:16px system-ui;max-width:42rem;margin:12vh auto;padding:1.5rem"><h1>'.e(t('Export PDF indisponible')).'</h1><p>'.e(import_failure_message($exception)).'</p><p><a href="'.e(route('pathway',$courseId?['course'=>$courseId]:[])).'">'.e(t('Retour au parcours')).'</a></p></body></html>';
+        $returnRoute=$user['role']==='student'?route('student',$courseId?['course'=>$courseId]:[]):route('pathway',$courseId?['course'=>$courseId]:[]);
+        echo '<!doctype html><html lang="'.e(current_language()).'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.e(t('Export PDF indisponible')).'</title><body style="font:16px system-ui;max-width:42rem;margin:12vh auto;padding:1.5rem"><h1>'.e(t('Export PDF indisponible')).'</h1><p>'.e(import_failure_message($exception)).'</p><p><a href="'.e($returnRoute).'">'.e(t('Retour au parcours')).'</a></p></body></html>';
         exit;
     }
 }

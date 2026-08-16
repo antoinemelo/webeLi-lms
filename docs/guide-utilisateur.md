@@ -156,7 +156,7 @@ Les tableaux utilisent la syntaxe Markdown à barres verticales. Les deux-points
 | Sam | En cours | 6 |
 ```
 
-Ils s’adaptent à l’écran avec un défilement horizontal sur mobile et sont repris avec leurs en-têtes et alignements dans les exports PDF. Pour écrire une barre verticale dans une cellule, utiliser `\|` ou la placer dans du code inline, par exemple `` `A|B` ``.
+Ils s’adaptent à l’écran avec un défilement horizontal sur mobile et sont repris avec leurs en-têtes et alignements dans les exports PDF. Lorsque tous les séparateurs ont la même longueur (`|---|---|`), la largeur des colonnes suit automatiquement leur contenu. Lorsque leurs longueurs diffèrent, elles servent de proportions : `|---|------|` produit une première colonne d’environ un tiers et une seconde d’environ deux tiers. Pour écrire une barre verticale dans une cellule, utiliser `\|` ou la placer dans du code inline, par exemple `` `A|B` ``.
 
 Un QCM formatif s’insère directement dans un bloc Markdown :
 

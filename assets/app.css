@@ -114,8 +114,9 @@ button,a,summary{touch-action:manipulation}
 .timeline-item.waiting .timeline-state{border-color:#ebc46e;background:#fff0d0;color:#8d5b08}
 .timeline-item div{display:flex;flex-direction:column}
 .timeline-item em{color:var(--green);font-size:.75rem;font-style:normal;font-weight:750}
-.reader-top{display:flex;max-width:56rem;justify-content:space-between;margin:auto;color:var(--muted);font-size:.82rem}
+.reader-top{display:flex;max-width:56rem;align-items:center;justify-content:space-between;gap:1rem;margin:auto;color:var(--muted);font-size:.82rem}
 .reader-top .back{margin:0}
+.reader-pdf-download{flex:0 0 auto;padding:.48rem .72rem;font-size:.78rem}
 .reader{max-width:47.5rem;margin:1.8rem auto 0}
 .reader > header{margin-bottom:2rem;padding:2rem 0;border-bottom:1px solid var(--line)}
 .reader > header > p{color:var(--muted);font-size:1.1rem}
@@ -134,6 +135,7 @@ button,a,summary{touch-action:manipulation}
 .content-block pre{overflow:auto;padding:1.1rem;border-radius:.9rem;background:var(--ink);color:#fff}
 .markdown-table-wrap{max-width:100%;overflow-x:auto;margin:1.25rem 0;border:1px solid var(--line);border-radius:.85rem;background:#fff;box-shadow:0 5px 18px rgb(41 39 59 / 6%)}
 .markdown-table{width:100%;min-width:32rem;border-collapse:collapse;font-size:.92rem}
+.markdown-table-weighted{table-layout:fixed}
 .markdown-table th,.markdown-table td{padding:.7rem .8rem;border-right:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
 .markdown-table th:last-child,.markdown-table td:last-child{border-right:0}.markdown-table tbody tr:last-child td{border-bottom:0}
 .markdown-table th{background:var(--purple-soft);color:var(--ink);font-weight:750}.markdown-table tbody tr:nth-child(even){background:#fafafd}

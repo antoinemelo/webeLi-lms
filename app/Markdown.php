@@ -43,10 +43,10 @@ final class Markdown
             if ($inCode) { $code[] = $line; continue; }
             if (trim($line) === '') { $flushParagraph(); $flushList(); $flushQuote(); continue; }
             $tableHeader=self::splitTableRow($line);
-            $tableAlignment=$lineIndex+1<$lineCount&&$tableHeader!==null
+            $tableDefinition=$lineIndex+1<$lineCount&&$tableHeader!==null
                 ?self::tableAlignments($lines[$lineIndex+1],count($tableHeader))
                 :null;
-            if($tableHeader!==null&&$tableAlignment!==null){
+            if($tableHeader!==null&&$tableDefinition!==null){
                 $flushParagraph();$flushList();$flushQuote();$rows=[];$cursor=$lineIndex+2;
                 while($cursor<$lineCount){
                     $row=self::splitTableRow($lines[$cursor]);
@@ -54,7 +54,7 @@ final class Markdown
                     $rows[]=array_slice(array_pad($row,count($tableHeader),''),0,count($tableHeader));
                     $cursor++;
                 }
-                $out[]=self::renderTable($tableHeader,$tableAlignment,$rows);
+                $out[]=self::renderTable($tableHeader,$tableDefinition['alignments'],$tableDefinition['widths'],$rows);
                 $lineIndex=$cursor-1;
                 continue;
             }
@@ -105,33 +105,42 @@ final class Markdown
         return $cells;
     }
 
-    /** @return list<'left'|'center'|'right'>|null */
+    /** @return array{alignments:list<'left'|'center'|'right'>,widths:list<float>|null}|null */
     private static function tableAlignments(string $line,int $columnCount): ?array
     {
         $cells=self::splitTableRow($line);
         if($cells===null||count($cells)!==$columnCount)return null;
-        $alignments=[];
+        $alignments=[];$weights=[];
         foreach($cells as $cell){
             $cell=preg_replace('/\s+/','',trim($cell))??'';
-            if(!preg_match('/^:?-{3,}:?$/',$cell))return null;
-            $left=str_starts_with($cell,':');$right=str_ends_with($cell,':');
+            if(!preg_match('/^(:?)(-{3,})(:?)$/',$cell,$matches))return null;
+            $left=$matches[1]===':';$right=$matches[3]===':';$weights[]=strlen($matches[2]);
             $alignments[]=$left&&$right?'center':($right?'right':'left');
         }
-        return $alignments;
+        $widths=null;
+        if(count(array_unique($weights))>1){
+            $total=array_sum($weights);
+            $widths=array_map(static fn(int $weight):float=>$weight/$total*100,$weights);
+        }
+        return ['alignments'=>$alignments,'widths'=>$widths];
     }
 
     /**
      * @param list<string> $header
      * @param list<'left'|'center'|'right'> $alignments
+     * @param list<float>|null $widths
      * @param list<list<string>> $rows
      */
-    private static function renderTable(array $header,array $alignments,array $rows): string
+    private static function renderTable(array $header,array $alignments,?array $widths,array $rows): string
     {
         $cellHtml=static function(string $tag,string $value,string $alignment): string {
             $scope=$tag==='th'?' scope="col"':'';
             return '<'.$tag.$scope.' style="text-align:'.$alignment.'">'.self::inline($value).'</'.$tag.'>';
         };
-        $html='<div class="markdown-table-wrap"><table class="markdown-table"><thead><tr>';
+        $tableClass=$widths===null?'markdown-table':'markdown-table markdown-table-weighted';
+        $html='<div class="markdown-table-wrap"><table class="'.$tableClass.'">';
+        if($widths!==null){$html.='<colgroup>';foreach($widths as $width)$html.='<col style="width:'.rtrim(rtrim(number_format($width,4,'.',''),'0'),'.').'%">';$html.='</colgroup>';}
+        $html.='<thead><tr>';
         foreach($header as $index=>$cell)$html.=$cellHtml('th',$cell,$alignments[$index]);
         $html.='</tr></thead><tbody>';
         foreach($rows as $row){$html.='<tr>';foreach($row as $index=>$cell)$html.=$cellHtml('td',$cell,$alignments[$index]);$html.='</tr>';}
