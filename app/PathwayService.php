@@ -166,7 +166,7 @@ function pathway_objectives(PDO $pdo, int $courseId): array
 {
     $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count,GROUP_CONCAT(DISTINCT pi.position) AS item_positions
         FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
-        WHERE pi.course_id=? GROUP BY lower(po.title)");
+        WHERE pi.course_id=? AND pi.framework_tracking_enabled=1 GROUP BY lower(po.title)");
     $query->execute([$courseId]);
     $objectives=$query->fetchAll(PDO::FETCH_ASSOC);
     foreach($objectives as &$objective){$positions=array_values(array_unique(array_map('intval',explode(',',(string)$objective['item_positions']))));sort($positions,SORT_NUMERIC);$objective['item_positions']=$positions;}unset($objective);
@@ -178,8 +178,9 @@ function pathway_sidebar_skills(PDO $pdo, int $courseId): array
 {
     $query=$pdo->prepare("SELECT s.*,
         COUNT(i.pathway_item_id) AS linked_count,
-        SUM(CASE WHEN pi.access_mode='all' THEN 1 ELSE 0 END) AS open_count,
-        SUM(CASE WHEN pi.access_mode='restricted' THEN 1 ELSE 0 END) AS restricted_count
+        SUM(CASE WHEN pi.framework_tracking_enabled=1 THEN 1 ELSE 0 END) AS tracked_count,
+        SUM(CASE WHEN pi.framework_tracking_enabled=1 AND pi.access_mode='all' THEN 1 ELSE 0 END) AS open_count,
+        SUM(CASE WHEN pi.framework_tracking_enabled=1 AND pi.access_mode IN ('restricted','none') THEN 1 ELSE 0 END) AS restricted_count
         FROM course_skills s
         LEFT JOIN item_skills i ON i.skill_id=s.id
         LEFT JOIN pathway_items pi ON pi.id=i.pathway_item_id
@@ -188,9 +189,10 @@ function pathway_sidebar_skills(PDO $pdo, int $courseId): array
     $skills=[];
     foreach($query->fetchAll(PDO::FETCH_ASSOC) as $skill){
         $linked=(int)$skill['linked_count'];
+        $tracked=(int)$skill['tracked_count'];
         $open=(int)$skill['open_count'];
         $restricted=(int)$skill['restricted_count'];
-        if($linked>0&&$open===0&&$restricted===0)continue;
+        if($linked>0&&$tracked===0)continue;
         $skill['access_visibility']=$open===0&&$restricted>0?'restricted':'open';
         $skills[]=$skill;
     }
@@ -230,11 +232,11 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode) VALUES(?,?,?,?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled) VALUES(?,?,?,?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['self_evaluation_enabled']??1,$item['evaluation_weight']??1,$item['instructions'],$item['access_mode']]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['self_evaluation_enabled']??1,$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();

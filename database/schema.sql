@@ -169,6 +169,7 @@ CREATE TABLE pathway_items (
     evaluation_weight REAL NOT NULL DEFAULT 1 CHECK(evaluation_weight IN (0.5,1,2,3,4)),
     instructions TEXT NOT NULL DEFAULT '',
     access_mode TEXT NOT NULL DEFAULT 'all' CHECK(access_mode IN ('all','restricted','none')),
+    framework_tracking_enabled INTEGER NOT NULL DEFAULT 1 CHECK(framework_tracking_enabled IN (0,1)),
     revision INTEGER NOT NULL DEFAULT 0,
     UNIQUE(course_id, position),
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
@@ -387,4 +388,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 12;
+PRAGMA user_version = 13;

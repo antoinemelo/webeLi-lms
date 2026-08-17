@@ -834,7 +834,9 @@ function handle_action(string $action): never
             if($deadlineInput!==''&&$deadline===null){flash('Saisissez la date au format jj/mm/aaaa.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             $revision=(int)($_POST['item_revision']??-1);
             if(!edit_lock_claim_for_save(db(),'pathway_item',$id,(int)$user['id'])||$revision!==(int)$item['revision']){flash('Cette étape a été modifiée ou est en cours d’édition par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            $accessMode=in_array($_POST['access_mode']??'all',['all','restricted','none'],true)?(string)$_POST['access_mode']:'all';
+            $accessChoice=in_array($_POST['access_mode']??'all',['all','restricted','none','none_tracked','none_untracked'],true)?(string)$_POST['access_mode']:'all';
+            $accessMode=str_starts_with($accessChoice,'none_')?'none':$accessChoice;
+            $frameworkTracking=$accessChoice==='none_untracked'?0:1;
             $allowedStudents=[];
             if($accessMode==='restricted'){
                 foreach(array_unique(array_map('intval',(array)($_POST['allowed_students']??[]))) as $studentId){
@@ -844,8 +846,8 @@ function handle_action(string $action): never
             }
             $isEvaluation=isset($_POST['is_evaluation'])?1:0;$selfEvaluation=array_key_exists('self_evaluation_enabled',$_POST)?((int)$_POST['self_evaluation_enabled']===1?1:0):(int)$item['self_evaluation_enabled'];$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
             if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,revision=revision+1 WHERE id=? AND revision=?');
-            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$id,$revision]);
+            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,revision=revision+1 WHERE id=? AND revision=?');
+            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$frameworkTracking,$id,$revision]);
             if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             if($isEvaluation!==(int)$item['is_evaluation'])run("UPDATE progress SET teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$id]);
             if($selfEvaluation!==(int)$item['self_evaluation_enabled']){
