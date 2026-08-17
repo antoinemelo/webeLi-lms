@@ -64,7 +64,7 @@ function pathway_page_pdf_render(PDO $pdo, array $item): string
     $tags=$pdo->prepare('SELECT t.name FROM tags t JOIN page_tags pt ON pt.tag_id=t.id WHERE pt.page_id=? ORDER BY t.name');$tags->execute([$item['page_id']]);
     $objectives=$pdo->prepare('SELECT title FROM page_objectives WHERE page_id=? ORDER BY position,id');$objectives->execute([$item['page_id']]);
     $skills=$pdo->prepare('SELECT s.code,s.title FROM course_skills s JOIN item_skills i ON i.skill_id=s.id WHERE i.pathway_item_id=? ORDER BY s.position');$skills->execute([$itemId]);
-    $metaValues=[t('Étape :number',['number'=>(int)$item['position']]),t($item['is_evaluation']?'Évaluation':'Activité'),(int)$item['estimated_minutes'].' min',t('Échéance').' '.pdf_date_fr($item['deadline']),t($item['status']==='ready'?'Prête':'Brouillon')];if(!(bool)($item['self_evaluation_enabled']??1))$metaValues[]=t('Sans autoévaluation');
+    $metaValues=[t('Étape :number',['number'=>(int)$item['position']]),t($item['is_evaluation']?'Évaluation':'Activité'),(int)$item['estimated_minutes'].' min',t('Échéance').' '.pdf_date_fr($item['deadline']),t($item['status']==='ready'?'Prête':'Brouillon')];if((bool)($item['self_evaluation_enabled']??1))$metaValues[]=t('Autoévaluation');
     foreach($tags->fetchAll(PDO::FETCH_COLUMN) as $tag)$metaValues[]='#'.$tag;
     $meta=pdf_meta($metaValues);
     $body='<header class="header"><div class="eyebrow">'.e($item['course_title']).' · '.e($item['course_code']).'</div><h1>'.e($item['title']).'</h1><p class="muted">'.e($item['summary']).'</p><div class="meta">'.$meta.'</div></header>';

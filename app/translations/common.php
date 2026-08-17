@@ -267,7 +267,6 @@ return [
     'Retirer du parcours'=>['en'=>'Remove from learning path','de'=>'Aus Lernpfad entfernen','it'=>'Rimuovi dal percorso','es'=>'Quitar del itinerario'],
     'Cette étape est une évaluation'=>['en'=>'This step is an assessment','de'=>'Dieser Schritt ist eine Beurteilung','it'=>'Questa tappa è una valutazione','es'=>'Esta etapa es una evaluación'],
     'Autoévaluation'=>['en'=>'Self-assessment','de'=>'Selbsteinschätzung','it'=>'Autovalutazione','es'=>'Autoevaluación'],
-    'Sans autoévaluation'=>['en'=>'Without self-assessment','de'=>'Ohne Selbsteinschätzung','it'=>'Senza autovalutazione','es'=>'Sin autoevaluación'],
     'Consultée'=>['en'=>'Viewed','de'=>'Angesehen','it'=>'Consultata','es'=>'Consultada'],
     'À consulter'=>['en'=>'To view','de'=>'Anzusehen','it'=>'Da consultare','es'=>'Por consultar'],
     'Cette étape ne demande pas d’autoévaluation.'=>['en'=>'This step does not require self-assessment.','de'=>'Dieser Schritt erfordert keine Selbsteinschätzung.','it'=>'Questa tappa non richiede un’autovalutazione.','es'=>'Esta etapa no requiere autoevaluación.'],
