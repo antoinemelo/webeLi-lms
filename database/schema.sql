@@ -165,6 +165,7 @@ CREATE TABLE pathway_items (
     position INTEGER NOT NULL,
     deadline TEXT,
     is_evaluation INTEGER NOT NULL DEFAULT 0 CHECK(is_evaluation IN (0,1)),
+    self_evaluation_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_evaluation_enabled IN (0,1)),
     evaluation_weight REAL NOT NULL DEFAULT 1 CHECK(evaluation_weight IN (0.5,1,2,3,4)),
     instructions TEXT NOT NULL DEFAULT '',
     access_mode TEXT NOT NULL DEFAULT 'all' CHECK(access_mode IN ('all','restricted','none')),
@@ -230,6 +231,7 @@ CREATE TABLE progress (
     student_level INTEGER CHECK(student_level BETWEEN 0 AND 3),
     student_note TEXT NOT NULL DEFAULT '',
     student_validated_at TEXT,
+    completed_at TEXT,
     teacher_level INTEGER CHECK(teacher_level BETWEEN 0 AND 3),
     evaluation_score REAL CHECK(evaluation_score BETWEEN 0 AND 10),
     teacher_note TEXT NOT NULL DEFAULT '',
@@ -385,4 +387,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 11;
+PRAGMA user_version = 12;

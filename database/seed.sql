@@ -123,6 +123,8 @@ INSERT INTO progress (enrollment_id,pathway_item_id,student_level,student_note,s
  (3,1,2,'',datetime('now','-8 day'),2,'',datetime('now','-7 day')),
  (4,6,3,'',datetime('now','-1 day'),3,'',datetime('now'));
 
+UPDATE progress SET completed_at=student_validated_at WHERE student_validated_at IS NOT NULL;
+
 INSERT INTO reward_types (id,course_id,name,icon,color,default_points) VALUES
  (1,1,'Persévérance','🌱','#2da58d',1),
  (2,1,'Curiosité','🔎','#6d5dfc',1),

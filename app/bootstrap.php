@@ -254,7 +254,7 @@ function framework_progress(int $courseId, int $enrollmentId, string $kind): arr
             SUM(CASE WHEN p.student_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS student_done,
             SUM(CASE WHEN p.teacher_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS teacher_done
             FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
-            LEFT JOIN pathway_items visible ON visible.id=pi.id AND visible.is_evaluation=0 AND (
+            LEFT JOIN pathway_items visible ON visible.id=pi.id AND visible.is_evaluation=0 AND visible.self_evaluation_enabled=1 AND (
                 visible.access_mode='all'
                 OR (visible.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?)))
             LEFT JOIN progress p ON p.pathway_item_id=visible.id AND p.enrollment_id=?
@@ -272,7 +272,7 @@ function framework_progress(int $courseId, int $enrollmentId, string $kind): arr
         SUM(CASE WHEN p.teacher_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS teacher_done
         FROM $table f
         LEFT JOIN $link l ON l.$column=f.id
-        LEFT JOIN pathway_items visible ON visible.id=l.pathway_item_id AND visible.is_evaluation=0 AND (
+        LEFT JOIN pathway_items visible ON visible.id=l.pathway_item_id AND visible.is_evaluation=0 AND visible.self_evaluation_enabled=1 AND (
             visible.access_mode='all'
             OR (visible.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?)))
         LEFT JOIN progress p ON p.pathway_item_id=visible.id AND p.enrollment_id=?

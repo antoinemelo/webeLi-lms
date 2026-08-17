@@ -569,9 +569,10 @@ function handle_action(string $action): never
             AND (pi.access_mode='all'
               OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))", [$user['id'],$itemId,$user['id']]);
         if (!$item) { flash('Étape introuvable.', 'error'); redirect('student'); }
-        run("INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,updated_at)
-            VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET student_level=excluded.student_level,student_note=excluded.student_note,student_validated_at=CURRENT_TIMESTAMP,teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP",
+        if(!(bool)$item['self_evaluation_enabled']){flash(t('Cette étape ne demande pas d’autoévaluation.'),'error');redirect('learn',['item'=>$itemId]);}
+        run("INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,completed_at,updated_at)
+            VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET student_level=excluded.student_level,student_note=excluded.student_note,student_validated_at=CURRENT_TIMESTAMP,completed_at=CURRENT_TIMESTAMP,teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP",
             [$item['enrollment_id'],$itemId,$level,trim((string)($_POST['note'] ?? ''))]);
         $teacherLanguage=normalize_language((string)($item['teacher_language']??''))??'fr';
         try{
@@ -604,21 +605,24 @@ function handle_action(string $action): never
     if ($action === 'teacher_validate' && $user['role'] === 'teacher') {
         $enrollmentId = (int) $_POST['enrollment_id'];
         $itemId = (int) $_POST['item_id'];
-        $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,pi.is_evaluation,pi.evaluation_weight,p.title AS page_title,c.title AS course_title
+        $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,p.title AS page_title,c.title AS course_title,pr.student_validated_at
             FROM enrollments e JOIN users s ON s.id=e.student_id JOIN pathway_items pi ON pi.id=? AND pi.course_id=e.course_id
-            JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=e.course_id WHERE e.id=? AND e.status='active' AND s.account_status='active'
+            JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=e.course_id LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE e.id=? AND e.status='active' AND s.account_status='active'
             AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id)))", [$itemId,$enrollmentId]);
         if (!$context || !teacher_can_access_course(db(),(int)$context['course_id'],(int)$user['id'])) { flash('Validation impossible.', 'error'); redirect('teacher'); }
-        $isEvaluation=(bool)$context['is_evaluation'];$level=null;$score=null;
+        $isEvaluation=(bool)$context['is_evaluation'];$selfEvaluation=(bool)$context['self_evaluation_enabled'];
+        if((!$isEvaluation&&!$selfEvaluation)||($selfEvaluation&&!$context['student_validated_at'])){flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
+        $level=null;$score=null;
         if($isEvaluation){
             $rawScore=str_replace(',','.',trim((string)($_POST['score']??'')));
             if($rawScore===''||!is_numeric($rawScore)||(float)$rawScore<0||(float)$rawScore>10){flash('La note doit être comprise entre 0 et 10.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
             $score=round((float)$rawScore,2);
         }else $level=max(0,min(3,(int)($_POST['level']??0)));
-        run('INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,updated_at)
-            VALUES(?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,teacher_note=excluded.teacher_note,teacher_validated_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP',
-            [$enrollmentId,$itemId,$level,$score,trim((string)($_POST['note'] ?? ''))]);
+        $completedAt=!$selfEvaluation&&$isEvaluation?gmdate('Y-m-d H:i:s'):null;
+        run('INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,completed_at,updated_at)
+            VALUES(?,?,?,?,?,CURRENT_TIMESTAMP,?,CURRENT_TIMESTAMP)
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,teacher_note=excluded.teacher_note,teacher_validated_at=CURRENT_TIMESTAMP,completed_at=COALESCE(progress.completed_at,excluded.completed_at),updated_at=CURRENT_TIMESTAMP',
+            [$enrollmentId,$itemId,$level,$score,trim((string)($_POST['note'] ?? '')),$completedAt]);
         $rewardId = (int) ($_POST['reward_type_id'] ?? 0);
         if ($rewardId > 0) {
             $reward = one('SELECT * FROM reward_types WHERE id=? AND course_id=? AND active=1', [$rewardId,$context['course_id']]);
@@ -838,12 +842,17 @@ function handle_action(string $action): never
                 }
                 if(!$allowedStudents){flash('Sélectionnez au moins un élève pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
-            $isEvaluation=isset($_POST['is_evaluation'])?1:0;$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
+            $isEvaluation=isset($_POST['is_evaluation'])?1:0;$selfEvaluation=array_key_exists('self_evaluation_enabled',$_POST)?((int)$_POST['self_evaluation_enabled']===1?1:0):(int)$item['self_evaluation_enabled'];$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
             if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,evaluation_weight=?,instructions=?,access_mode=?,revision=revision+1 WHERE id=? AND revision=?');
-            $update->execute([$deadline,$isEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$id,$revision]);
+            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,revision=revision+1 WHERE id=? AND revision=?');
+            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$id,$revision]);
             if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             if($isEvaluation!==(int)$item['is_evaluation'])run("UPDATE progress SET teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$id]);
+            if($selfEvaluation!==(int)$item['self_evaluation_enabled']){
+                if(!$selfEvaluation)run("UPDATE progress SET student_level=NULL,student_note='',student_validated_at=NULL,teacher_level=CASE WHEN ?=1 THEN teacher_level ELSE NULL END,evaluation_score=CASE WHEN ?=1 THEN evaluation_score ELSE NULL END,teacher_note=CASE WHEN ?=1 THEN teacher_note ELSE '' END,teacher_validated_at=CASE WHEN ?=1 THEN teacher_validated_at ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$isEvaluation,$isEvaluation,$isEvaluation,$isEvaluation,$id]);
+                else run('UPDATE progress SET completed_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=? AND student_validated_at IS NULL AND teacher_validated_at IS NULL',[$id]);
+            }
+            if($isEvaluation&& !$selfEvaluation && ($isEvaluation!==(int)$item['is_evaluation']))run('UPDATE progress SET completed_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=? AND teacher_validated_at IS NULL',[$id]);
             run('DELETE FROM item_skills WHERE pathway_item_id=?',[$id]);
             foreach ((array)($_POST['skills']??[]) as $v) run('INSERT INTO item_skills SELECT ?,id FROM course_skills WHERE id=? AND course_id=?',[$id,(int)$v,$item['course_id']]);
             run('DELETE FROM pathway_item_students WHERE pathway_item_id=?',[$id]);

@@ -143,6 +143,25 @@ function format_signed_points(int $points): string
     return $points>0?'+'.$points:($points<0?'−'.abs($points):'0');
 }
 
+function complete_consultation_step(PDO $pdo, int $studentId, int $itemId): bool
+{
+    $query=$pdo->prepare("SELECT e.id FROM pathway_items pi
+        JOIN courses c ON c.id=pi.course_id
+        JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
+        JOIN users u ON u.id=e.student_id AND u.account_status='active'
+        WHERE pi.id=? AND c.archived=0 AND pi.self_evaluation_enabled=0 AND pi.is_evaluation=0
+          AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+              SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
+    $query->execute([$studentId,$itemId,$studentId]);$enrollmentId=(int)($query->fetchColumn()?:0);
+    if($enrollmentId<1)return false;
+    $complete=$pdo->prepare("INSERT INTO progress(enrollment_id,pathway_item_id,completed_at,updated_at)
+        VALUES(?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+        ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
+        WHERE progress.completed_at IS NULL");
+    $complete->execute([$enrollmentId,$itemId]);
+    return true;
+}
+
 function pathway_objectives(PDO $pdo, int $courseId): array
 {
     $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count,GROUP_CONCAT(DISTINCT pi.position) AS item_positions
@@ -211,11 +230,11 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight,instructions,access_mode) VALUES(?,?,?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode) VALUES(?,?,?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['evaluation_weight']??1,$item['instructions'],$item['access_mode']]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['self_evaluation_enabled']??1,$item['evaluation_weight']??1,$item['instructions'],$item['access_mode']]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();
