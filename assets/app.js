@@ -848,6 +848,40 @@ document.querySelectorAll('.student-access').forEach((section) => {
   syncStudentSelection();
 });
 
+const frameworkPanel = document.querySelector('.pathway-side-column .framework-panel');
+if (frameworkPanel) {
+  const courseId = frameworkPanel.querySelector('input[name="course_id"]')?.value;
+  const headings = Array.from(frameworkPanel.children).filter((element) => element.tagName === 'H2');
+  const definitions = [
+    { kind: 'objectives', exportLabel: ui('csv_export_objectives', 'Exporter les objectifs en CSV') },
+    { kind: 'skills', exportLabel: ui('csv_export_skills', 'Exporter les compétences en CSV'), importLabel: ui('csv_import_skills', 'Importer les compétences depuis un CSV') },
+    { kind: 'rewards', exportLabel: ui('csv_export_rewards', 'Exporter les encouragements en CSV'), importLabel: ui('csv_import_rewards', 'Importer les encouragements depuis un CSV') },
+  ];
+  const hiddenInput = (name, value) => { const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value; return input; };
+  if (courseId) definitions.forEach((definition, index) => {
+    const heading = headings[index]; if (!heading) return;
+    const actions = document.createElement('span'); actions.className = 'framework-csv-actions';
+    const exportForm = document.createElement('form'); exportForm.method = 'post'; exportForm.className = 'framework-csv-action';
+    exportForm.append(hiddenInput('token', document.body.dataset.csrf || ''), hiddenInput('action', 'export_framework_csv'), hiddenInput('course_id', courseId), hiddenInput('kind', definition.kind));
+    const exportButton = document.createElement('button'); exportButton.type = 'submit'; exportButton.className = 'framework-icon-button'; exportButton.title = definition.exportLabel; exportButton.setAttribute('aria-label', definition.exportLabel); exportButton.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i>'; exportForm.append(exportButton); actions.append(exportForm);
+    if (definition.importLabel) {
+      const importForm = document.createElement('form'); importForm.method = 'post'; importForm.enctype = 'multipart/form-data'; importForm.className = 'framework-csv-action';
+      importForm.append(hiddenInput('token', document.body.dataset.csrf || ''), hiddenInput('action', 'import_framework_csv'), hiddenInput('course_id', courseId), hiddenInput('kind', definition.kind));
+      const file = document.createElement('input'); file.type = 'file'; file.name = 'framework_csv'; file.accept = '.csv,text/csv'; file.required = true; file.className = 'framework-csv-file'; file.id = `framework-csv-${definition.kind}`; file.addEventListener('change', () => { if (file.files?.length) importForm.requestSubmit(); }); importForm.append(file);
+      const label = document.createElement('label'); label.className = 'framework-icon-button'; label.htmlFor = file.id; label.title = definition.importLabel; label.setAttribute('aria-label', definition.importLabel); label.innerHTML = '<i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>'; importForm.append(label); actions.append(importForm);
+    }
+    heading.append(actions);
+  });
+  frameworkPanel.querySelectorAll('.framework-item input[name="skill_id"]').forEach((input) => {
+    const item = input.closest('.framework-item'); const removeForm = input.closest('form'); if (!item || !removeForm) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'framework-edit-trigger'; button.dataset.bsToggle = 'modal'; button.dataset.bsTarget = `#skill-edit-modal-${input.value}`; button.title = ui('edit_skill', 'Modifier cette compétence'); button.setAttribute('aria-label', button.title); button.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>'; item.insertBefore(button, removeForm);
+  });
+  frameworkPanel.querySelectorAll('.reward-type input[name="reward_type_id"]').forEach((input) => {
+    const item = input.closest('.reward-type'); const removeForm = input.closest('form'); if (!item || !removeForm) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'framework-edit-trigger'; button.dataset.bsToggle = 'modal'; button.dataset.bsTarget = `#reward-edit-modal-${input.value}`; button.title = ui('edit_reward', 'Modifier cet encouragement'); button.setAttribute('aria-label', button.title); button.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>'; item.insertBefore(button, removeForm);
+  });
+}
+
 document.querySelectorAll('[data-evaluation-toggle]').forEach((toggle) => {
   const form = toggle.closest('form');
   const weight = form?.querySelector('[data-evaluation-weight]');

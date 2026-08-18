@@ -130,6 +130,14 @@ function pathway_natural_compare(string $left, string $right): int
     return $comparison!==0?$comparison:strnatcasecmp($left,$right);
 }
 
+function student_detail_neighbors(PDO $pdo, int $courseId, int $enrollmentId): array
+{
+    $query=$pdo->prepare("SELECT e.id FROM enrollments e JOIN users u ON u.id=e.student_id WHERE e.course_id=? AND e.status='active' AND u.account_status='active' ORDER BY u.name,e.id");
+    $query->execute([$courseId]);$ids=array_map('intval',$query->fetchAll(PDO::FETCH_COLUMN));$index=array_search($enrollmentId,$ids,true);
+    if($index===false)return ['previous'=>null,'next'=>null];
+    return ['previous'=>$index>0?$ids[$index-1]:null,'next'=>$index<count($ids)-1?$ids[$index+1]:null];
+}
+
 function normalize_reward_points(mixed $value, int $fallback = 1): int
 {
     $fallback=max(-100,min(100,$fallback));if($fallback===0)$fallback=1;

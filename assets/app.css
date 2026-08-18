@@ -237,6 +237,7 @@ button,a,summary{touch-action:manipulation}
 .waiting-count{display:grid;width:1.8rem;height:1.8rem;place-items:center;border-radius:.55rem;background:#eeeef3}
 .waiting-count.has-waiting{background:#fff0d0;color:#8c5a08;font-weight:750}
 .student-profile{display:grid;grid-template-columns:auto minmax(12rem,1fr) auto;gap:1.1rem;align-items:center;padding:1.3rem;border:1px solid var(--line);border-radius:1.3rem;background:#fff}
+.student-detail-navigation{display:flex;min-height:2.75rem;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.student-detail-navigation .back{margin:0}.student-detail-pager{display:flex;align-items:center;justify-content:flex-end;gap:1.25rem;font-size:.82rem;font-weight:750}.student-detail-pager a{color:var(--purple);text-decoration:none}.student-detail-pager span[aria-disabled="true"]{color:var(--muted);opacity:.4}
 .student-profile-identity{min-width:0}
 .student-profile h1{margin-bottom:.15rem;font-size:2rem;overflow-wrap:anywhere}
 .student-profile p{margin:0}
@@ -391,6 +392,7 @@ button,a,summary{touch-action:manipulation}
 .add-panel form,.framework-panel details form{display:grid;gap:.5rem;padding:.4rem 0 .9rem}
 .framework-panel{height:max-content;margin-top:0;padding:1.1rem}
 .framework-panel h2:not(:first-child){margin-top:1.8rem}
+.framework-panel>h2{display:flex;align-items:center;justify-content:space-between;gap:.5rem}.framework-csv-actions{display:inline-flex;flex:0 0 auto;align-items:center;gap:0}.framework-csv-action{display:inline-flex;margin:0;padding:0!important}.framework-icon-button,.framework-edit-trigger{display:grid;width:1.8rem;height:1.8rem;place-items:center;padding:0;border:0;border-radius:.45rem;background:transparent;color:var(--purple);font-size:1rem;line-height:1;cursor:pointer}.framework-icon-button{width:1.55rem}.framework-icon-button:hover,.framework-icon-button:focus-visible,.framework-edit-trigger:hover,.framework-edit-trigger:focus-visible{background:var(--purple-soft);color:var(--purple)}.framework-csv-file{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.framework-edit-trigger{flex:0 0 auto;font-size:.82rem}
 .framework-item{display:flex;gap:.55rem;margin:.7rem 0}
 .framework-item-restricted{margin-inline:-.45rem;padding:.45rem;border-radius:.7rem;background:#f1f1f5}
 .framework-item > span{display:grid;min-width:2.1rem;height:2rem;place-items:center;border-radius:.55rem;background:var(--purple-soft);color:var(--purple);font-size:.72rem;font-weight:750}
@@ -513,6 +515,7 @@ h1{font-size:2.25rem}
 .course-tabs a{min-width:11rem}
 .pdf-preview-toolbar{grid-template-columns:auto 1fr}.pdf-preview-toolbar>div{min-width:0}.pdf-preview-toolbar h1{overflow:hidden;font-size:1rem;text-overflow:ellipsis;white-space:nowrap}.pdf-preview-toolbar>.pdf-preview-actions{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;width:100%}.pdf-preview-frame{height:calc(100dvh - 18rem);min-height:24rem;border-radius:.7rem}
 .student-profile{grid-template-columns:auto minmax(0,1fr)}
+.student-detail-navigation{gap:.4rem}.student-detail-navigation .back{font-size:.72rem}.student-detail-pager{gap:.55rem;font-size:.7rem}
 .student-profile-actions{grid-column:1 / -1;margin:0;flex-direction:column;align-items:stretch;justify-content:flex-start}
 .student-profile-actions > .btn{justify-content:center;white-space:normal}
 .student-profile-actions .student-score{width:100%;margin:0;flex-direction:row;align-items:center;justify-content:center;gap:.5rem}

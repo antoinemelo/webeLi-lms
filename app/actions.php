@@ -20,6 +20,25 @@ function send_json_download(array $document, string $filename): never
     echo json_encode($document,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);exit;
 }
 
+function uploaded_csv(string $field): string
+{
+    $file=$_FILES[$field]??null;
+    if(!is_array($file)||($file['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK)throw new TransferException('Sélectionnez un fichier CSV valide.');
+    if((int)($file['size']??0)>2*1024*1024)throw new TransferException('Le fichier CSV dépasse la limite de 2 Mo.');
+    $contents=file_get_contents((string)$file['tmp_name']);
+    if($contents===false)throw new TransferException('Le fichier CSV ne peut pas être lu.');
+    return $contents;
+}
+
+function send_csv_download(string $contents, string $filename): never
+{
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="'.preg_replace('/[^A-Za-z0-9._-]/','-',basename($filename)).'"');
+    header('Content-Length: '.strlen($contents));
+    header('Cache-Control: private, no-store');
+    echo $contents;exit;
+}
+
 function import_failure_message(Throwable $exception): string
 {
     if (!$exception instanceof TransferException) return t('Import impossible : le fichier entre en conflit avec les données existantes.');
@@ -880,6 +899,19 @@ function handle_action(string $action): never
         flash($courseId?'Annonce supprimée.':'Annonce introuvable.',$courseId?'success':'error');
         redirect('pathway',$courseId?['course'=>$courseId]:[]);
     }
+    if($action==='export_framework_csv'&&$user['role']==='teacher'){
+        $courseId=(int)($_POST['course_id']??0);$kind=(string)($_POST['kind']??'');$course=one('SELECT code FROM courses WHERE id=?',[$courseId]);
+        if(!$course||!teacher_can_access_course(db(),$courseId,(int)$user['id'])||!in_array($kind,['objectives','skills','rewards'],true)){flash(t('Export CSV impossible.'),'error');redirect('pathway');}
+        $contents=$kind==='objectives'?pathway_objectives_csv(db(),$courseId):($kind==='skills'?pathway_skills_csv(db(),$courseId):pathway_rewards_csv(db(),$courseId));
+        $prefix=['objectives'=>'objectifs','skills'=>'competences','rewards'=>'encouragements'][$kind];
+        send_csv_download($contents,$prefix.'-'.mb_strtolower((string)$course['code'],'UTF-8').'.csv');
+    }
+    if($action==='import_framework_csv'&&$user['role']==='teacher'){
+        $courseId=(int)($_POST['course_id']??0);$kind=(string)($_POST['kind']??'');
+        if(!teacher_can_access_course(db(),$courseId,(int)$user['id'])||!in_array($kind,['skills','rewards'],true)){flash(t('Import CSV impossible.'),'error');redirect('pathway');}
+        try{$contents=uploaded_csv('framework_csv');$count=$kind==='skills'?import_pathway_skills_csv(db(),$courseId,$contents):import_pathway_rewards_csv(db(),$courseId,$contents);flash(t(':count élément(s) importé(s) ou mis à jour.',['count'=>$count]));}catch(Throwable $exception){flash(import_failure_message($exception),'error');}
+        redirect('pathway',['course'=>$courseId]);
+    }
     if ($action === 'add_framework' && $user['role'] === 'teacher') {
         $courseId=(int)$_POST['course_id']; $kind='skill';
         if (teacher_can_access_course(db(),$courseId,(int)$user['id'])) {
@@ -887,6 +919,14 @@ function handle_action(string $action): never
             flash(t('Compétence ajoutée.'));
         }
         redirect('pathway',['course'=>$courseId]);
+    }
+    if($action==='update_skill'&&$user['role']==='teacher'){
+        $skillId=(int)($_POST['skill_id']??0);$skill=one('SELECT id,course_id FROM course_skills WHERE id=?',[$skillId]);
+        if(!$skill||!teacher_can_access_course(db(),(int)$skill['course_id'],(int)$user['id'])){flash(t('Compétence introuvable.'),'error');redirect('pathway');}
+        $code=mb_substr(mb_strtoupper(trim((string)($_POST['code']??'')),'UTF-8'),0,50);$title=mb_substr(trim((string)($_POST['title']??'')),0,200);$description=mb_substr(trim((string)($_POST['description']??'')),0,2000);
+        if($code===''||$title===''){flash(t('Le code et le titre de la compétence sont obligatoires.'),'error');redirect('pathway',['course'=>$skill['course_id']]);}
+        try{run('UPDATE course_skills SET code=?,title=?,description=? WHERE id=?',[$code,$title,$description,$skillId]);flash(t('Compétence mise à jour.'));}catch(PDOException){flash(t('Ce code de compétence existe déjà dans ce parcours.'),'error');}
+        redirect('pathway',['course'=>(int)$skill['course_id']]);
     }
     if ($action === 'remove_skill' && $user['role'] === 'teacher') {
         $skillId=(int)($_POST['skill_id']??0);$skill=one('SELECT id,course_id FROM course_skills WHERE id=?',[$skillId]);
@@ -902,6 +942,14 @@ function handle_action(string $action): never
             flash('Type d’encouragement ajouté.');
         }
         redirect('pathway',['course'=>$courseId]);
+    }
+    if($action==='update_reward_type'&&$user['role']==='teacher'){
+        $rewardTypeId=(int)($_POST['reward_type_id']??0);$rewardType=one('SELECT id,course_id FROM reward_types WHERE id=?',[$rewardTypeId]);
+        if(!$rewardType||!teacher_can_access_course(db(),(int)$rewardType['course_id'],(int)$user['id'])){flash(t('Type d’encouragement introuvable.'),'error');redirect('pathway');}
+        $name=mb_substr(trim((string)($_POST['name']??'')),0,160);$icon=mb_substr(trim((string)($_POST['icon']??'')),0,20)?:'✨';$points=normalize_reward_points($_POST['default_points']??1);
+        if($name===''){flash(t('Le nom de l’encouragement est obligatoire.'),'error');redirect('pathway',['course'=>$rewardType['course_id']]);}
+        try{run('UPDATE reward_types SET name=?,icon=?,default_points=? WHERE id=?',[$name,$icon,$points,$rewardTypeId]);flash(t('Encouragement mis à jour.'));}catch(PDOException){flash(t('Ce type d’encouragement existe déjà dans ce parcours.'),'error');}
+        redirect('pathway',['course'=>(int)$rewardType['course_id']]);
     }
     if ($action === 'remove_reward_type' && $user['role'] === 'teacher') {
         $rewardTypeId=(int)($_POST['reward_type_id']??0);$rewardType=one('SELECT id,course_id FROM reward_types WHERE id=?',[$rewardTypeId]);

@@ -15,6 +15,7 @@ require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/PathwayService.php';
 require_once __DIR__ . '/CourseEnrollment.php';
 require_once __DIR__ . '/TransferService.php';
+require_once __DIR__ . '/FrameworkCsv.php';
 require_once __DIR__ . '/AdminService.php';
 require_once __DIR__ . '/UpdateService.php';
 require_once __DIR__ . '/PdfExport.php';
