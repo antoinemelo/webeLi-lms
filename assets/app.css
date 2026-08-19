@@ -400,7 +400,7 @@ button,a,summary{touch-action:manipulation}
 .framework-item-content{min-width:0;flex:1}
 .framework-item b{font-size:.8rem}
 .framework-item small{font-size:.68rem}
-.framework-remove{margin-left:auto}.framework-remove button,.reward-type form button{display:grid;width:1.6rem;height:1.6rem;place-items:center;padding:0;border:0;border-radius:.4rem;background:transparent;color:var(--red);font-size:1rem;font-weight:850}.framework-remove button:hover,.reward-type form button:hover{background:#ffe8ed}
+.framework-remove{margin-left:auto}.framework-item>.framework-edit-trigger{margin-right:-.52rem}.reward-type>.framework-edit-trigger{margin-right:-.27rem}.framework-remove button,.reward-type form button{display:grid;width:1.6rem;height:1.6rem;place-items:center;padding:0;border:0;border-radius:.4rem;background:transparent;color:var(--red);font-size:1rem;font-weight:850}.framework-remove button:hover,.reward-type form button:hover{background:#ffe8ed}
 .reward-config{display:flex;flex-wrap:wrap;gap:.3rem}
 .reward-config>.reward-type{display:flex;align-items:center;gap:.3rem;padding:.3rem .35rem .3rem .5rem;border-radius:.5rem;background:#fff4d4;font-size:.72rem}.reward-type form{display:flex;margin:0}
 .course-collaborators{display:flex;align-items:stretch;flex-direction:column;gap:.9rem;margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--line);border-radius:1rem;background:#fff}
