@@ -12,6 +12,7 @@ public/index.php
   ├── app/TransferService.php     documents JSON et imports transactionnels
   ├── app/AdminService.php        suppressions globales superadmin
   ├── app/PdfExport.php           HTML imprimable et rendu PDF via mPDF
+  ├── app/DocumentExport.php      exports Markdown, DOCX et LaTeX des étapes
   ├── app/actions.php         commandes POST et notifications
   └── app/views.php           requêtes de lecture et rendu HTML
 ```
@@ -30,6 +31,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 | `app/TransferService.php` | import/export JSON versionné des pages, parcours et élèves |
 | `app/AdminService.php` | suppressions globales réservées au superadmin |
 | `app/PdfExport.php` | tableaux et fiches détaillées rendus en PDF par mPDF |
+| `app/DocumentExport.php` | document Markdown détaillé, paquet DOCX OOXML portable sans dépendance ZIP et source LaTeX compilable |
 | `./vendor/` ou `../vendor/` | moteur mPDF et dépendances PHP externes, hors des instances et publications Git par défaut |
 | `app/bootstrap.php` | constantes, accès SQL et helpers de présentation |
 | `app/actions.php` | validations, édition, parcours, référentiels et rewards |

@@ -92,6 +92,23 @@ if($view==='pdf-download'){
         exit;
     }
 }
+if($view==='document-download'){
+    $courseId=0;
+    try{
+        if($user['role']!=='teacher')throw new TransferException('Document introuvable.');
+        $requestedFormat=(string)($_GET['format']??'markdown');$format=in_array($requestedFormat,['markdown','docx','latex'],true)?$requestedFormat:'markdown';$id=(int)($_GET['id']??0);
+        $document=pathway_page_document_export(db(),$id,(int)$user['id']);
+        $context=one('SELECT course_id FROM pathway_items WHERE id=?',[$id]);$courseId=(int)($context['course_id']??0);
+        $base='etape-'.mb_strtolower($document['title'],'UTF-8');
+        if($format==='docx')send_docx_download($document['markdown'],$document['title'],$base.'.docx');
+        if($format==='latex')send_latex_download($document['markdown'],$document['title'],$base.'.tex');
+        send_markdown_download($document['markdown'],$base.'.md');
+    }catch(Throwable $exception){
+        http_response_code(404);header('Content-Type: text/html; charset=UTF-8');header('Cache-Control: private, no-store');
+        echo '<!doctype html><html lang="'.e(current_language()).'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.e(t('Export indisponible')).'</title><body style="font:16px system-ui;max-width:42rem;margin:12vh auto;padding:1.5rem"><h1>'.e(t('Export indisponible')).'</h1><p>'.e(import_failure_message($exception)).'</p><p><a href="'.e(route('pathway',$courseId?['course'=>$courseId]:[])).'">'.e(t('Retour au parcours')).'</a></p></body></html>';
+        exit;
+    }
+}
 $allowed = $user['role'] === 'teacher'
     ? ['teacher','student-detail','students','library','page-edit','pathway','pdf-preview','outbox','profile']
     : ['student','learn','competencies','announcements','rewards','profile','join'];

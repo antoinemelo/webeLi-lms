@@ -385,6 +385,11 @@ button,a,summary{touch-action:manipulation}
 .row-actions form{display:flex}
 .row-actions button,.row-actions > a{display:grid;min-width:2.2rem;height:2.2rem;place-items:center;padding:0 .5rem;border:1px solid var(--line);background:#fff}
 .row-actions > a{border-radius:.55rem;color:var(--purple);font-size:.74rem;font-weight:750}
+.row-actions .pathway-row-action{display:grid;width:2.2rem;min-width:2.2rem;height:2.2rem;margin:0;padding:0;place-items:center;border:1px solid var(--line);border-radius:.55rem;appearance:none;background:#fff;color:var(--purple);font:inherit;font-size:.74rem;font-weight:750;line-height:1;text-decoration:none}
+.row-actions .pathway-row-action:hover,.row-actions .pathway-row-action:focus-visible{border-color:#cfc9f5;background:var(--purple-soft);color:var(--purple)}
+.row-actions .pathway-export-menu{display:flex}
+.row-actions .pathway-export-menu .dropdown-menu{min-width:11rem}
+.row-actions .pathway-export-menu .dropdown-item{width:100%;height:auto;min-width:0}
 .row-actions .remove-item{border-radius:.55rem;color:var(--red);font-size:1.1rem}
 .item-settings{padding:1rem 1.5rem;border-bottom:1px solid var(--line);background:#faf9ff}
 .pathway-assessment-options{display:flex;flex-wrap:wrap;gap:0 1.5rem}.pathway-assessment-options .check.plain{margin:.5rem 0}

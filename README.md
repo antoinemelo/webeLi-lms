@@ -105,7 +105,7 @@ python3 scripts/apr.py \
 - ordre, consigne, échéance et statut d’évaluation propres à chaque cours ;
 - retrait de pages, archivage et duplication de parcours avec échéances conservées ou remises à zéro ;
 - superadministration globale des utilisateurs, pages et parcours ;
-- exports PDF du tableau d’un parcours et du détail de chaque étape ;
+- exports PDF du tableau d’un parcours, ainsi que PDF, Markdown, DOCX et LaTeX du détail de chaque étape ;
 - objectifs et compétences définis au niveau du cours, puis liés aux étapes ;
 - auto-positionnement élève 0–3 et confirmation enseignante 0–3 ;
 - vues de progression par étape, compétence et objectif ;

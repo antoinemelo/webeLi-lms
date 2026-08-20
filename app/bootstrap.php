@@ -19,6 +19,7 @@ require_once __DIR__ . '/FrameworkCsv.php';
 require_once __DIR__ . '/AdminService.php';
 require_once __DIR__ . '/UpdateService.php';
 require_once __DIR__ . '/PdfExport.php';
+require_once __DIR__ . '/DocumentExport.php';
 
 session_start();
 
