@@ -227,13 +227,15 @@ button,a,summary{touch-action:manipulation}
 .metrics .attention{border-color:#ecd99f;background:#fff8e5}
 .metrics .attention.complete{border-color:#b8dece;background:#e8f7f1}
 .student-table{overflow:hidden;border:1px solid var(--line);border-radius:1.2rem;background:#fff}
-.table-head,.student-row{display:grid;grid-template-columns:1.5fr 1fr .65fr .65fr 1.25rem;gap:1.25rem;align-items:center;padding:.8rem 1.1rem}
+.table-head,.student-row{display:grid;grid-template-columns:1.4fr .9fr 1.05fr .6fr .7fr 1.25rem;gap:1rem;align-items:center;padding:.8rem 1.1rem}
 .table-head{background:#fafafd;color:var(--muted);font-size:.72rem}
+.student-sort{display:inline-flex;align-items:center;gap:.35rem;border:0;background:transparent;color:inherit;font:inherit;font-weight:750;text-decoration:none;white-space:nowrap}.student-sort:hover,.student-sort:focus-visible,.student-sort.active{color:var(--purple)}.student-sort i{font-size:.68rem}
 .student-row{min-height:4.2rem;border-top:1px solid var(--line)}
 .student-row:hover{background:#fafafd}
 .student-name{display:flex;align-items:center;gap:.65rem}
 .row-progress{display:grid;grid-template-columns:1fr 1.9rem;gap:.5rem;align-items:center}
 .row-progress i{height:.38rem}
+.student-last-activity{display:flex;align-items:center;gap:.35rem;color:var(--muted);font-size:.74rem;white-space:nowrap}.student-last-activity i{color:var(--purple)}
 .waiting-count{display:grid;width:1.8rem;height:1.8rem;place-items:center;border-radius:.55rem;background:#eeeef3}
 .waiting-count.has-waiting{background:#fff0d0;color:#8c5a08;font-weight:750}
 .student-profile{display:grid;grid-template-columns:auto minmax(12rem,1fr) auto;gap:1.1rem;align-items:center;padding:1.3rem;border:1px solid var(--line);border-radius:1.3rem;background:#fff}
@@ -466,10 +468,13 @@ button,a,summary{touch-action:manipulation}
 .library-tools{grid-template-columns:1fr 1fr}.library-search{grid-column:1/-1}.archived-courses article{grid-template-columns:1fr auto}.archived-courses .course-copy{grid-column:1/-1;border-top:1px solid var(--line);border-left:0;padding-top:.8rem}.course-identity form{grid-template-columns:1fr}
 .detail-grid aside,.framework-panel,.student-admin-side{margin-top:0}
 .reward-types,.page-grid{grid-template-columns:repeat(2,1fr)}
-.table-head{display:none}
-.student-row{grid-template-columns:1fr auto auto;gap:.65rem}
+.table-head{display:flex;flex-wrap:wrap;gap:.35rem;padding:.55rem}.table-head>span{display:flex}.table-head>span:last-child{display:none}.student-sort{padding:.35rem .55rem;border:1px solid var(--line);border-radius:.55rem;background:#fff}.student-sort.active{border-color:#cfc9f5;background:var(--purple-soft)}
+.student-row{grid-template-columns:minmax(0,1fr) auto auto;gap:.65rem}
+.student-row .student-name{grid-column:1 / 3;grid-row:1}
 .student-row .row-progress{grid-column:1 / -1;grid-row:2}
-.student-row > span:nth-child(4){grid-column:2}
+.student-row .student-last-activity{grid-column:1;grid-row:3}
+.student-row .waiting-count{grid-column:2;grid-row:3}
+.student-row .student-points{grid-column:3;grid-row:3}
 .student-row > strong{grid-row:1;grid-column:3}
 .editor-header{flex-direction:column}
 .editor-actions{position:sticky;z-index:10;bottom:5rem;padding:.5rem;border-radius:.9rem;background:rgb(246 246 250 / 92%);backdrop-filter:blur(12px)}

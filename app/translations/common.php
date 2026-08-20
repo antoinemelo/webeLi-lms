@@ -115,6 +115,7 @@ return [
     'Appuyez sur un élève pour ouvrir son suivi.'=>['en'=>'Select a student to open their progress.','de'=>'Wählen Sie einen Lernenden, um den Fortschritt zu öffnen.','it'=>'Seleziona uno studente per aprire il monitoraggio.','es'=>'Selecciona un estudiante para abrir su seguimiento.'],
     'Organiser le parcours'=>['en'=>'Organise learning path','de'=>'Lernpfad organisieren','it'=>'Organizza il percorso','es'=>'Organizar el itinerario'],
     'Progression'=>['en'=>'Progress','de'=>'Fortschritt','it'=>'Progresso','es'=>'Progreso'],
+    'Trier par :column'=>['en'=>'Sort by :column','de'=>'Nach :column sortieren','it'=>'Ordina per :column','es'=>'Ordenar por :column'],
     'Gestion des accès'=>['en'=>'Access management','de'=>'Zugriffsverwaltung','it'=>'Gestione accessi','es'=>'Gestión de accesos'],
     'Élèves & inscriptions'=>['en'=>'Students & enrolments','de'=>'Lernende & Einschreibungen','it'=>'Studenti e iscrizioni','es'=>'Estudiantes e inscripciones'],
     'Actions des élèves'=>['en'=>'Student actions','de'=>'Aktionen für Lernende','it'=>'Azioni studenti','es'=>'Acciones de estudiantes'],
