@@ -615,7 +615,8 @@ function handle_action(string $action): never
     if($action==='submit_qcm'&&$user['role']==='student'){
         $itemId=(int)($_POST['item_id']??0);$blockId=(int)($_POST['block_id']??0);$key=trim((string)($_POST['qcm_key']??''));
         $result=Qcm::submit(db(),(int)$user['id'],$itemId,$blockId,$key,(array)($_POST['answers']??[]));
-        if($result['status']==='saved')flash(t('QCM enregistré : :score %.',['score'=>number_format((float)$result['score'],0,',','')]));
+        if($result['status']==='saved')flash(t(!empty($result['is_evaluation'])?'QCM terminé : :score %.':'QCM enregistré : :score %.',['score'=>number_format((float)$result['score'],0,',','')]));
+        elseif($result['status']==='already_submitted')flash(t('Ce QCM d’évaluation a déjà été terminé.'),'error');
         elseif($result['status']==='changed')flash(t('Le QCM a changé. Rechargez la page et réessayez.'),'error');
         else flash(t('Ce QCM n’est pas disponible.'),'error');
         header('Location: '.route('learn',['item'=>$itemId]).'#qcm-'.rawurlencode($key));exit;

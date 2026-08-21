@@ -75,7 +75,7 @@ final class Markdown
             }
             if (preg_match('/^>\s?(.*)$/', trim($line), $m)) { $flushParagraph(); $flushList(); $quote[] = $m[1]; continue; }
             $listLine=str_replace("\t",'    ',$line);
-            if (preg_match('/^( *)([-*+]|\d+[.)])\s+(.+)$/', $listLine, $m)) {
+            if (preg_match('/^( *)([-+]|\d+[.)])\s+(.+)$/', $listLine, $m)) {
                 $flushParagraph(); $flushQuote();
                 $list[]=[
                     'indent'=>strlen($m[1]),

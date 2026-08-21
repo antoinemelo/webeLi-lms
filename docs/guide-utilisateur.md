@@ -147,7 +147,7 @@ La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilis�
 - zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
 - une suite ordonnée de blocs Markdown, image, fichier ou iframe.
 
-Les titres Markdown sont disponibles du niveau `#` au niveau `######`. Une ligne contenant `---` produit un séparateur horizontal. Pour commencer la suite du contenu sur une nouvelle page dans l’export PDF, placer cette instruction sur sa propre ligne :
+Les titres Markdown sont disponibles du niveau `#` au niveau `######`. Une liste à puces peut commencer par `- ` ; contrairement à celle-ci, une ligne commençant par `* ` conserve son étoile comme du texte ordinaire. Une ligne contenant `---` produit un séparateur horizontal. Pour commencer la suite du contenu sur une nouvelle page dans l’export PDF, placer cette instruction sur sa propre ligne :
 
 ```html
 <div style="page-break-after: always;"></div>
@@ -176,7 +176,9 @@ Un QCM formatif s’insère directement dans un bloc Markdown :
 :::
 ```
 
-Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]` utilisent des cases à cocher. Chaque question vaut le même poids et n’est réussie que si toutes ses réponses justes sont cochées sans réponse fausse. La catégorie **QCM** est ajoutée automatiquement à la page. L’élève voit son résultat et peut recommencer. L’enseignant voit uniquement le pourcentage de chaque élève dans son profil et la moyenne du groupe par étape dans le tableau de bord, jamais les réponses choisies.
+Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]` utilisent des cases à cocher. Les réponses sont présentées dans un ordre aléatoire à chaque affichage. Chaque question vaut le même poids et n’est réussie que si toutes ses réponses justes sont cochées sans réponse fausse. La catégorie **QCM** est ajoutée automatiquement à la page.
+
+Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. Si la case **Cette étape est une évaluation** est cochée, le bouton devient **Terminer le QCM** et la remise est définitive : le score reste visible par l’élève et apparaît dans le profil de l’élève côté enseignant. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, mais jamais les réponses choisies.
 
 La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
 

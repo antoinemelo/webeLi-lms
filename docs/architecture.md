@@ -58,7 +58,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 - `pages` : métadonnées, référence stable d’échange et propriétaire enseignant immuable ;
 - `page_blocks` : blocs ordonnés ;
 - `tags`, `page_tags` : catégories réutilisables.
-- `qcm_attempts` : dernier score agrégé d’un QCM Markdown, sans conservation des réponses choisies.
+- `qcm_attempts` : dernier score agrégé d’un QCM Markdown, sans conservation des réponses choisies ; une étape évaluative verrouille chaque QCM après sa première remise.
 
 ### Parcours et référentiel
 

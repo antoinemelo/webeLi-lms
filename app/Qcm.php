@@ -68,40 +68,41 @@ final class Qcm
             if(empty($section['valid'])){$html[]='<section class="qcm-static"><b>'.e(t('QCM incomplet')).'</b></section>';continue;}
             $quiz='<section class="qcm-static"><span>'.e(t('QCM')).'</span>';
             foreach($section['questions'] as $question){
-                $quiz.='<div><h3>'.e($question['title']).'</h3><ul>';
-                foreach($question['answers'] as $answer)$quiz.='<li>□ '.e($answer['text']).'</li>';
-                $quiz.='</ul></div>';
+                $quiz.='<div><h3>'.e($question['title']).'</h3><div class="qcm-static-answers">';
+                foreach($question['answers'] as $answer)$quiz.='<div class="qcm-static-answer">□ '.e($answer['text']).'</div>';
+                $quiz.='</div></div>';
             }
             $html[]=$quiz.'</section>';
         }
         return implode("\n",$html);
     }
 
-    public static function renderPreview(string $source): string
+    public static function renderPreview(string $source,bool $isEvaluation=false): string
     {
         $html=[];
         foreach(self::sections($source) as $section){
             if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
             if(empty($section['valid'])){$html[]='<section class="qcm-card qcm-invalid"><b>'.e(t('QCM incomplet')).'</b><p>'.e(t('Ce questionnaire doit être corrigé par l’équipe enseignante.')).'</p></section>';continue;}
             $quiz='<section class="qcm-card qcm-preview"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t('QCM')).'</span><small>'.e(t('Interaction désactivée dans l’aperçu')).'</small></header><form>';
+            if($isEvaluation)$quiz.='<p class="qcm-evaluation-notice"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> '.e(t('Cette évaluation ne peut être envoyée qu’une seule fois.')).'</p>';
             foreach($section['questions'] as $questionIndex=>$question){
                 $quiz.='<fieldset class="qcm-question"><legend><span>'.($questionIndex+1).'</span>'.e($question['title']).'</legend><div class="qcm-options">';
                 $type=$question['multiple']?'checkbox':'radio';
-                foreach($question['answers'] as $answer)$quiz.='<label><input type="'.$type.'" name="preview-q'.$questionIndex.'[]" value="'.$answer['index'].'"><span>'.e($answer['text']).'</span></label>';
+                foreach(self::shuffledAnswers($question['answers']) as $answer)$quiz.='<label><input type="'.$type.'" name="preview-q'.$questionIndex.'[]" value="'.$answer['index'].'"><span>'.e($answer['text']).'</span></label>';
                 $quiz.='</div></fieldset>';
             }
-            $html[]=$quiz.'<button class="button primary" type="button" disabled>'.e(t('Vérifier mes réponses')).'</button></form></section>';
+            $html[]=$quiz.'<button class="button primary" type="button" disabled>'.e(t($isEvaluation?'Terminer le QCM':'Vérifier mes réponses')).'</button></form></section>';
         }
         return implode("\n",$html);
     }
 
     /**
      * @param array<string,mixed> $submitted
-     * @return array{status:string,score?:float,correct?:int,total?:int,course_id?:int}
+     * @return array{status:string,score?:float,correct?:int,total?:int,course_id?:int,is_evaluation?:bool}
      */
     public static function submit(PDO $pdo,int $studentId,int $itemId,int $blockId,string $key,array $submitted): array
     {
-        $access=$pdo->prepare("SELECT pi.id,pi.page_id,pi.course_id FROM pathway_items pi
+        $access=$pdo->prepare("SELECT pi.id,pi.page_id,pi.course_id,pi.is_evaluation FROM pathway_items pi
             JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
             WHERE pi.id=? AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
                 SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
@@ -115,13 +116,16 @@ final class Qcm
             $candidate=self::key($blockId,(int)$section['index'],$section['source']);
             if(!hash_equals($candidate,$key))continue;
             $result=self::score($section['questions'],$submitted);
+            $isEvaluation=(bool)$item['is_evaluation'];
+            $conflict=$isEvaluation?'DO NOTHING':"DO UPDATE SET
+                  score_percent=excluded.score_percent,correct_questions=excluded.correct_questions,total_questions=excluded.total_questions,
+                  attempt_count=qcm_attempts.attempt_count+1,answered_at=CURRENT_TIMESTAMP";
             $save=$pdo->prepare("INSERT INTO qcm_attempts(student_id,pathway_item_id,page_block_id,qcm_key,score_percent,correct_questions,total_questions,attempt_count,answered_at)
                 VALUES(?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-                ON CONFLICT(student_id,pathway_item_id,page_block_id,qcm_key) DO UPDATE SET
-                  score_percent=excluded.score_percent,correct_questions=excluded.correct_questions,total_questions=excluded.total_questions,
-                  attempt_count=qcm_attempts.attempt_count+1,answered_at=CURRENT_TIMESTAMP");
+                ON CONFLICT(student_id,pathway_item_id,page_block_id,qcm_key) $conflict");
             $save->execute([$studentId,$itemId,$blockId,$key,$result['score'],$result['correct'],$result['total'],1]);
-            return ['status'=>'saved','score'=>$result['score'],'correct'=>$result['correct'],'total'=>$result['total'],'course_id'=>(int)$item['course_id']];
+            if($isEvaluation&&$save->rowCount()!==1)return ['status'=>'already_submitted','course_id'=>(int)$item['course_id']];
+            return ['status'=>'saved','score'=>$result['score'],'correct'=>$result['correct'],'total'=>$result['total'],'course_id'=>(int)$item['course_id'],'is_evaluation'=>$isEvaluation];
         }
         return ['status'=>'changed'];
     }
@@ -234,19 +238,30 @@ final class Qcm
 
     private static function renderQuizForm(PDO $pdo,array $questions,string $key,int $blockId,int $itemId,int $studentId): string
     {
+        $evaluationQuery=$pdo->prepare('SELECT is_evaluation FROM pathway_items WHERE id=?');
+        $evaluationQuery->execute([$itemId]);$isEvaluation=(bool)$evaluationQuery->fetchColumn();
         $query=$pdo->prepare('SELECT score_percent,correct_questions,total_questions,attempt_count,answered_at FROM qcm_attempts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?');
         $query->execute([$studentId,$itemId,$blockId,$key]);$attempt=$query->fetch(PDO::FETCH_ASSOC);
         $html='<section class="qcm-card" id="qcm-'.e($key).'"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t('QCM')).'</span>';
         if($attempt)$html.='<div class="qcm-result"><strong>'.e(t('Résultat : :score %',['score'=>self::formatScore((float)$attempt['score_percent'])])).'</strong><small>'.e(t(':correct question(s) juste(s) sur :total',['correct'=>$attempt['correct_questions'],'total'=>$attempt['total_questions']])).'</small></div>';
-        $html.='</header><form method="post">'.csrf_field().'<input type="hidden" name="action" value="submit_qcm"><input type="hidden" name="item_id" value="'.$itemId.'"><input type="hidden" name="block_id" value="'.$blockId.'"><input type="hidden" name="qcm_key" value="'.e($key).'">';
+        $html.='</header>';
+        if($isEvaluation&&$attempt)return $html.'<div class="qcm-evaluation-complete"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><p><b>'.e(t('QCM terminé')).'</b><span>'.e(t('Vos réponses ont été enregistrées définitivement.')).'</span></p></div></section>';
+        $html.='<form method="post">'.csrf_field().'<input type="hidden" name="action" value="submit_qcm"><input type="hidden" name="item_id" value="'.$itemId.'"><input type="hidden" name="block_id" value="'.$blockId.'"><input type="hidden" name="qcm_key" value="'.e($key).'">';
+        if($isEvaluation)$html.='<p class="qcm-evaluation-notice"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> '.e(t('Cette évaluation ne peut être envoyée qu’une seule fois.')).'</p>';
         foreach($questions as $questionIndex=>$question){
             $html.='<fieldset class="qcm-question"><legend><span>'.($questionIndex+1).'</span>'.e($question['title']).'</legend><div class="qcm-options">';
             $type=$question['multiple']?'checkbox':'radio';
-            foreach($question['answers'] as $answer)$html.='<label><input type="'.$type.'" name="answers[q'.$questionIndex.'][]" value="'.$answer['index'].'"><span>'.e($answer['text']).'</span></label>';
+            foreach(self::shuffledAnswers($question['answers']) as $answer)$html.='<label><input type="'.$type.'" name="answers[q'.$questionIndex.'][]" value="'.$answer['index'].'"><span>'.e($answer['text']).'</span></label>';
             $html.='</div></fieldset>';
         }
-        $button=$attempt?t('Réessayer'):t('Vérifier mes réponses');
+        $button=$isEvaluation?t('Terminer le QCM'):($attempt?t('Réessayer'):t('Vérifier mes réponses'));
         return $html.'<button class="button primary" type="submit">'.e($button).'</button></form></section>';
+    }
+
+    private static function shuffledAnswers(array $answers): array
+    {
+        shuffle($answers);
+        return $answers;
     }
 
     public static function formatScore(float $score): string
