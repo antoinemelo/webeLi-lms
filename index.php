@@ -110,7 +110,7 @@ if($view==='document-download'){
     }
 }
 $allowed = $user['role'] === 'teacher'
-    ? ['teacher','student-detail','students','library','page-edit','pathway','pdf-preview','outbox','profile']
+    ? ['teacher','student-detail','students','library','page-edit','pathway','teacher-preview','teacher-preview-page','pdf-preview','outbox','profile']
     : ['student','learn','competencies','announcements','rewards','profile','join'];
 if ($user['role'] === 'teacher' && (int)($user['is_superadmin'] ?? 0) === 1) $allowed[] = 'admin';
 if (!in_array($view, $allowed, true)) {

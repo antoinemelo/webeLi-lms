@@ -77,6 +77,24 @@ final class Qcm
         return implode("\n",$html);
     }
 
+    public static function renderPreview(string $source): string
+    {
+        $html=[];
+        foreach(self::sections($source) as $section){
+            if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
+            if(empty($section['valid'])){$html[]='<section class="qcm-card qcm-invalid"><b>'.e(t('QCM incomplet')).'</b><p>'.e(t('Ce questionnaire doit être corrigé par l’équipe enseignante.')).'</p></section>';continue;}
+            $quiz='<section class="qcm-card qcm-preview"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t('QCM')).'</span><small>'.e(t('Interaction désactivée dans l’aperçu')).'</small></header><form>';
+            foreach($section['questions'] as $questionIndex=>$question){
+                $quiz.='<fieldset class="qcm-question"><legend><span>'.($questionIndex+1).'</span>'.e($question['title']).'</legend><div class="qcm-options">';
+                $type=$question['multiple']?'checkbox':'radio';
+                foreach($question['answers'] as $answer)$quiz.='<label><input type="'.$type.'" name="preview-q'.$questionIndex.'[]" value="'.$answer['index'].'"><span>'.e($answer['text']).'</span></label>';
+                $quiz.='</div></fieldset>';
+            }
+            $html[]=$quiz.'<button class="button primary" type="button" disabled>'.e(t('Vérifier mes réponses')).'</button></form></section>';
+        }
+        return implode("\n",$html);
+    }
+
     /**
      * @param array<string,mixed> $submitted
      * @return array{status:string,score?:float,correct?:int,total?:int,course_id?:int}

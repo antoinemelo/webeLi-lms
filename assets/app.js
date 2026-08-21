@@ -453,6 +453,14 @@ if (sessionGuardEnabled) {
   const isSensitiveAction = (element) => element?.matches?.(
     '[data-bs-toggle="modal"],a[href*="view=page-edit"],a[href*="&edit="],a[href*="?edit="]',
   );
+  const openApprovedModal = (action) => {
+    const selector = action.dataset.bsTarget || action.getAttribute('href');
+    if (!selector?.startsWith('#')) return false;
+    const modal = document.querySelector(selector);
+    if (!modal || !window.bootstrap?.Modal) return false;
+    window.bootstrap.Modal.getOrCreateInstance(modal).show(action);
+    return true;
+  };
 
   recheck.addEventListener('click', async () => {
     recheck.disabled = true;
@@ -479,6 +487,7 @@ if (sessionGuardEnabled) {
     event.preventDefault();
     event.stopImmediatePropagation();
     if (await checkSession(true)) {
+      if (action.matches('[data-bs-toggle="modal"]') && openApprovedModal(action)) return;
       approvedActions.add(action);
       action.click();
     }

@@ -95,6 +95,7 @@ python3 scripts/apr.py \
 - import/export JSON des pages, parcours et élèves ;
 - blocs Markdown, image, fichier et iframe, avec import local ;
 - QCM formatifs intégrés au Markdown, avec choix simple ou multiple et score agrégé ;
+- aperçu élève non destructif d’un parcours et de ses pages pour l’équipe enseignante, incluant les contenus restreints ou masqués avec leur code couleur ;
 - catégories par tags ;
 - connexion enseignante protégée et codes personnels élèves ;
 - inscription publique des élèves et enseignants, avec suffixe numérique en cas d’identifiant déjà utilisé ;

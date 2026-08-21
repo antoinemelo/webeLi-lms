@@ -124,10 +124,12 @@ Le paramètre `view` sélectionne une vue. Les vues autorisées dépendent du r�
 | `competencies` | `library` |
 | `rewards` | `page-edit` |
 |  | `pathway` |
+|  | `teacher-preview` |
+|  | `teacher-preview-page` |
 |  | `outbox` |
 |  | `profile` |
 
-Une vue non autorisée ramène vers l’accueil du rôle. Les commandes POST possèdent leurs propres contrôles et ne reposent pas uniquement sur la navigation.
+Une vue non autorisée ramène vers l’accueil du rôle. `teacher-preview` et `teacher-preview-page` reprennent la présentation élève sans créer de progression ni de tentative QCM ; elles restent strictement réservées aux enseignants autorisés sur le parcours. Les commandes POST possèdent leurs propres contrôles et ne reposent pas uniquement sur la navigation.
 
 ## PWA et mobile
 
