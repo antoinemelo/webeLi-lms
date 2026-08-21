@@ -628,14 +628,27 @@ function handle_action(string $action): never
         $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,p.title AS page_title,c.title AS course_title,pr.student_validated_at
             FROM enrollments e JOIN users s ON s.id=e.student_id JOIN pathway_items pi ON pi.id=? AND pi.course_id=e.course_id
             JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=e.course_id LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE e.id=? AND e.status='active' AND s.account_status='active'
-            AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id)))", [$itemId,$enrollmentId]);
+            AND ((pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id))) OR pi.is_evaluation=1)", [$itemId,$enrollmentId]);
         if (!$context || !teacher_can_access_course(db(),(int)$context['course_id'],(int)$user['id'])) { flash('Validation impossible.', 'error'); redirect('teacher'); }
         $isEvaluation=(bool)$context['is_evaluation'];$selfEvaluation=(bool)$context['self_evaluation_enabled'];
-        if((!$isEvaluation&&!$selfEvaluation)||($selfEvaluation&&!$context['student_validated_at'])){flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
+        $evaluationReady=false;
+        if($isEvaluation){
+            $quizCompletion=Qcm::courseEvaluationCompletion(db(),(int)$context['course_id']);
+            $hasQuiz=isset($quizCompletion['expected'][$itemId]);
+            $evaluationReady=$hasQuiz
+                ?!empty($quizCompletion['completed'][(int)$context['student_id']][$itemId])
+                :(!$selfEvaluation||(bool)$context['student_validated_at']);
+        }
+        if((!$isEvaluation&&!$selfEvaluation)||(!$isEvaluation&&$selfEvaluation&&!$context['student_validated_at'])||($isEvaluation&&!$evaluationReady)){flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
         $level=null;$score=null;
         if($isEvaluation){
             $rawScore=str_replace(',','.',trim((string)($_POST['score']??'')));
-            if($rawScore===''||!is_numeric($rawScore)||(float)$rawScore<0||(float)$rawScore>10){flash('La note doit être comprise entre 0 et 10.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
+            if($rawScore===''){
+                run('UPDATE progress SET evaluation_score=NULL,teacher_level=NULL,teacher_note=?,teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE enrollment_id=? AND pathway_item_id=?',[trim((string)($_POST['note']??'')),$enrollmentId,$itemId]);
+                flash(t('Note retirée. L’évaluation n’est plus validée.'));
+                redirect('student-detail',['enrollment'=>$enrollmentId]);
+            }
+            if(!is_numeric($rawScore)||(float)$rawScore<0||(float)$rawScore>10){flash('La note doit être comprise entre 0 et 10.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
             $score=round((float)$rawScore,2);
         }else $level=max(0,min(3,(int)($_POST['level']??0)));
         $completedAt=!$selfEvaluation&&$isEvaluation?gmdate('Y-m-d H:i:s'):null;
@@ -805,6 +818,9 @@ function handle_action(string $action): never
         } elseif ($operation === 'reactivate') {
             run('UPDATE courses SET archived=0 WHERE id=?', [$courseId]);
             flash('Parcours réactivé.');
+        } elseif ($operation === 'delete') {
+            if(!delete_archived_course(db(),$courseId,(int)$user['id']))flash('Seul un parcours archivé dont vous êtes propriétaire peut être supprimé.','error');
+            else flash('Parcours supprimé définitivement. Ses pages restent dans la bibliothèque.');
         }
         redirect('pathway', $operation === 'reactivate' ? ['course'=>$courseId] : []);
     }
@@ -1050,9 +1066,8 @@ function handle_action(string $action): never
             run("UPDATE enrollments SET status='active',archived_at=NULL WHERE id=?",[$enrollmentId]);
             flash('La participation est réactivée.');
         } elseif($operation==='delete'){
-            run('DELETE FROM learning_visits WHERE student_id=? AND pathway_item_id IN (SELECT id FROM pathway_items WHERE course_id=?)',[$enrollment['student_id'],$enrollment['course_id']]);
-            run('DELETE FROM enrollments WHERE id=?',[$enrollmentId]);
-            flash('La participation et son historique dans ce cours ont été supprimés définitivement.');
+            if(purge_course_enrollment(db(),$enrollmentId,(int)$user['id']))flash('La participation et son historique dans ce cours ont été supprimés définitivement.');
+            else flash('La participation n’a pas pu être supprimée.','error');
         }
         redirect('students',student_directory_return_params((int)$enrollment['student_id']));
     }

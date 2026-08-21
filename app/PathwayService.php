@@ -138,6 +138,69 @@ function student_detail_neighbors(PDO $pdo, int $courseId, int $enrollmentId): a
     return ['previous'=>$index>0?$ids[$index-1]:null,'next'=>$index<count($ids)-1?$ids[$index+1]:null];
 }
 
+/** @return array{by_student:array<int,int>,by_enrollment:array<int,int>,students:int,total:int,quiz:array} */
+function course_pending_review_counts(PDO $pdo,int $courseId): array
+{
+    $quiz=Qcm::courseEvaluationCompletion($pdo,$courseId);
+    $query=$pdo->prepare("SELECT e.id AS enrollment_id,e.student_id,pi.id AS item_id,pi.is_evaluation,pi.self_evaluation_enabled,
+        pr.student_validated_at,pr.teacher_validated_at,
+        CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            SELECT 1 FROM pathway_item_students access WHERE access.pathway_item_id=pi.id AND access.student_id=e.student_id)) THEN 1 ELSE 0 END AS accessible
+        FROM enrollments e JOIN users u ON u.id=e.student_id AND u.account_status='active'
+        JOIN pathway_items pi ON pi.course_id=e.course_id
+        LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id
+        WHERE e.course_id=? AND e.status='active'");
+    $query->execute([$courseId]);$byStudent=[];$byEnrollment=[];
+    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
+        $studentId=(int)$row['student_id'];$enrollmentId=(int)$row['enrollment_id'];$itemId=(int)$row['item_id'];
+        $byStudent[$studentId]??=0;$byEnrollment[$enrollmentId]??=0;
+        if($row['teacher_validated_at']!==null)continue;
+        $selfPending=(bool)$row['self_evaluation_enabled']&&$row['student_validated_at']!==null&&((bool)$row['accessible']||(bool)$row['is_evaluation']);
+        $qcmPending=(bool)$row['is_evaluation']&&!empty($quiz['completed'][$studentId][$itemId]);
+        if(!$selfPending&&!$qcmPending)continue;
+        $byStudent[$studentId]++;$byEnrollment[$enrollmentId]++;
+    }
+    return ['by_student'=>$byStudent,'by_enrollment'=>$byEnrollment,'students'=>count(array_filter($byStudent)),'total'=>array_sum($byStudent),'quiz'=>$quiz];
+}
+
+function purge_course_enrollment(PDO $pdo,int $enrollmentId,int $teacherId): bool
+{
+    $query=$pdo->prepare('SELECT e.id,e.course_id,e.student_id FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.id=? AND c.teacher_id=?');
+    $query->execute([$enrollmentId,$teacherId]);$enrollment=$query->fetch(PDO::FETCH_ASSOC);
+    if(!$enrollment)return false;
+    $courseId=(int)$enrollment['course_id'];$studentId=(int)$enrollment['student_id'];
+    $ownsTransaction=!$pdo->inTransaction();
+    if($ownsTransaction)$pdo->beginTransaction();else $pdo->exec('SAVEPOINT purge_course_enrollment');
+    try{
+        $itemScope='SELECT id FROM pathway_items WHERE course_id=?';
+        foreach(['learning_visits','qcm_attempts','student_private_notes'] as $table)$pdo->prepare("DELETE FROM $table WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
+        $pdo->prepare("DELETE FROM pathway_item_students WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
+        $pdo->prepare('DELETE FROM announcement_reads WHERE student_id=? AND announcement_id IN (SELECT id FROM course_announcements WHERE course_id=?)')->execute([$studentId,$courseId]);
+        $pdo->prepare('DELETE FROM course_accesses WHERE user_id=? AND course_id=?')->execute([$studentId,$courseId]);
+        $delete=$pdo->prepare('DELETE FROM enrollments WHERE id=?');$delete->execute([$enrollmentId]);
+        if($ownsTransaction)$pdo->commit();else $pdo->exec('RELEASE SAVEPOINT purge_course_enrollment');
+        return $delete->rowCount()===1;
+    }catch(Throwable $exception){
+        if($ownsTransaction&&$pdo->inTransaction())$pdo->rollBack();
+        elseif(!$ownsTransaction){$pdo->exec('ROLLBACK TO SAVEPOINT purge_course_enrollment');$pdo->exec('RELEASE SAVEPOINT purge_course_enrollment');}
+        throw $exception;
+    }
+}
+
+function delete_archived_course(PDO $pdo,int $courseId,int $teacherId): bool
+{
+    $query=$pdo->prepare('SELECT id FROM courses WHERE id=? AND teacher_id=? AND archived=1');$query->execute([$courseId,$teacherId]);
+    if(!$query->fetchColumn())return false;
+    $pdo->beginTransaction();
+    try{
+        $pdo->prepare("DELETE FROM collaboration_comments WHERE subject_type='course' AND subject_id=?")->execute([$courseId]);
+        $pdo->prepare("DELETE FROM edit_locks WHERE entity_type='course_structure' AND entity_id=?")->execute([$courseId]);
+        $pdo->prepare("DELETE FROM edit_locks WHERE entity_type='pathway_item' AND entity_id IN (SELECT id FROM pathway_items WHERE course_id=?)")->execute([$courseId]);
+        $delete=$pdo->prepare('DELETE FROM courses WHERE id=?');$delete->execute([$courseId]);
+        $pdo->commit();return $delete->rowCount()===1;
+    }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
+}
+
 function normalize_reward_points(mixed $value, int $fallback = 1): int
 {
     $fallback=max(-100,min(100,$fallback));if($fallback===0)$fallback=1;
@@ -334,21 +397,22 @@ function save_student_private_note(PDO $pdo, int $studentId, int $itemId, string
     return true;
 }
 
-function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId): array
+function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $trackedOnly=false): array
 {
     $context=$pdo->prepare("SELECT e.student_id FROM enrollments e WHERE e.id=? AND e.course_id=? AND e.status='active'");
     $context->execute([$enrollmentId,$courseId]);
     $studentId=(int)($context->fetchColumn()?:0);
     if($studentId<1)return ['rows'=>[],'average'=>null,'graded'=>0,'total'=>0,'weight_total'=>0.0];
-    $query=$pdo->prepare("SELECT pi.id,pi.position,pi.deadline,pi.evaluation_weight,p.title,
-        pr.evaluation_score,pr.teacher_note,pr.teacher_validated_at
+    $tracking=$trackedOnly?' AND pi.framework_tracking_enabled=1':'';
+    $query=$pdo->prepare("SELECT pi.id,pi.position,pi.deadline,pi.evaluation_weight,pi.access_mode,pi.framework_tracking_enabled,p.title,
+        pr.evaluation_score,pr.teacher_note,pr.teacher_validated_at,
+        CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)) THEN 1 ELSE 0 END AS accessible
         FROM pathway_items pi JOIN pages p ON p.id=pi.page_id
         LEFT JOIN progress pr ON pr.pathway_item_id=pi.id AND pr.enrollment_id=?
-        WHERE pi.course_id=? AND pi.is_evaluation=1 AND (
-            pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
-                SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))
+        WHERE pi.course_id=? AND pi.is_evaluation=1$tracking
         ORDER BY pi.position,pi.id");
-    $query->execute([$enrollmentId,$courseId,$studentId]);
+    $query->execute([$studentId,$enrollmentId,$courseId]);
     $rows=$query->fetchAll(PDO::FETCH_ASSOC);
     $weighted=0.0;$weightTotal=0.0;$graded=0;
     foreach($rows as &$row){
@@ -362,6 +426,59 @@ function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId): array
     }
     unset($row);
     return ['rows'=>$rows,'average'=>$weightTotal>0?$weighted/$weightTotal:null,'graded'=>$graded,'total'=>count($rows),'weight_total'=>$weightTotal];
+}
+
+function framework_progress_in(PDO $pdo,int $courseId,int $enrollmentId,string $kind): array
+{
+    $studentQuery=$pdo->prepare('SELECT student_id FROM enrollments WHERE id=? AND course_id=?');$studentQuery->execute([$enrollmentId,$courseId]);
+    $studentId=(int)($studentQuery->fetchColumn()?:0);if($studentId<1)return [];
+    $access="CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+        SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)) THEN 1 ELSE 0 END AS accessible";
+    if($kind==='skill'){
+        $query=$pdo->prepare("SELECT f.id AS framework_id,f.title,f.code,f.description,f.position AS framework_position,
+            pi.id AS item_id,pi.position AS item_position,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,pi.framework_tracking_enabled,$access,
+            p.student_level,p.student_validated_at,p.teacher_level,p.evaluation_score,p.teacher_validated_at
+            FROM course_skills f LEFT JOIN item_skills l ON l.skill_id=f.id LEFT JOIN pathway_items pi ON pi.id=l.pathway_item_id
+            LEFT JOIN progress p ON p.pathway_item_id=pi.id AND p.enrollment_id=?
+            WHERE f.course_id=? ORDER BY f.position,f.id,pi.position,pi.id");
+        $query->execute([$studentId,$enrollmentId,$courseId]);$groupKey=static fn(array $row):string=>'skill:'.(int)$row['framework_id'];
+    }else{
+        $query=$pdo->prepare("SELECT po.id AS framework_id,po.title,'' AS code,po.description,pi.position AS framework_position,
+            pi.id AS item_id,pi.position AS item_position,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,pi.framework_tracking_enabled,$access,
+            p.student_level,p.student_validated_at,p.teacher_level,p.evaluation_score,p.teacher_validated_at
+            FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
+            LEFT JOIN progress p ON p.pathway_item_id=pi.id AND p.enrollment_id=?
+            WHERE pi.course_id=? ORDER BY pi.position,po.position,po.id");
+        $query->execute([$studentId,$enrollmentId,$courseId]);$groupKey=static fn(array $row):string=>'objective:'.mb_strtolower((string)$row['title'],'UTF-8');
+    }
+    $framework=[];
+    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
+        $key=$groupKey($row);
+        if(!isset($framework[$key]))$framework[$key]=[
+            'id'=>(int)$row['framework_id'],'title'=>(string)$row['title'],'code'=>(string)$row['code'],'description'=>(string)$row['description'],
+            'position'=>(int)$row['framework_position'],'items'=>[],'student_sum'=>0.0,'student_done'=>0,'teacher_sum'=>0.0,'teacher_weight'=>0.0,'teacher_done'=>0,
+        ];
+        if($row['item_id']===null||!(bool)$row['framework_tracking_enabled'])continue;
+        $isEvaluation=(bool)$row['is_evaluation'];$eligible=$isEvaluation||((bool)$row['self_evaluation_enabled']&&(bool)$row['accessible']);
+        if(!$eligible)continue;
+        $itemId=(int)$row['item_id'];$framework[$key]['items'][$itemId]=true;
+        if(!$isEvaluation&&$row['student_validated_at']!==null&&$row['student_level']!==null){$framework[$key]['student_sum']+=(float)$row['student_level'];$framework[$key]['student_done']++;}
+        if($isEvaluation&&$row['evaluation_score']!==null){
+            $weight=(float)$row['evaluation_weight'];$framework[$key]['teacher_sum']+=(float)$row['evaluation_score']/10*3*$weight;$framework[$key]['teacher_weight']+=$weight;$framework[$key]['teacher_done']++;
+        }elseif(!$isEvaluation&&$row['teacher_validated_at']!==null&&$row['teacher_level']!==null){
+            $framework[$key]['teacher_sum']+=(float)$row['teacher_level']*.5;$framework[$key]['teacher_weight']+=.5;$framework[$key]['teacher_done']++;
+        }
+    }
+    $result=[];
+    foreach($framework as $row){
+        $itemCount=count($row['items']);if($itemCount<1)continue;
+        $result[]=['id'=>$row['id'],'title'=>$row['title'],'code'=>$row['code'],'description'=>$row['description'],'item_count'=>$itemCount,
+            'student_level'=>$row['student_done']?$row['student_sum']/$row['student_done']:null,
+            'teacher_level'=>$row['teacher_weight']>0?$row['teacher_sum']/$row['teacher_weight']:null,
+            'student_done'=>$row['student_done'],'teacher_done'=>$row['teacher_done'],'position'=>$row['position']];
+    }
+    if($kind!=='skill')usort($result,static fn(array $left,array $right):int=>$left['position']<=>$right['position']?:strnatcasecmp((string)$left['title'],(string)$right['title']));
+    return $result;
 }
 
 function create_course_announcement(PDO $pdo, int $courseId, int $teacherId, string $title, string $body): ?int

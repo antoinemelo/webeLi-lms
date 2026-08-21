@@ -70,9 +70,9 @@ if($view==='pdf-download'){
         $type=($_GET['type']??'course')==='item'?'item':'course';$id=(int)($_GET['id']??0);
         if($user['role']==='student'){
             if($type!=='item'||!item_is_visible_to_student(db(),$id,(int)$user['id']))throw new TransferException('Étape introuvable.');
-            $context=one('SELECT p.title,pi.course_id FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
+            $context=one('SELECT p.title,pi.course_id,pi.is_evaluation FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.id=?',[$id]);
             $courseId=(int)($context['course_id']??0);
-            if(!$context)throw new TransferException('Étape introuvable.');
+            if(!$context||(bool)$context['is_evaluation'])throw new TransferException('Étape introuvable.');
             send_pdf_download(student_pathway_page_pdf_html(db(),$id,(int)$user['id']),'etape-'.mb_strtolower((string)$context['title'],'UTF-8').'.pdf');
         }
         if($user['role']!=='teacher')throw new TransferException('Document introuvable.');

@@ -46,12 +46,21 @@ Les dates `student_validated_at` et `teacher_validated_at` portent l’état mé
 
 ## Acquisition des compétences et objectifs
 
-Une compétence ou un objectif peut être rattaché à plusieurs étapes. Pour une inscription donnée, l’application calcule :
+Une compétence ou un objectif peut être rattaché à plusieurs étapes suivies. Pour une inscription donnée, l’application calcule :
 
 - la moyenne des niveaux élève validés sur ces étapes ;
-- la moyenne des niveaux enseignant confirmés ;
+- une moyenne enseignante pondérée sur l’échelle 0–3 ;
 - le nombre de situations validées et confirmées ;
 - le nombre total d’étapes mobilisant l’élément du référentiel.
+
+Une activité ordinaire contribue avec le niveau 0–3 confirmé par l’enseignant et un poids de `0,5`. Une évaluation contribue avec sa note convertie sur la même échelle et sa pondération configurée :
+
+```text
+niveau de l’évaluation = note / 10 × 3
+moyenne = somme(niveau × poids) / somme(poids)
+```
+
+Une évaluation suivie reste incluse lorsqu’elle est masquée aux élèves. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Si une évaluation comporte aussi une autoévaluation, seule sa note officielle contribue à la moyenne enseignante.
 
 L’affichage convertit une moyenne sur 3 en pourcentage pour la barre visuelle :
 
@@ -59,7 +68,7 @@ L’affichage convertit une moyenne sur 3 en pourcentage pour la barre visuelle 
 pourcentage = niveau moyen / 3 × 100
 ```
 
-La moyenne reste une synthèse de navigation, pas une règle institutionnelle définitive. Une future version pourra pondérer les étapes ou appliquer une règle du type « dernier niveau confirmé ».
+La moyenne reste une synthèse de navigation, pas une règle institutionnelle définitive. Une future version pourra notamment appliquer une règle du type « dernier niveau confirmé ».
 
 ## Rewards
 

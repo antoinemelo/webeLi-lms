@@ -87,7 +87,7 @@ function student_pathway_page_pdf_html(PDO $pdo, int $itemId, int $studentId): s
 {
     if(!item_is_visible_to_student($pdo,$itemId,$studentId))throw new TransferException('Étape introuvable.');
     $item=pathway_page_pdf_item($pdo,$itemId);
-    if(!$item)throw new TransferException('Étape introuvable.');
+    if(!$item||(bool)$item['is_evaluation'])throw new TransferException('Étape introuvable.');
     return pathway_page_pdf_render($pdo,$item);
 }
 

@@ -246,39 +246,7 @@ function tags_for_page(int $pageId): array
 
 function framework_progress(int $courseId, int $enrollmentId, string $kind): array
 {
-    $isSkill = $kind === 'skill';
-    $studentId=(int)(one('SELECT student_id FROM enrollments WHERE id=?',[$enrollmentId])['student_id']??0);
-    if (!$isSkill) {
-        return all("SELECT MIN(po.id) AS id,po.title,'' AS code,MAX(po.description) AS description,
-            COUNT(DISTINCT visible.id) AS item_count,
-            AVG(CASE WHEN p.student_validated_at IS NOT NULL THEN p.student_level END) AS student_level,
-            AVG(CASE WHEN p.teacher_validated_at IS NOT NULL THEN p.teacher_level END) AS teacher_level,
-            SUM(CASE WHEN p.student_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS student_done,
-            SUM(CASE WHEN p.teacher_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS teacher_done
-            FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
-            LEFT JOIN pathway_items visible ON visible.id=pi.id AND visible.is_evaluation=0 AND visible.self_evaluation_enabled=1 AND (
-                visible.access_mode='all'
-                OR (visible.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?)))
-            LEFT JOIN progress p ON p.pathway_item_id=visible.id AND p.enrollment_id=?
-            WHERE pi.course_id=? GROUP BY lower(po.title) HAVING COUNT(DISTINCT visible.id)>0 ORDER BY MIN(pi.position),po.title",[$studentId,$enrollmentId,$courseId]);
-    }
-    $table = 'course_skills';
-    $link = 'item_skills';
-    $column = 'skill_id';
-    $code = 'f.code';
-    return all("SELECT f.id, f.title, $code AS code, f.description,
-        COUNT(DISTINCT visible.id) AS item_count,
-        AVG(CASE WHEN p.student_validated_at IS NOT NULL THEN p.student_level END) AS student_level,
-        AVG(CASE WHEN p.teacher_validated_at IS NOT NULL THEN p.teacher_level END) AS teacher_level,
-        SUM(CASE WHEN p.student_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS student_done,
-        SUM(CASE WHEN p.teacher_validated_at IS NOT NULL THEN 1 ELSE 0 END) AS teacher_done
-        FROM $table f
-        LEFT JOIN $link l ON l.$column=f.id
-        LEFT JOIN pathway_items visible ON visible.id=l.pathway_item_id AND visible.is_evaluation=0 AND visible.self_evaluation_enabled=1 AND (
-            visible.access_mode='all'
-            OR (visible.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=visible.id AND a.student_id=?)))
-        LEFT JOIN progress p ON p.pathway_item_id=visible.id AND p.enrollment_id=?
-        WHERE f.course_id=? GROUP BY f.id HAVING COUNT(DISTINCT visible.id)>0 ORDER BY f.position, f.id", [$studentId,$enrollmentId,$courseId]);
+    return framework_progress_in(db(),$courseId,$enrollmentId,$kind);
 }
 
 function reward_summary(int $enrollmentId): array

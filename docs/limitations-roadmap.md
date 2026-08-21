@@ -21,7 +21,7 @@ Le prototype répond au besoin de démonstration, mais les points suivants doive
 
 ### Évaluation
 
-- les synthèses utilisent une moyenne arithmétique non pondérée ;
+- les synthèses pondèrent les activités confirmées à `0,5` et les évaluations selon leur pondération configurée ; cette règle reste une convention interne, pas une grille institutionnelle paramétrable ;
 - aucun niveau cible n’est défini par compétence ou par objectif ;
 - il n’existe pas de preuve jointe, dépôt élève, grille critériée ou commentaire par compétence ;
 - une confirmation répétée avec reward peut attribuer plusieurs rewards, ce qui est autorisé mais devrait être rendu plus explicite.

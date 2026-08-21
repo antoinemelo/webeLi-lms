@@ -195,6 +195,7 @@ button,a,summary{touch-action:manipulation}
 .mastery-card header{display:flex;gap:.8rem}
 .mastery-card header p{color:var(--muted);font-size:.82rem}
 .mastery-icon{display:grid;flex:none;width:2.65rem;height:2.65rem;place-items:center;border-radius:.75rem;background:var(--purple-soft);color:var(--purple);font-weight:750}
+.mastery-icon.skill-code{width:auto;min-width:5rem;height:auto;min-height:2.65rem;padding:.4rem .65rem;line-height:1.15;text-align:center;overflow-wrap:anywhere}
 .dual-progress > div{margin:1rem 0}
 .dual-progress span{display:flex;justify-content:space-between;margin-bottom:.35rem;font-size:.73rem}
 .dual-progress .teacher-line em,.mini-mastery em{background:var(--green)}
@@ -252,6 +253,7 @@ button,a,summary{touch-action:manipulation}
 .student-profile-actions .student-score{margin-left:0}
 .detail-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(16rem,1fr);gap:1.5rem;margin-top:1.5rem;align-items:start}
 .detail-grid aside{height:max-content;margin-top:0;padding:1.2rem;border:1px solid var(--line);border-radius:1.2rem;background:#fff}
+.student-evaluation-average{display:flex;flex-direction:column;margin:-.2rem -.2rem 1.25rem;padding:1rem;border-radius:1rem;background:linear-gradient(135deg,#29273b,#514d72);color:#fff}.student-evaluation-average span{font-size:.78rem;font-weight:700}.student-evaluation-average strong{margin:.2rem 0;font-size:2rem;line-height:1.1}.student-evaluation-average small{color:#dcd9ef}
 .review-card{overflow:hidden;margin-bottom:.65rem;border:1px solid var(--line);border-radius:1rem;background:#fff}
 .review-card.needs-review{border-color:#e6be62;box-shadow:0 0 0 2px #fff0ce}
 .review-card > header{display:grid;grid-template-columns:2.15rem 1fr auto;gap:.65rem;align-items:center;padding:.9rem}

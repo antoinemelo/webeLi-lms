@@ -117,7 +117,7 @@ Une adresse électronique secondaire privée peut être ajoutée à la fiche d�
 Dans l’annuaire, **Gérer** ouvre les commandes d’une participation et du compte :
 
 - **Archiver** une participation la masque à l’élève mais conserve progression, validations et rewards ;
-- **Retirer définitivement** supprime la participation et tout son historique dans ce cours ;
+- **Retirer définitivement** supprime la participation et tout son historique dans ce cours (progression, validations, QCM, visites, notes privées et accès ciblés), sans toucher au compte ni à ses autres cours ;
 - **Archiver le compte** bloque la connexion et archive ses participations ;
 - **Effacer définitivement** supprime le compte et toutes ses données.
 
@@ -129,15 +129,16 @@ Depuis **Suivi**, ouvrir un élève. La dernière visite connue apparaît à dro
 
 Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps actif toutes les 60 secondes et à la fermeture ou au masquage de l’onglet. Les données de plus d’un mois sont automatiquement supprimées.
 
-Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards.
+Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
 
 En ouvrant un élève, l’enseignant peut :
 
 - lire son auto-positionnement et sa note ;
 - confirmer un niveau de 0 à 3 ;
+- noter une évaluation sur 10, ou laisser sa note vide pour annuler la validation tout en conservant le commentaire comme brouillon ;
 - rédiger une **Note / Commentaire (visible par l'apprenant)** ;
 - attribuer facultativement un reward, des points et un message ;
-- consulter les compétences confirmées et les derniers rewards.
+- consulter la moyenne pondérée des évaluations suivies, les compétences confirmées et les derniers rewards.
 
 ### Gérer les contenus
 
@@ -178,7 +179,9 @@ Un QCM formatif s’insère directement dans un bloc Markdown :
 
 Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]` utilisent des cases à cocher. Les réponses sont présentées dans un ordre aléatoire à chaque affichage. Chaque question vaut le même poids et n’est réussie que si toutes ses réponses justes sont cochées sans réponse fausse. La catégorie **QCM** est ajoutée automatiquement à la page.
 
-Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. Si la case **Cette étape est une évaluation** est cochée, le bouton devient **Terminer le QCM** et la remise est définitive : le score reste visible par l’élève et apparaît dans le profil de l’élève côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue élève ; les champs personnels et les commandes restent utilisables. Cette restriction ne s’applique pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, mais jamais les réponses choisies.
+Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. Si la case **Cette étape est une évaluation** est cochée, le bouton devient **Terminer le QCM** et la remise est définitive : le score reste visible par l’élève et apparaît dans le profil de l’élève côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue élève ; les champs personnels et les commandes restent utilisables. Le téléchargement PDF de l’étape est également retiré et refusé côté serveur pour l’élève. Ces restrictions ne s’appliquent pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, y compris si l’étape a été masquée après la remise, mais jamais les réponses choisies.
+
+Dans **Acquis → Évaluations**, une évaluation masquée reste présente pour assurer la continuité du suivi. Tant qu’elle n’est ni accessible ni notée, son vrai titre est remplacé par **Évaluation à venir**.
 
 La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
 
@@ -209,6 +212,7 @@ Dans **Parcours**, l’enseignant sélectionne un cours. Le bouton à trois poin
 - rattache les objectifs et compétences du référentiel du cours.
 - retire une page du parcours, avec confirmation explicite de la suppression des progressions liées à cette étape ;
 - archive ou réactive un parcours sans perdre ses données ;
+- supprime définitivement un parcours archivé dont il est propriétaire ; les données propres au parcours sont purgées, mais ses pages restent dans la bibliothèque ;
 - duplique un parcours sans ses élèves ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
 
 L’organisation complète du parcours n’est jamais proposée dans la navigation élève.

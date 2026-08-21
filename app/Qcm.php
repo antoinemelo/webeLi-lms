@@ -141,6 +141,36 @@ final class Qcm
         return $row;
     }
 
+    /**
+     * @return array{expected:array<int,int>,completed:array<int,array<int,bool>>}
+     */
+    public static function courseEvaluationCompletion(PDO $pdo,int $courseId): array
+    {
+        $blocks=$pdo->prepare("SELECT pi.id AS item_id,b.id AS block_id,b.body
+            FROM pathway_items pi JOIN page_blocks b ON b.page_id=pi.page_id AND b.type='markdown'
+            WHERE pi.course_id=? AND pi.is_evaluation=1 ORDER BY pi.id,b.position,b.id");
+        $blocks->execute([$courseId]);$expectedKeys=[];
+        foreach($blocks->fetchAll(PDO::FETCH_ASSOC) as $block){
+            $itemId=(int)$block['item_id'];$blockId=(int)$block['block_id'];
+            foreach(self::quizKeys((string)$block['body'],$blockId) as $key)$expectedKeys[$itemId][$blockId."\0".$key]=true;
+        }
+        if(!$expectedKeys)return ['expected'=>[],'completed'=>[]];
+        $attempts=$pdo->prepare("SELECT qa.student_id,qa.pathway_item_id,qa.page_block_id,qa.qcm_key
+            FROM qcm_attempts qa JOIN pathway_items pi ON pi.id=qa.pathway_item_id
+            JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=qa.student_id AND e.status='active'
+            JOIN users u ON u.id=qa.student_id AND u.account_status='active'
+            WHERE pi.course_id=? AND pi.is_evaluation=1");
+        $attempts->execute([$courseId]);$answered=[];
+        foreach($attempts->fetchAll(PDO::FETCH_ASSOC) as $attempt){
+            $itemId=(int)$attempt['pathway_item_id'];$key=(int)$attempt['page_block_id']."\0".(string)$attempt['qcm_key'];
+            if(isset($expectedKeys[$itemId][$key]))$answered[(int)$attempt['student_id']][$itemId][$key]=true;
+        }
+        $expected=[];$completed=[];
+        foreach($expectedKeys as $itemId=>$keys)$expected[(int)$itemId]=count($keys);
+        foreach($answered as $studentId=>$items)foreach($items as $itemId=>$keys)if(count($keys)===$expected[$itemId])$completed[(int)$studentId][(int)$itemId]=true;
+        return ['expected'=>$expected,'completed'=>$completed];
+    }
+
     /** @return list<array{item_id:int,position:int,title:string,score_percent:?float}> */
     public static function courseStepAverages(PDO $pdo,int $courseId): array
     {
@@ -162,8 +192,6 @@ final class Qcm
               JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=qa.student_id AND e.status='active'
               JOIN users u ON u.id=qa.student_id AND u.account_status='active'
               WHERE qa.pathway_item_id IN ($placeholders)
-                AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
-                  SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=qa.student_id)))
               GROUP BY qa.student_id,qa.pathway_item_id
             ) GROUP BY pathway_item_id");
         $scores->execute(array_keys($steps));
