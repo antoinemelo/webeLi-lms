@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "458470332e7d7fd5bc1ab4032caa0970773625b2c4491e478dfd4f5c651916a5",
-    "VERSION": "8ff6b8d63e8541904f6fe0fae2bbbe4be54d5277447c2a79cbcc11b28f860def",
+    "VERSION": "a75f4818a5634f85d600ff3591e28ee2053ba8c4ff343cadb1729d49f96d6640",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/AdminService.php": "663082fbc4bf6a97f8ef277f45ff98a19b7ec0c2b5fc0e1489a5a0b8e71349bd",
     "app/Collaboration.php": "811ca1b200f96d169875c153f546cc1717c55f31590d64d0629ba1db5255de9b",
@@ -37,8 +37,8 @@
     "app/translations/en.php": "8046ab1588f6bbf2315e57b04d2a706948f2b9d55a65453981703653f5f174be",
     "app/translations/es.php": "fca48160d1a9fc4b34e44380dae66016e197e4347996b3ae985325c79c88dbc4",
     "app/translations/it.php": "ea01e3b14d2d18fae657628c057e5a05e0f10d2e1b330e019605e28977817524",
-    "app/views.php": "fde4afcb4350fb66dbf55a03421e4eafc96f54f1772a33931f0caf935758bf4e",
-    "assets/app.css": "51d9aa627c68ad74f94b8b56bc5a384b0d1ba4ec08860cab35bef479bf0fff38",
+    "app/views.php": "f6750b71c8bab443b48fae246cba2da1bee896dac3a3487c108e9c0514a0fa13",
+    "assets/app.css": "582f8b391e15427bdc73b7e5080b6b8926c2d71901513ce0e0c075336a52f096",
     "assets/app.js": "af20765700be435e4fe1bc3e0f04fdce2ad8037fce1fe26231f92839ad87308e",
     "assets/apple-touch-icon.png": "822a81419587af0f29c1d2e651659746d870f27f3c047d528c04511aa42d333a",
     "assets/field-notes.svg": "17e2824b4b3fb955c5501a9bf2d46eef12b66256efbbf2137f7be45c6a9307f4",
@@ -74,7 +74,7 @@
     "docs/README.md": "46b0133c11dccfb2a3c35e6af7c33904fca34123c4042bc432b5e8174b4f7cb3",
     "docs/architecture.md": "f60a0465fc1d3c33be62e1b94b7ea135ba16bddcdb6cc925074423044cd63c42",
     "docs/exploitation.md": "c2e5a426bab61671a4ff14c686f0c8f25b648277b769210db58f6a1bf7fac4e5",
-    "docs/guide-utilisateur.md": "283030e5d1012989184479726a4fc283f5dec9f946b1027ea1ed45136fbbefc2",
+    "docs/guide-utilisateur.md": "739ac8006bda5012b0fd7e7a7e5d360898d45e800e61cb01fa1eb0d1775f98a1",
     "docs/limitations-roadmap.md": "a82adc76616b2cad23236849f61517364ffb7a1cd9874aa4bf430d6fdc6cdba9",
     "docs/modele-fonctionnel.md": "08e16ba43e7f726453a17f54abcb898fa4f3701f1291a8dfc9f033449ec31c06",
     "index.php": "a799676cef70536218cb9256926d103f9b3ceabeb09ebf986cdaee6f977004dd",
@@ -84,12 +84,12 @@
     "scripts/migrate_database.php": "c158ef5c6635be764473e074283e5d9f5636f89af44ed7c1e32688b109972fad",
     "scripts/purge_registrations.php": "278cf25a993c7c57cba7e4df761a54adb728814bcbeb637cc095097bcb45d646",
     "storage/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
-    "sw.js": "1c3a0865edaa0b8079e0bc728a39df706dd35ea8a4f669135a6b429df93cd362",
+    "sw.js": "927ce2d83329fe60f6819f3cfdbb930ecec85953fe06f5259faeaef4bc003287",
     "uploads/.htaccess": "eea47c349b4aa72d1f2328a1640d8f6455d2c8e96ff86a8908d140b98343e74f",
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-08-21T06:21:59+00:00",
+  "generated_at": "2026-08-21T06:58:04+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "mutable_paths": [
     "storage/",
@@ -101,5 +101,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q3.50"
+  "version": "2026Q3.51"
 }
