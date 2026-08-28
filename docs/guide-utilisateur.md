@@ -131,6 +131,8 @@ Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps a
 
 Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
 
+Lorsqu’une annonce est publiée dans un parcours, tous les élèves qui y sont activement inscrits reçoivent également un courriel. Son objet suit la forme **Nom du parcours / Titre de l’annonce** et son corps reprend uniquement le contenu de l’annonce. Le message est préparé dans la boîte de notifications puis envoyé par la tâche d’exploitation habituelle.
+
 En ouvrant un élève, l’enseignant peut :
 
 - lire son auto-positionnement et sa note ;

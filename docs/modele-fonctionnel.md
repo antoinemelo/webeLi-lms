@@ -94,5 +94,6 @@ Les actions métier insèrent un email dans `notification_outbox` :
 | `teacher.confirmed` | élève | confirmation du niveau |
 | `reward.awarded` | élève | attribution d’un reward |
 | `page.updated` | élèves concernés | mise à jour d’une page présente dans leur cours |
+| `course.announcement` | élèves inscrits | publication d’une annonce dans leur parcours |
 
 L’écriture métier ne dépend donc pas du succès immédiat de `mail()`.

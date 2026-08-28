@@ -27,7 +27,7 @@ return static function(PDO $pdo): void {
         'learning_visits'=>['id','student_id','pathway_item_id','visit_token','duration_seconds'],
         'edit_locks'=>['entity_type','entity_id','teacher_id','owner_token','expires_at'],
         'collaboration_comments'=>['id','subject_type','subject_id','author_id','status'],
-        'notification_outbox'=>['id','event','recipient','status'],
+        'notification_outbox'=>['id','event','recipient','status','announcement_id','available_at'],
         'tags'=>['id','name','color'],
         'page_tags'=>['page_id','tag_id'],
     ];

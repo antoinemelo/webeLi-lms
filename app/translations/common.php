@@ -747,6 +747,7 @@ return [
     'Votre note privée a été enregistrée.'=>['en'=>'Your private note has been saved.','de'=>'Ihre private Notiz wurde gespeichert.','it'=>'La nota privata è stata salvata.','es'=>'Tu nota privada se ha guardado.'],
     'La note privée ne peut pas être enregistrée.'=>['en'=>'The private note could not be saved.','de'=>'Die private Notiz konnte nicht gespeichert werden.','it'=>'Non è stato possibile salvare la nota privata.','es'=>'No se pudo guardar la nota privada.'],
     'Annonce publiée.'=>['en'=>'Announcement posted.','de'=>'Ankündigung veröffentlicht.','it'=>'Annuncio pubblicato.','es'=>'Anuncio publicado.'],
+    'Annonce publiée et courriels préparés.'=>['en'=>'Announcement posted and emails prepared.','de'=>'Ankündigung veröffentlicht und E-Mails vorbereitet.','it'=>'Annuncio pubblicato ed email preparate.','es'=>'Anuncio publicado y correos preparados.'],
     'Le titre et le message de l’annonce sont obligatoires.'=>['en'=>'The announcement title and message are required.','de'=>'Titel und Nachricht der Ankündigung sind erforderlich.','it'=>'Il titolo e il messaggio dell’annuncio sono obbligatori.','es'=>'El título y el mensaje del anuncio son obligatorios.'],
     'Annonce retirée.'=>['en'=>'Announcement removed.','de'=>'Ankündigung entfernt.','it'=>'Annuncio rimosso.','es'=>'Anuncio retirado.'],
     'Annonce introuvable.'=>['en'=>'Announcement not found.','de'=>'Ankündigung nicht gefunden.','it'=>'Annuncio non trovato.','es'=>'Anuncio no encontrado.'],

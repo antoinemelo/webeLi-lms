@@ -481,15 +481,68 @@ function framework_progress_in(PDO $pdo,int $courseId,int $enrollmentId,string $
     return $result;
 }
 
-function create_course_announcement(PDO $pdo, int $courseId, int $teacherId, string $title, string $body): ?int
+function course_announcement_url(int $courseId, int $announcementId): string
+{
+    $host=(string)($_SERVER['HTTP_HOST']??'127.0.0.1:8080');
+    if(!preg_match('/^[A-Za-z0-9.:-]+$/',$host))$host='127.0.0.1:8080';
+    $scheme=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')?'https':'http';
+    $script=(string)($_SERVER['SCRIPT_NAME']??'/lms/index.php');
+    $base=rtrim(str_replace('\\','/',dirname($script)),'/');
+    $query=http_build_query(['view'=>'announcements','course'=>$courseId,'announcement'=>$announcementId]);
+    return $scheme.'://'.$host.$base.'/?'.$query.'#announcement-'.$announcementId;
+}
+
+function create_course_announcement(PDO $pdo, int $courseId, int $teacherId, string $title, string $body, ?bool $mailCronActive=null): ?int
 {
     $title=trim($title);$body=trim($body);
     if(!teacher_can_access_course($pdo,$courseId,$teacherId)||$title===''||$body===''||mb_strlen($title)>160||mb_strlen($body)>5000)return null;
-    $insert=$pdo->prepare('INSERT INTO course_announcements(course_id,created_by,title,body) VALUES(?,?,?,?)');
-    $insert->execute([$courseId,$teacherId,$title,$body]);
-    $announcementId=(int)$pdo->lastInsertId();
-    $pdo->prepare('INSERT OR IGNORE INTO announcement_reads(announcement_id,student_id,read_at) VALUES(?,?,CURRENT_TIMESTAMP)')->execute([$announcementId,$teacherId]);
-    return $announcementId;
+    $mailCronActive??=mail_cron_is_active(dirname(__DIR__));
+    $ownsTransaction=!$pdo->inTransaction();
+    if($ownsTransaction)$pdo->beginTransaction();else $pdo->exec('SAVEPOINT create_course_announcement');
+    try{
+        $insert=$pdo->prepare('INSERT INTO course_announcements(course_id,created_by,title,body) VALUES(?,?,?,?)');
+        $insert->execute([$courseId,$teacherId,$title,$body]);
+        $announcementId=(int)$pdo->lastInsertId();
+        $pdo->prepare('INSERT OR IGNORE INTO announcement_reads(announcement_id,student_id,read_at) VALUES(?,?,CURRENT_TIMESTAMP)')->execute([$announcementId,$teacherId]);
+
+        $courseQuery=$pdo->prepare('SELECT title FROM courses WHERE id=?');$courseQuery->execute([$courseId]);
+        $courseTitle=(string)($courseQuery->fetchColumn()?:'liike');
+        $teacherQuery=$pdo->prepare("SELECT u.name
+            FROM users u JOIN (
+                SELECT teacher_id AS id,0 AS team_order FROM courses WHERE id=?
+                UNION ALL
+                SELECT teacher_id AS id,1 AS team_order FROM course_teachers WHERE course_id=?
+            ) team ON team.id=u.id
+            WHERE trim(u.name)<>''
+            GROUP BY u.id,u.name
+            ORDER BY MIN(team.team_order),u.name");
+        $teacherQuery->execute([$courseId,$courseId]);
+        $teacherNames=array_map(static fn(array $teacher):string=>(string)$teacher['name'],$teacherQuery->fetchAll(PDO::FETCH_ASSOC));
+        $teacherSignature=implode("\n",$teacherNames?:['L’équipe enseignante']);
+        $announcementUrl=course_announcement_url($courseId,$announcementId);
+        $recipients=$pdo->prepare("SELECT DISTINCT u.id,u.email,u.first_name,u.name
+            FROM enrollments e JOIN users u ON u.id=e.student_id
+            WHERE e.course_id=? AND e.status='active' AND u.account_status='active' AND trim(u.email)<>''");
+        $recipients->execute([$courseId]);
+        $queue=$pdo->prepare("INSERT INTO notification_outbox(event,recipient,subject,body,announcement_id,available_at) VALUES(?,?,?,?,?,datetime('now',?))");
+        $availability=$mailCronActive?'+'.ANNOUNCEMENT_MAIL_DELAY_SECONDS.' seconds':'+0 seconds';
+        foreach($recipients->fetchAll(PDO::FETCH_ASSOC) as $recipient){
+            $firstName=trim((string)$recipient['first_name'])?:trim((string)$recipient['name']);
+            $emailBody=$firstName.",\n\n".$body
+                ."\n\nCette annonce est également disponible dans liike."
+                ."\n\n".$teacherSignature
+                ."\n\n---"
+                ."\n\nRaccourcis vers la page web de l’annonce :"
+                ."\n".$announcementUrl;
+            $queue->execute(['course.announcement',(string)$recipient['email'],'ANNONCE / '.$courseTitle.' / '.$title,$emailBody,$announcementId,$availability]);
+        }
+        if($ownsTransaction)$pdo->commit();else $pdo->exec('RELEASE SAVEPOINT create_course_announcement');
+        return $announcementId;
+    }catch(Throwable $exception){
+        if($ownsTransaction&&$pdo->inTransaction())$pdo->rollBack();
+        elseif(!$ownsTransaction){$pdo->exec('ROLLBACK TO SAVEPOINT create_course_announcement');$pdo->exec('RELEASE SAVEPOINT create_course_announcement');}
+        throw $exception;
+    }
 }
 
 function archive_course_announcement(PDO $pdo, int $announcementId, int $teacherId): ?int
@@ -497,6 +550,7 @@ function archive_course_announcement(PDO $pdo, int $announcementId, int $teacher
     $query=$pdo->prepare('SELECT course_id FROM course_announcements WHERE id=? AND archived=0');
     $query->execute([$announcementId]);$courseId=(int)($query->fetchColumn()?:0);
     if($courseId<1||!teacher_can_access_course($pdo,$courseId,$teacherId))return null;
+    $pdo->prepare("DELETE FROM notification_outbox WHERE event='course.announcement' AND announcement_id=? AND status='pending'")->execute([$announcementId]);
     $pdo->prepare('UPDATE course_announcements SET archived=1 WHERE id=?')->execute([$announcementId]);
     return $courseId;
 }
@@ -506,6 +560,7 @@ function delete_course_announcement(PDO $pdo, int $announcementId, int $teacherI
     $query=$pdo->prepare('SELECT course_id FROM course_announcements WHERE id=?');
     $query->execute([$announcementId]);$courseId=(int)($query->fetchColumn()?:0);
     if($courseId<1||!teacher_can_access_course($pdo,$courseId,$teacherId))return null;
+    $pdo->prepare("DELETE FROM notification_outbox WHERE event='course.announcement' AND announcement_id=? AND status='pending'")->execute([$announcementId]);
     $pdo->prepare('DELETE FROM course_announcements WHERE id=?')->execute([$announcementId]);
     return $courseId;
 }

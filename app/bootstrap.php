@@ -7,6 +7,7 @@ require_once __DIR__ . '/I18n.php';
 require_once __DIR__ . '/Markdown.php';
 require_once __DIR__ . '/Qcm.php';
 require_once __DIR__ . '/MailDelivery.php';
+require_once __DIR__ . '/NotificationOutbox.php';
 require_once __DIR__ . '/RegistrationPolicy.php';
 require_once __DIR__ . '/PasswordReset.php';
 require_once __DIR__ . '/SessionPolicy.php';
@@ -187,7 +188,7 @@ function due_meta(?string $deadline, bool $done): array
 
 function enqueue(string $event, string $recipient, string $subject, string $body): int
 {
-    run('INSERT INTO notification_outbox(event,recipient,subject,body) VALUES (?,?,?,?)', [$event,$recipient,$subject,$body]);
+    run('INSERT INTO notification_outbox(event,recipient,subject,body,available_at) VALUES (?,?,?,?,CURRENT_TIMESTAMP)', [$event,$recipient,$subject,$body]);
     return (int)db()->lastInsertId();
 }
 
@@ -199,7 +200,7 @@ function try_send_outbox(int $messageId): bool
     if ($sent) {
         run("UPDATE notification_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE id=?", [$messageId]);
     } else {
-        run("UPDATE notification_outbox SET attempts=attempts+1,last_error='mail() a retourné false' WHERE id=?", [$messageId]);
+        run("UPDATE notification_outbox SET attempts=attempts+1,last_error='mail() a retourné false',available_at=datetime('now','+5 minutes') WHERE id=?", [$messageId]);
     }
     return $sent;
 }

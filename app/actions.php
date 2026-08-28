@@ -903,7 +903,7 @@ function handle_action(string $action): never
     if($action==='create_announcement'&&$user['role']==='teacher'){
         $courseId=(int)($_POST['course_id']??0);
         $created=create_course_announcement(db(),$courseId,(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['body']??''));
-        flash($created?'Annonce publiée.':'Le titre et le message de l’annonce sont obligatoires.',$created?'success':'error');
+        flash($created?'Annonce publiée et courriels préparés.':'Le titre et le message de l’annonce sont obligatoires.',$created?'success':'error');
         redirect('pathway',['course'=>$courseId]);
     }
     if($action==='archive_announcement'&&$user['role']==='teacher'){

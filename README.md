@@ -131,7 +131,13 @@ Sur un hébergement où `mail()` est configuré :
 php scripts/mail_outbox.php --send
 ```
 
-Ce découplage évite de ralentir une validation et permet de relancer les échecs.
+Pour activer le délai de 90 secondes des annonces et l’envoi de cinq messages toutes les cinq secondes, lancer le worker chaque minute :
+
+```cron
+* * * * * /usr/bin/php /chemin/absolu/vers/instance/scripts/mail_outbox.php --send --worker >/dev/null 2>&1
+```
+
+Le battement de vie du worker active automatiquement le mode différé. Sans cron actif, les annonces repassent en envoi immédiat et toutes les autres notifications arrivées à échéance sont traitées en fin de requête Web. Un échec attend cinq minutes avant une nouvelle tentative.
 
 ## Modèle mental
 

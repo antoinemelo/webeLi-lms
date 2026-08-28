@@ -345,8 +345,15 @@ CREATE TABLE notification_outbox (
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    sent_at TEXT
+    sent_at TEXT,
+    announcement_id INTEGER,
+    available_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(announcement_id) REFERENCES course_announcements(id) ON DELETE SET NULL
 );
+
+CREATE TRIGGER cancel_pending_announcement_mail BEFORE DELETE ON course_announcements BEGIN
+    DELETE FROM notification_outbox WHERE event='course.announcement' AND announcement_id=OLD.id AND status='pending';
+END;
 
 CREATE TABLE registration_attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -368,6 +375,7 @@ CREATE INDEX idx_learning_visits_student_item ON learning_visits(student_id, pat
 CREATE INDEX idx_learning_visits_retention ON learning_visits(last_seen_at);
 CREATE INDEX idx_rewards_enrollment ON reward_awards(enrollment_id, awarded_at DESC);
 CREATE INDEX idx_outbox_pending ON notification_outbox(status, created_at);
+CREATE INDEX idx_outbox_available ON notification_outbox(status, available_at, id);
 CREATE INDEX idx_registration_attempts_ip ON registration_attempts(ip_hash, attempted_at);
 CREATE INDEX idx_password_reset_attempts_ip ON password_reset_attempts(ip_hash, requested_at);
 CREATE INDEX idx_password_reset_attempts_email ON password_reset_attempts(email_hash, requested_at);
@@ -388,4 +396,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 13;
+PRAGMA user_version = 14;

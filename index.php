@@ -16,6 +16,11 @@ require_once $applicationRoot . '/app/bootstrap.php';
 require_once $applicationRoot . '/app/actions.php';
 require_once $applicationRoot . '/app/views.php';
 
+register_shutdown_function(static function()use($applicationRoot):void{
+    if(mail_cron_is_active($applicationRoot))return;
+    try{outbox_send_pending_batch(db(),500);}catch(Throwable){}
+});
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['restart_login'])) {
     unset($_SESSION['login_teacher_id']);
 }
