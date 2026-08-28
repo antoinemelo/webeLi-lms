@@ -472,6 +472,13 @@ function handle_action(string $action): never
             redirect('students');
         }catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('students');}
     }
+    if ($action === 'clear_notification_history' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
+        $deleted=clear_sent_notification_history(db());
+        flash(t($deleted
+            ? ':count notification(s) envoyée(s) supprimée(s) de l’historique.'
+            : 'Aucune notification envoyée à supprimer.', ['count'=>$deleted]));
+        redirect('outbox');
+    }
     if ($action === 'superadmin_delete' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
         $entity=(string)($_POST['entity']??'');$id=(int)($_POST['id']??0);$deleted=false;
         if($entity==='user'){$deleted=superadmin_delete_user(db(),$id);}

@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "320e8e5be1b3db19702223350615b5c52af020c07d3bd8f307fa623bf4e1126b",
-    "VERSION": "1ba37e10e593c532ca9b6d7be6da5fa19d64e4f6838e1357db673585dd3a5779",
+    "VERSION": "7e553e655a4f3f3c0e81938d4de05bdfe1ad1c2df572b77a3768eaa6328ca66e",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/AdminService.php": "663082fbc4bf6a97f8ef277f45ff98a19b7ec0c2b5fc0e1489a5a0b8e71349bd",
     "app/Collaboration.php": "811ca1b200f96d169875c153f546cc1717c55f31590d64d0629ba1db5255de9b",
@@ -22,7 +22,7 @@
     "app/LearningActivity.php": "facfdf6f899629a95955ee703300848b55dc9ab2367b45362640ba6c4ed21223",
     "app/MailDelivery.php": "7926c87944fc84ded5a745d02bf92179a982fffa7caf9a5097b2291ea8895246",
     "app/Markdown.php": "71425cb9b716c6ed4b8cba9c58fee52db980e993b317df287e0ce4d4fe34548e",
-    "app/NotificationOutbox.php": "5aeaa80fbd1e1f8a572f2f7f071bb237315475ecfc251ddbae6e32c8d2b92cd2",
+    "app/NotificationOutbox.php": "f44c55434d7bee6a54d1fc7bf70dc69e17692b2c1975a2369577878dbfc2048d",
     "app/PasswordReset.php": "fab494843ab4d73800d3e6e466c0ab9e798516f9022723030729f90df9c03da4",
     "app/PathwayService.php": "2f2b35a9f0f1421df5257e27a3ffb75dee0a99122d1474a596a94e23b733722f",
     "app/PdfExport.php": "5da422d2344fcadcc014d214d4e027ae8ec955e7077e128878309a368c5ba764",
@@ -31,15 +31,15 @@
     "app/SessionPolicy.php": "c10a5ee935d13f16211ed33bb81cbf10c0e763419fe9a4fc1672ac7437eb73cc",
     "app/TransferService.php": "70f3b4793d17bc38d0425da20d07e6cf69c42f651053dcf518e31782b1add64e",
     "app/UpdateService.php": "8a35b11bd539cf76881bd17a4141707d408f6254c219c514a57359afd50cbfc6",
-    "app/actions.php": "b140c27cf5561aa17ccbe1163a12c42a715d98132f749b47d24b90483a0e15b9",
+    "app/actions.php": "5bf2a376de3a3bebcd055e57f251b8c9cf9d18a92e2e47b7633f739162257710",
     "app/bootstrap.php": "4449abc66696602c7857598662639446c81c478dd7fd1e910e25cb10cfb194f0",
-    "app/translations/common.php": "909d69923c37f9571a09731a7ba7d9e3611e4d8c0df85c5027bfedcc6422a649",
+    "app/translations/common.php": "a80b56076848e785df7b90ff4c1113a2080d4bee8f47e6ea3c9de04ab71b24eb",
     "app/translations/de.php": "5f216338428b4c7211a2ac242dc8efdb9f2d3dc06adac5e1ac49c7864b267f7d",
     "app/translations/en.php": "8046ab1588f6bbf2315e57b04d2a706948f2b9d55a65453981703653f5f174be",
     "app/translations/es.php": "fca48160d1a9fc4b34e44380dae66016e197e4347996b3ae985325c79c88dbc4",
     "app/translations/it.php": "ea01e3b14d2d18fae657628c057e5a05e0f10d2e1b330e019605e28977817524",
-    "app/views.php": "6ce714123f06cadc29bb9054bc767655fadbba7d5a4005dd433ff80a5a7718de",
-    "assets/app.css": "f990c82948f8d24fabfbfecfb6b9711ce45c081a86879bd7cd458e1c27338a5a",
+    "app/views.php": "349f057c40de95a34039f2940904536dd8327f2b1061cdb7ee174cb29da78abe",
+    "assets/app.css": "66f883576606356a8c951dceb6b31d287ddf0fdd9aaf8e5503233dd6e492472b",
     "assets/app.js": "af20765700be435e4fe1bc3e0f04fdce2ad8037fce1fe26231f92839ad87308e",
     "assets/apple-touch-icon.png": "822a81419587af0f29c1d2e651659746d870f27f3c047d528c04511aa42d333a",
     "assets/field-notes.svg": "17e2824b4b3fb955c5501a9bf2d46eef12b66256efbbf2137f7be45c6a9307f4",
@@ -75,7 +75,7 @@
     "docs/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "docs/README.md": "46b0133c11dccfb2a3c35e6af7c33904fca34123c4042bc432b5e8174b4f7cb3",
     "docs/architecture.md": "f60a0465fc1d3c33be62e1b94b7ea135ba16bddcdb6cc925074423044cd63c42",
-    "docs/exploitation.md": "45a609e6330d35d8b2d6a3a68b69f08a0c79c8da81a44a855737f9287ed1982d",
+    "docs/exploitation.md": "615994b1052a96075f368c675f71d5e9ca28d5e583eb02fa2cb75369fc4920f0",
     "docs/guide-utilisateur.md": "b11e49b93450cf741744a5510a90b06538856e37229b2ed272ccaa3e7320225e",
     "docs/limitations-roadmap.md": "65ffffccb8bf833e2b1f038bd44b7f30563392d0d0730e93a532fd69223142b3",
     "docs/modele-fonctionnel.md": "17d2a39539af9d815d7a2d1c82852e21f10979a9e49f8179feeab5613390d13d",
@@ -91,7 +91,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-08-28T06:02:42+00:00",
+  "generated_at": "2026-08-28T06:16:11+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "mutable_paths": [
     "storage/",
@@ -103,5 +103,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q3.53"
+  "version": "2026Q3.54"
 }

@@ -860,7 +860,28 @@ function view_profile(): void
 
 function view_outbox(): void
 {
-    $rows=all('SELECT * FROM notification_outbox ORDER BY created_at DESC LIMIT 100'); ?><a class="back" href="<?=route('teacher')?>">← <?=e(t('Tableau de bord'))?></a><section class="page-heading"><p class="eyebrow"><?=e(t('Email PHP simple'))?></p><h1><?=e(t('Notifications préparées'))?></h1><p><?=e(t('En développement, les emails restent dans cette boîte. Le script CLI peut les envoyer avec'))?> <code>mail()</code>.</p></section><div class="outbox-list"><?php foreach($rows as $r): ?><article><span class="status <?=$r['status']==='pending'?'draft':'ready'?>"><?=e(t($r['status']==='pending'?'En attente':'Envoyé'))?></span><div><b><?=e($r['subject'])?></b><p><?=e(t('À'))?> <?=e($r['recipient'])?> · <?=e($r['event'])?></p><small><?=e($r['created_at'])?></small></div></article><?php endforeach; ?><?php if(!$rows):?><div class="empty"><?=e(t('Aucune notification pour le moment.'))?></div><?php endif;?></div><?php
+    $user=require_actor();$isSuperadmin=(int)($user['is_superadmin']??0)===1;
+    $requestedStatus=(string)($_GET['status']??'all');$status=in_array($requestedStatus,['pending','sent','failed'],true)?$requestedStatus:'all';
+    $counts=one("SELECT COUNT(*) AS total,
+        COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0) AS pending,
+        COALESCE(SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END),0) AS sent,
+        COALESCE(SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END),0) AS failed
+        FROM notification_outbox")??['total'=>0,'pending'=>0,'sent'=>0,'failed'=>0];
+    $rows=$status==='all'?all('SELECT * FROM notification_outbox ORDER BY created_at DESC,id DESC LIMIT 100'):all('SELECT * FROM notification_outbox WHERE status=? ORDER BY created_at DESC,id DESC LIMIT 100',[$status]);
+    $cronActive=mail_cron_is_active(dirname(__DIR__));$heartbeatPath=mail_cron_heartbeat_path(dirname(__DIR__));$heartbeatAt=@filemtime($heartbeatPath);
+    $formatDate=static function(?string $value):string{$timestamp=$value?strtotime($value):false;return $timestamp===false?'—':date('d/m/Y H:i',$timestamp);};
+    ?><a class="back" href="<?=route('teacher')?>">← <?=e(t('Tableau de bord'))?></a>
+    <section class="page-heading outbox-heading"><div><p class="eyebrow"><?=e(t('Distribution des courriels'))?></p><h1><?=e(t('Notifications'))?></h1><p><?=e(t('Les messages en attente sont envoyés automatiquement par le worker ou, s’il est absent, lors de l’activité Web.'))?></p></div><?php if($isSuperadmin&&(int)$counts['sent']>0): ?><form method="post" onsubmit="return confirm('<?=e(t('Effacer définitivement toutes les notifications déjà envoyées ? Les messages en attente seront conservés.'))?>')"><?=csrf_field()?><input type="hidden" name="action" value="clear_notification_history"><button class="btn btn-outline-danger"><i class="bi bi-trash3 me-1"></i><?=e(t('Effacer l’historique envoyé'))?></button></form><?php endif; ?></section>
+    <div class="outbox-worker <?=$cronActive?'active':'fallback'?>"><i class="bi <?=$cronActive?'bi-check-circle-fill':'bi-lightning-charge-fill'?>" aria-hidden="true"></i><div><b><?=e(t($cronActive?'Worker cron actif':'Envoi de secours actif'))?></b><small><?=e($cronActive&&$heartbeatAt?t('Dernier signal : :date',['date'=>date('d/m/Y H:i:s',$heartbeatAt)]):t('Les notifications arrivées à échéance sont traitées à la fin des requêtes Web.'))?></small></div></div>
+    <div class="outbox-metrics"><div><b><?=e($counts['pending'])?></b><span><?=e(t('en attente'))?></span></div><div><b><?=e($counts['sent'])?></b><span><?=e(t('envoyées'))?></span></div><div><b><?=e($counts['failed'])?></b><span><?=e(t('en échec'))?></span></div><div><b><?=e($counts['total'])?></b><span><?=e(t('au total'))?></span></div></div>
+    <nav class="outbox-filters" aria-label="<?=e(t('Filtrer les notifications'))?>"><?php foreach(['all'=>'Toutes','pending'=>'En attente','sent'=>'Envoyées','failed'=>'En échec'] as $value=>$label): ?><a class="<?=$status===$value?'active':''?>" href="<?=route('outbox',$value==='all'?[]:['status'=>$value])?>"><?=e(t($label))?></a><?php endforeach; ?></nav>
+    <div class="outbox-list"><?php foreach($rows as $row):
+        $isPending=$row['status']==='pending';$isSent=$row['status']==='sent';$hasError=$isPending&&(int)$row['attempts']>0&&trim((string)$row['last_error'])!=='';
+        $statusLabel=$isSent?'Envoyé':($row['status']==='failed'?'En échec':($hasError?'Nouvelle tentative':'En attente'));
+        $statusClass=$isSent?'ready':($row['status']==='failed'||$hasError?'error':'draft');
+        $detail=$isSent?t('Envoyé le :date',['date'=>$formatDate($row['sent_at'])]):t('Disponible depuis le :date',['date'=>$formatDate($row['available_at']??$row['created_at'])]);
+        ?><article><span class="status <?=$statusClass?>"><?=e(t($statusLabel))?></span><div><b><?=e($row['subject'])?></b><p><?=e(t('À'))?> <?=e($row['recipient'])?> · <?=e($row['event'])?></p><small><?=e($detail)?><?php if((int)$row['attempts']>0): ?> · <?=e(t(':count tentative(s)',['count'=>$row['attempts']]))?><?php endif; ?><?php if($hasError): ?> · <?=e($row['last_error'])?><?php endif; ?></small></div></article><?php endforeach; ?><?php if(!$rows):?><div class="empty"><?=e(t('Aucune notification dans cette sélection.'))?></div><?php endif;?></div>
+    <?php if(count($rows)===100): ?><p class="outbox-limit"><?=e(t('Seules les 100 notifications les plus récentes de cette sélection sont affichées.'))?></p><?php endif; ?><?php
 }
 
 function view_admin(): void

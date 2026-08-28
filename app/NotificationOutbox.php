@@ -61,3 +61,9 @@ function outbox_send_pending_batch(PDO $pdo, int $limit=MAIL_OUTBOX_BATCH_SIZE, 
     return $results;
 }
 
+function clear_sent_notification_history(PDO $pdo): int
+{
+    $statement=$pdo->prepare("DELETE FROM notification_outbox WHERE status='sent'");
+    $statement->execute();
+    return $statement->rowCount();
+}
