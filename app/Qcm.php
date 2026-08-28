@@ -171,7 +171,7 @@ final class Qcm
         return ['expected'=>$expected,'completed'=>$completed];
     }
 
-    /** @return list<array{item_id:int,position:int,title:string,score_percent:?float}> */
+    /** @return list<array{item_id:int,position:int|string,title:string,score_percent:?float}> */
     public static function courseStepAverages(PDO $pdo,int $courseId): array
     {
         $query=$pdo->prepare("SELECT pi.id AS item_id,pi.position,p.title,b.body
@@ -199,6 +199,9 @@ final class Qcm
             $itemId=(int)$score['pathway_item_id'];
             if(isset($steps[$itemId]))$steps[$itemId]['score_percent']=round((float)$score['score_percent'],1);
         }
+        $displayPositions=pathway_display_position_map($pdo,$courseId);
+        foreach($steps as &$step)$step['position']=$displayPositions[(int)$step['item_id']]??'–';
+        unset($step);
         return array_values($steps);
     }
 

@@ -779,25 +779,33 @@ if (pathwaySortable) {
   const clearDropMarkers = () => rows().forEach((row) => row.classList.remove('pathway-drop-before', 'pathway-drop-after'));
 
   pathwaySortable.querySelectorAll('[data-pathway-position-form]').forEach((form) => {
-    const input = form.querySelector('[data-pathway-drag-handle]');
+    const handle = form.querySelector('[data-pathway-drag-handle]');
+    const displayInput = form.querySelector('[data-pathway-display-input]');
+    const orderTarget = form.querySelector('[data-pathway-order-target]');
     const row = form.closest('[data-pathway-row]');
-    if (!input || !row) return;
-    const initialPosition = Number(row.dataset.position || input.value);
+    if (!handle || !orderTarget || !row) return;
+    const initialPosition = Number(row.dataset.position || orderTarget.value);
+    const initialDisplayPosition = Number(row.dataset.displayPosition || 0);
 
-    input.addEventListener('change', () => {
-      const target = Number.parseInt(input.value, 10);
-      const maximum = Number.parseInt(input.max, 10);
-      if (!Number.isInteger(target) || target < 1 || target > maximum) { input.value = String(initialPosition); return; }
-      if (target !== initialPosition) form.requestSubmit();
+    displayInput?.addEventListener('change', () => {
+      const target = Number.parseInt(displayInput.value, 10);
+      const maximum = Number.parseInt(displayInput.max, 10);
+      if (!Number.isInteger(target) || target < 1 || target > maximum) { displayInput.value = String(initialDisplayPosition); return; }
+      if (target === initialDisplayPosition) return;
+      const candidates = rows().filter((candidate) => candidate !== row);
+      const visibleCandidates = candidates.filter((candidate) => candidate.dataset.displayPosition !== '');
+      const anchor = target <= visibleCandidates.length ? visibleCandidates[target - 1] : visibleCandidates[visibleCandidates.length - 1];
+      orderTarget.value = String(anchor ? candidates.indexOf(anchor) + (target <= visibleCandidates.length ? 1 : 2) : 1);
+      form.requestSubmit();
     });
 
     let gesture = null;
-    input.addEventListener('pointerdown', (event) => {
+    handle.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
       gesture = { pointerId: event.pointerId, startY: event.clientY, target: initialPosition, active: false };
-      input.setPointerCapture?.(event.pointerId);
+      handle.setPointerCapture?.(event.pointerId);
     });
-    input.addEventListener('pointermove', (event) => {
+    handle.addEventListener('pointermove', (event) => {
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       if (!gesture.active && Math.abs(event.clientY - gesture.startY) < 8) return;
       if (!gesture.active) {
@@ -827,14 +835,14 @@ if (pathwaySortable) {
       row.classList.remove('pathway-dragging');
       pathwaySortable.classList.remove('pathway-sorting');
       clearDropMarkers();
-      try { input.releasePointerCapture?.(event.pointerId); } catch (_) { /* already released */ }
+      try { handle.releasePointerCapture?.(event.pointerId); } catch (_) { /* already released */ }
       if (!cancelled && active && target !== initialPosition) {
-        input.value = String(target);
+        orderTarget.value = String(target);
         form.requestSubmit();
       }
     };
-    input.addEventListener('pointerup', (event) => finishGesture(event));
-    input.addEventListener('pointercancel', (event) => finishGesture(event, true));
+    handle.addEventListener('pointerup', (event) => finishGesture(event));
+    handle.addEventListener('pointercancel', (event) => finishGesture(event, true));
   });
 }
 

@@ -43,6 +43,48 @@ function reorder_pathway_item(PDO $pdo,int $itemId,int $targetPosition,int $teac
     }
 }
 
+/**
+ * Adds the pedagogical number shown in the interface without changing the
+ * technical position used to preserve and edit the complete pathway order.
+ * Items hidden from every student keep their place but receive no number.
+ */
+function number_pathway_items_for_display(array $items): array
+{
+    $displayPosition=0;
+    foreach($items as &$item){
+        $item['display_position']=(string)($item['access_mode']??'all')==='none'?null:++$displayPosition;
+    }
+    unset($item);
+    return $items;
+}
+
+/** @return array<int,int> item id => visible position */
+function pathway_display_position_map(PDO $pdo,int $courseId,?int $studentId=null): array
+{
+    if($studentId===null){
+        $query=$pdo->prepare('SELECT id,access_mode FROM pathway_items WHERE course_id=? ORDER BY position,id');
+        $query->execute([$courseId]);
+    }else{
+        $query=$pdo->prepare("SELECT pi.id,pi.access_mode FROM pathway_items pi WHERE pi.course_id=?
+            AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+                SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))
+            ORDER BY pi.position,pi.id");
+        $query->execute([$courseId,$studentId]);
+    }
+    $positions=[];
+    foreach(number_pathway_items_for_display($query->fetchAll(PDO::FETCH_ASSOC)) as $item){
+        if($item['display_position']!==null)$positions[(int)$item['id']]=(int)$item['display_position'];
+    }
+    return $positions;
+}
+
+function pathway_item_display_position(PDO $pdo,int $itemId,?int $studentId=null): ?int
+{
+    $query=$pdo->prepare('SELECT course_id FROM pathway_items WHERE id=?');$query->execute([$itemId]);
+    $courseId=(int)($query->fetchColumn()?:0);if($courseId<1)return null;
+    return pathway_display_position_map($pdo,$courseId,$studentId)[$itemId]??null;
+}
+
 function new_entity_reference(string $prefix): string
 {
     return strtoupper($prefix) . '-' . strtoupper(bin2hex(random_bytes(8)));
@@ -235,12 +277,17 @@ function complete_consultation_step(PDO $pdo, int $studentId, int $itemId): bool
 
 function pathway_objectives(PDO $pdo, int $courseId): array
 {
-    $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count,GROUP_CONCAT(DISTINCT pi.position) AS item_positions
+    $query=$pdo->prepare("SELECT MIN(po.id) AS id,po.title,MAX(po.description) AS description,MIN(pi.position) AS position,COUNT(DISTINCT pi.id) AS item_count,GROUP_CONCAT(DISTINCT pi.id) AS item_ids
         FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
         WHERE pi.course_id=? AND pi.framework_tracking_enabled=1 GROUP BY lower(po.title)");
     $query->execute([$courseId]);
-    $objectives=$query->fetchAll(PDO::FETCH_ASSOC);
-    foreach($objectives as &$objective){$positions=array_values(array_unique(array_map('intval',explode(',',(string)$objective['item_positions']))));sort($positions,SORT_NUMERIC);$objective['item_positions']=$positions;}unset($objective);
+    $objectives=$query->fetchAll(PDO::FETCH_ASSOC);$displayPositions=pathway_display_position_map($pdo,$courseId);
+    foreach($objectives as &$objective){
+        $positions=[];foreach(array_map('intval',explode(',',(string)$objective['item_ids'])) as $itemId)$positions[]=$displayPositions[$itemId]??'–';
+        $positions=array_values(array_unique($positions,SORT_REGULAR));usort($positions,static fn(int|string $left,int|string $right):int=>$left===$right?0:($left==='–'?1:($right==='–'?-1:$left<=>$right)));
+        $objective['item_positions']=$positions;unset($objective['item_ids']);
+    }
+    unset($objective);
     usort($objectives,fn(array $left,array $right): int=>pathway_natural_compare((string)$left['title'],(string)$right['title']));
     return $objectives;
 }
@@ -414,8 +461,10 @@ function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $tr
         ORDER BY pi.position,pi.id");
     $query->execute([$studentId,$enrollmentId,$courseId]);
     $rows=$query->fetchAll(PDO::FETCH_ASSOC);
+    $displayPositions=pathway_display_position_map($pdo,$courseId,$studentId);
     $weighted=0.0;$weightTotal=0.0;$graded=0;
     foreach($rows as &$row){
+        $row['display_position']=$displayPositions[(int)$row['id']]??null;
         $row['evaluation_weight']=(float)$row['evaluation_weight'];
         if($row['evaluation_score']!==null){
             $row['evaluation_score']=(float)$row['evaluation_score'];

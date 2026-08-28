@@ -29,14 +29,15 @@ function pdf_document(string $title, string $body, bool $landscape = false): str
 function course_pdf_html(PDO $pdo, int $courseId, int $teacherId): string
 {
     $query=$pdo->prepare('SELECT * FROM courses WHERE id=?');$query->execute([$courseId]);$course=$query->fetch(PDO::FETCH_ASSOC);if(!$course||!teacher_can_access_course($pdo,$courseId,$teacherId))throw new TransferException('Parcours introuvable.');
-    $skillQuery=$pdo->prepare('SELECT i.pathway_item_id,pi.position AS item_position,s.id,s.code,s.title FROM item_skills i JOIN course_skills s ON s.id=i.skill_id JOIN pathway_items pi ON pi.id=i.pathway_item_id WHERE pi.course_id=? AND pi.framework_tracking_enabled=1');$skillQuery->execute([$courseId]);$skillsByItem=[];$usedSkills=[];
-    foreach($skillQuery->fetchAll(PDO::FETCH_ASSOC) as $skill){$skillsByItem[(int)$skill['pathway_item_id']][]=$skill;$skillId=(int)$skill['id'];if(!isset($usedSkills[$skillId])){$usedSkills[$skillId]=$skill;$usedSkills[$skillId]['item_positions']=[];}$usedSkills[$skillId]['item_positions'][]=(int)$skill['item_position'];}
+    $displayPositions=pathway_display_position_map($pdo,$courseId);
+    $skillQuery=$pdo->prepare('SELECT i.pathway_item_id,s.id,s.code,s.title FROM item_skills i JOIN course_skills s ON s.id=i.skill_id JOIN pathway_items pi ON pi.id=i.pathway_item_id WHERE pi.course_id=? AND pi.framework_tracking_enabled=1');$skillQuery->execute([$courseId]);$skillsByItem=[];$usedSkills=[];
+    foreach($skillQuery->fetchAll(PDO::FETCH_ASSOC) as $skill){$itemId=(int)$skill['pathway_item_id'];$skillsByItem[$itemId][]=$skill;$skillId=(int)$skill['id'];if(!isset($usedSkills[$skillId])){$usedSkills[$skillId]=$skill;$usedSkills[$skillId]['item_positions']=[];}$usedSkills[$skillId]['item_positions'][]=$displayPositions[$itemId]??'–';}
     foreach($skillsByItem as &$itemSkills)usort($itemSkills,fn(array $left,array $right):int=>pathway_natural_compare((string)$left['code'],(string)$right['code']));unset($itemSkills);
-    foreach($usedSkills as &$usedSkill){$usedSkill['item_positions']=array_values(array_unique($usedSkill['item_positions']));sort($usedSkill['item_positions'],SORT_NUMERIC);}unset($usedSkill);
+    foreach($usedSkills as &$usedSkill){$usedSkill['item_positions']=array_values(array_unique($usedSkill['item_positions'],SORT_REGULAR));usort($usedSkill['item_positions'],static fn(int|string $left,int|string $right):int=>$left===$right?0:($left==='–'?1:($right==='–'?-1:$left<=>$right)));}unset($usedSkill);
     $usedSkills=array_values($usedSkills);usort($usedSkills,fn(array $left,array $right):int=>pathway_natural_compare((string)$left['code'],(string)$right['code']));
     $objectives=pathway_objectives($pdo,$courseId);
     $items=$pdo->prepare('SELECT pi.*,p.title,p.estimated_minutes FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.course_id=? AND pi.framework_tracking_enabled=1 ORDER BY pi.position');$items->execute([$courseId]);$rows='';
-    foreach($items->fetchAll(PDO::FETCH_ASSOC) as $item){$skillBadges=[];foreach($skillsByItem[(int)$item['id']]??[] as $skill)$skillBadges[]='<span class="course-skill-code">'.e($skill['code']).'</span>';$skillCodes=$skillBadges?' / '.implode(' · ',$skillBadges):'';$rows.='<tr><td class="course-step-number">'.(int)$item['position'].'</td><td><strong>'.e($item['title']).'</strong>'.$skillCodes.'</td><td>'.e(pdf_date_fr($item['deadline'])).'</td><td>'.(int)$item['estimated_minutes'].' min</td></tr>';}
+    foreach(number_pathway_items_for_display($items->fetchAll(PDO::FETCH_ASSOC)) as $item){$skillBadges=[];foreach($skillsByItem[(int)$item['id']]??[] as $skill)$skillBadges[]='<span class="course-skill-code">'.e($skill['code']).'</span>';$skillCodes=$skillBadges?' / '.implode(' · ',$skillBadges):'';$rows.='<tr><td class="course-step-number">'.e($item['display_position']??'–').'</td><td><strong>'.e($item['title']).'</strong>'.$skillCodes.'</td><td>'.e(pdf_date_fr($item['deadline'])).'</td><td>'.(int)$item['estimated_minutes'].' min</td></tr>';}
     $objectiveLegend='';if($objectives)$objectiveLegend='<section class="course-reference-legend course-objective-legend"><p><strong>'.e(t('Objectifs')).' :</strong> '.e(implode(', ',array_map(fn(array $objective):string=>$objective['title'].' ('.implode(', ',$objective['item_positions']).')',$objectives))).'.</p></section>';
     $skillLegend='';if($usedSkills)$skillLegend='<section class="course-reference-legend course-skill-legend"><p><strong>'.e(t('Compétences')).' :</strong> '.e(implode(', ',array_map(fn(array $skill):string=>$skill['code'].' - '.$skill['title'].' ('.implode(', ',$skill['item_positions']).')',$usedSkills))).'.</p></section>';
     $body='<header class="header"><div class="eyebrow">'.e(t('Parcours pédagogique')).'</div><h1>'.e($course['title']).'</h1><p class="muted">'.e($course['description']).'</p><div class="meta">'.pdf_meta([t('Code').' '.$course['code'],t($course['archived']?'Archivé':'Actif')]).'</div></header>'.$objectiveLegend.'<table><thead><tr><th class="course-step-number"></th><th>'.e(t('Nom')).'</th><th>'.e(t('Échéance')).'</th><th>'.e(t('Durée')).'</th></tr></thead><tbody>'.$rows.'</tbody></table>'.$skillLegend.'<div class="footer">Export liike · '.e(date('d/m/Y H:i')).'</div>';
@@ -64,7 +65,7 @@ function pathway_page_pdf_render(PDO $pdo, array $item): string
     $tags=$pdo->prepare('SELECT t.name FROM tags t JOIN page_tags pt ON pt.tag_id=t.id WHERE pt.page_id=? ORDER BY t.name');$tags->execute([$item['page_id']]);
     $objectives=$pdo->prepare('SELECT title FROM page_objectives WHERE page_id=? ORDER BY position,id');$objectives->execute([$item['page_id']]);
     $skills=$pdo->prepare('SELECT s.code,s.title FROM course_skills s JOIN item_skills i ON i.skill_id=s.id WHERE i.pathway_item_id=? ORDER BY s.position');$skills->execute([$itemId]);
-    $metaValues=[t('Étape :number',['number'=>(int)$item['position']]),t($item['is_evaluation']?'Évaluation':'Activité'),(int)$item['estimated_minutes'].' min',t('Échéance').' '.pdf_date_fr($item['deadline']),t($item['status']==='ready'?'Prête':'Brouillon')];if((bool)($item['self_evaluation_enabled']??1))$metaValues[]=t('Autoévaluation');
+    $metaValues=[t('Étape :number',['number'=>$item['position']]),t($item['is_evaluation']?'Évaluation':'Activité'),(int)$item['estimated_minutes'].' min',t('Échéance').' '.pdf_date_fr($item['deadline']),t($item['status']==='ready'?'Prête':'Brouillon')];if((bool)($item['self_evaluation_enabled']??1))$metaValues[]=t('Autoévaluation');
     foreach($tags->fetchAll(PDO::FETCH_COLUMN) as $tag)$metaValues[]='#'.$tag;
     $meta=pdf_meta($metaValues);
     $body='<header class="header"><div class="eyebrow">'.e($item['course_title']).' · '.e($item['course_code']).'</div><h1>'.e($item['title']).'</h1><p class="muted">'.e($item['summary']).'</p><div class="meta">'.$meta.'</div></header>';
@@ -80,6 +81,7 @@ function pathway_page_pdf_html(PDO $pdo, int $itemId, int $teacherId): string
 {
     $item=pathway_page_pdf_item($pdo,$itemId);
     if(!$item||!teacher_can_access_course($pdo,(int)$item['course_id'],$teacherId))throw new TransferException('Étape introuvable.');
+    $item['position']=pathway_item_display_position($pdo,$itemId)??'–';
     return pathway_page_pdf_render($pdo,$item);
 }
 
@@ -88,6 +90,7 @@ function student_pathway_page_pdf_html(PDO $pdo, int $itemId, int $studentId): s
     if(!item_is_visible_to_student($pdo,$itemId,$studentId))throw new TransferException('Étape introuvable.');
     $item=pathway_page_pdf_item($pdo,$itemId);
     if(!$item||(bool)$item['is_evaluation'])throw new TransferException('Étape introuvable.');
+    $item['position']=pathway_item_display_position($pdo,$itemId,$studentId)??$item['position'];
     return pathway_page_pdf_render($pdo,$item);
 }
 

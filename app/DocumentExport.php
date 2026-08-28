@@ -10,6 +10,7 @@ function pathway_page_document_export(PDO $pdo, int $itemId, int $teacherId): ar
     $query=$pdo->prepare('SELECT pi.*,p.reference,p.title,p.summary,p.status,p.estimated_minutes,p.id AS page_id,c.title AS course_title,c.code AS course_code FROM pathway_items pi JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=pi.course_id WHERE pi.id=?');
     $query->execute([$itemId]);$item=$query->fetch(PDO::FETCH_ASSOC);
     if(!$item||!teacher_can_access_course($pdo,(int)$item['course_id'],$teacherId))throw new TransferException('Étape introuvable.');
+    $item['position']=pathway_item_display_position($pdo,$itemId)??'–';
 
     $tags=$pdo->prepare('SELECT t.name FROM tags t JOIN page_tags pt ON pt.tag_id=t.id WHERE pt.page_id=? ORDER BY t.name');$tags->execute([$item['page_id']]);
     $objectives=$pdo->prepare('SELECT title FROM page_objectives WHERE page_id=? ORDER BY position,id');$objectives->execute([$item['page_id']]);
@@ -19,7 +20,7 @@ function pathway_page_document_export(PDO $pdo, int $itemId, int $teacherId): ar
     $lines=['# '.document_markdown_text((string)$item['title']),''];
     if(trim((string)$item['summary'])!==''){$lines[]=document_markdown_text((string)$item['summary']);$lines[]='';}
     $lines[]='> **'.t('Parcours').' :** '.document_markdown_text((string)$item['course_title']).' (`'.document_markdown_code((string)$item['course_code']).'`)';
-    $lines[]='> **'.t('Étape :number',['number'=>(int)$item['position']]).'** · '.t($item['is_evaluation']?'Évaluation':'Activité').' · '.(int)$item['estimated_minutes'].' min';
+    $lines[]='> **'.t('Étape :number',['number'=>$item['position']]).'** · '.t($item['is_evaluation']?'Évaluation':'Activité').' · '.(int)$item['estimated_minutes'].' min';
     $lines[]='> **'.t('Échéance').' :** '.pdf_date_fr($item['deadline']).' · **'.t('Statut').' :** '.t($item['status']==='ready'?'Prête':'Brouillon');
     $tagRows=$tags->fetchAll(PDO::FETCH_COLUMN);
     if($tagRows)$lines[]='> **'.t('Catégories').' :** '.implode(', ',array_map(static fn(string $tag):string=>'#'.document_markdown_text($tag),$tagRows));

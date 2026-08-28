@@ -61,8 +61,16 @@ function outbox_send_pending_batch(PDO $pdo, int $limit=MAIL_OUTBOX_BATCH_SIZE, 
     return $results;
 }
 
-function clear_sent_notification_history(PDO $pdo): int
+function teacher_can_clear_notification_history(PDO $pdo, int $teacherId): bool
 {
+    $statement=$pdo->prepare('SELECT 1 FROM courses WHERE teacher_id=? LIMIT 1');
+    $statement->execute([$teacherId]);
+    return (bool)$statement->fetchColumn();
+}
+
+function clear_sent_notification_history(PDO $pdo, int $teacherId): int
+{
+    if(!teacher_can_clear_notification_history($pdo,$teacherId))return 0;
     $statement=$pdo->prepare("DELETE FROM notification_outbox WHERE status='sent'");
     $statement->execute();
     return $statement->rowCount();

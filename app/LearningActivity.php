@@ -81,6 +81,9 @@ function learning_activity_report(PDO $pdo, int $enrollmentId, int $teacherId): 
         $groups[$key]['duration_seconds']+=(int)$visit['duration_seconds'];
         $groups[$key]['sessions']++;
     }
+    $displayPositions=pathway_display_position_map($pdo,(int)$enrollment['course_id'],(int)$enrollment['student_id']);
+    foreach($groups as &$group)$group['position']=$displayPositions[(int)$group['item_id']]??'–';
+    unset($group);
     usort($groups,static fn(array $a,array $b): int=>$b['last_at']<=>$a['last_at']);
     return array_values($groups);
 }

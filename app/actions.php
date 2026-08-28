@@ -472,8 +472,12 @@ function handle_action(string $action): never
             redirect('students');
         }catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('students');}
     }
-    if ($action === 'clear_notification_history' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
-        $deleted=clear_sent_notification_history(db());
+    if ($action === 'clear_notification_history' && $user['role'] === 'teacher') {
+        if(!teacher_can_clear_notification_history(db(),(int)$user['id'])){
+            flash(t('Seul un enseignant propriétaire d’un parcours peut effacer cet historique.'),'error');
+            redirect('outbox');
+        }
+        $deleted=clear_sent_notification_history(db(),(int)$user['id']);
         flash(t($deleted
             ? ':count notification(s) envoyée(s) supprimée(s) de l’historique.'
             : 'Aucune notification envoyée à supprimer.', ['count'=>$deleted]));
