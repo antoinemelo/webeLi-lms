@@ -153,6 +153,7 @@ button,a,summary{touch-action:manipulation}
 .content-block blockquote >:last-child{margin-bottom:0}
 .content-block code{padding:.12rem .32rem;border-radius:.3rem;background:#eae9f0}
 .content-block pre{overflow:auto;padding:1.1rem;border-radius:.9rem;background:var(--ink);color:#fff}
+.content-block pre code{padding:0;border-radius:0;background:transparent;color:inherit}
 .markdown-table-wrap{max-width:100%;overflow-x:auto;margin:1.25rem 0;border:1px solid var(--line);border-radius:.85rem;background:#fff;box-shadow:0 5px 18px rgb(41 39 59 / 6%)}
 .markdown-table{width:100%;min-width:32rem;border-collapse:collapse;font-size:.92rem}
 .markdown-table-weighted{table-layout:fixed}
