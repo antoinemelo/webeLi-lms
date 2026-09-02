@@ -156,7 +156,29 @@ Les titres Markdown sont disponibles du niveau `#` au niveau `######`. Une liste
 <div style="page-break-after: always;"></div>
 ```
 
-Dans la page Web, ce saut est indiqué par un trait discret. Seule cette instruction HTML précise est acceptée ; les autres balises restent affichées comme du texte afin de protéger le contenu.
+Dans la page Web, ce saut est indiqué par un trait discret. En dehors de cette instruction et de la balise sûre `<pre>` décrite ci-dessous, les balises HTML restent affichées comme du texte afin de protéger le contenu.
+
+Les liens acceptent un titre facultatif, affiché par le navigateur au survol :
+
+```markdown
+[Corrigé des exercices](https://exemple.ch/corrige "Corrigé")
+```
+
+Pour conserver les espaces et les retours à la ligne d’un texte préformaté, utiliser un bloc de code clôturé par trois accents graves, ou la balise `<pre>` sans attribut :
+
+````markdown
+```
+Première ligne
+  Ligne indentée
+```
+
+<pre>
+Première ligne
+  Ligne indentée
+</pre>
+````
+
+Le contenu de `<pre>` est toujours traité comme du texte : les éventuelles balises qu’il contient ne sont pas exécutées.
 
 Les tableaux utilisent la syntaxe Markdown à barres verticales. Les deux-points de la ligne de séparation règlent l’alignement des colonnes :
 

@@ -14,7 +14,9 @@ final class Markdown
         $list = [];
         $quote = [];
         $code = [];
+        $preformatted = [];
         $inCode = false;
+        $inPreformatted = false;
 
         $flushParagraph = static function () use (&$paragraph, &$out): void {
             if ($paragraph) {
@@ -35,12 +37,35 @@ final class Markdown
         $lineCount=count($lines);
         for($lineIndex=0;$lineIndex<$lineCount;$lineIndex++) {
             $line=$lines[$lineIndex];
+            if($inPreformatted){
+                if(preg_match('/^(.*?)<\/pre\s*>\s*$/i',$line,$matches)){
+                    if($matches[1]!=='')$preformatted[]=$matches[1];
+                    $out[]='<pre>'.e(implode("\n",$preformatted)).'</pre>';
+                    $preformatted=[];$inPreformatted=false;
+                }else $preformatted[]=$line;
+                continue;
+            }
+            if($inCode){
+                if(preg_match('/^```/',trim($line))){
+                    $out[]='<pre><code>'.e(implode("\n",$code)).'</code></pre>';
+                    $code=[];$inCode=false;
+                }else $code[]=$line;
+                continue;
+            }
+            if(preg_match('/^\s*<pre\s*>(.*)$/i',$line,$matches)){
+                $flushParagraph();$flushList();$flushQuote();
+                if(preg_match('/^(.*?)<\/pre\s*>\s*$/i',$matches[1],$closing)){
+                    $out[]='<pre>'.e($closing[1]).'</pre>';
+                }else{
+                    $inPreformatted=true;
+                    if($matches[1]!=='')$preformatted[]=$matches[1];
+                }
+                continue;
+            }
             if (preg_match('/^```/', trim($line))) {
                 $flushParagraph(); $flushList(); $flushQuote();
-                if ($inCode) { $out[] = '<pre><code>' . e(implode("\n", $code)) . '</code></pre>'; $code = []; }
-                $inCode = !$inCode; continue;
+                $inCode = true; continue;
             }
-            if ($inCode) { $code[] = $line; continue; }
             if (trim($line) === '') { $flushParagraph(); $flushList(); $flushQuote(); continue; }
             if (preg_match('/^<div\s+style\s*=\s*(["\'])\s*page-break-after\s*:\s*always\s*;?\s*\1\s*>\s*<\/div\s*>$/i', trim($line))) {
                 $flushParagraph(); $flushList(); $flushQuote();
@@ -86,6 +111,7 @@ final class Markdown
             }
             $flushList(); $flushQuote(); $paragraph[] = $line;
         }
+        if ($inPreformatted) $out[] = '<pre>' . e(implode("\n", $preformatted)) . '</pre>';
         if ($inCode) $out[] = '<pre><code>' . e(implode("\n", $code)) . '</code></pre>';
         $flushParagraph(); $flushList(); $flushQuote();
         return implode("\n", $out);
@@ -198,7 +224,17 @@ final class Markdown
         $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text) ?? $text;
         $text = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text) ?? $text;
         $text = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $text) ?? $text;
-        $text = preg_replace_callback('/\[([^]]+)]\((https?:\/\/[^\s)]+)\)/', static fn($m) => '<a href="' . e($m[2]) . '" rel="noopener" target="_blank">' . $m[1] . '</a>', $text) ?? $text;
+        $text = preg_replace_callback(
+            '/\[([^]]+)]\((https?:\/\/[^\s)]+)(?:\s+(?:&quot;([^\r\n]*?)&quot;|&#039;([^\r\n]*?)&#039;|\(([^()\r\n]*?)\)))?\)/',
+            static function(array $matches):string {
+                $title='';
+                foreach([3,4,5] as $index){
+                    if(($matches[$index]??'')!==''){$title=' title="'.$matches[$index].'"';break;}
+                }
+                return '<a href="'.$matches[2].'"'.$title.' rel="noopener" target="_blank">'.$matches[1].'</a>';
+            },
+            $text
+        ) ?? $text;
         return nl2br($text, false);
     }
 }
