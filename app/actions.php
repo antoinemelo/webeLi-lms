@@ -658,7 +658,7 @@ function handle_action(string $action): never
         if($isEvaluation){
             $rawScore=str_replace(',','.',trim((string)($_POST['score']??'')));
             if($rawScore===''){
-                run('UPDATE progress SET evaluation_score=NULL,teacher_level=NULL,teacher_note=?,teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE enrollment_id=? AND pathway_item_id=?',[trim((string)($_POST['note']??'')),$enrollmentId,$itemId]);
+                run("UPDATE progress SET evaluation_score=NULL,teacher_level=NULL,teacher_note=?,teacher_validated_at=NULL,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE enrollment_id=? AND pathway_item_id=?",[trim((string)($_POST['note']??'')),$enrollmentId,$itemId]);
                 flash(t('Note retirée. L’évaluation n’est plus validée.'));
                 redirect('student-detail',['enrollment'=>$enrollmentId]);
             }
@@ -666,9 +666,9 @@ function handle_action(string $action): never
             $score=round((float)$rawScore,2);
         }else $level=max(0,min(3,(int)($_POST['level']??0)));
         $completedAt=!$selfEvaluation&&$isEvaluation?gmdate('Y-m-d H:i:s'):null;
-        run('INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,completed_at,updated_at)
-            VALUES(?,?,?,?,?,CURRENT_TIMESTAMP,?,CURRENT_TIMESTAMP)
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,teacher_note=excluded.teacher_note,teacher_validated_at=CURRENT_TIMESTAMP,completed_at=COALESCE(progress.completed_at,excluded.completed_at),updated_at=CURRENT_TIMESTAMP',
+        run("INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,completed_at,updated_at)
+            VALUES(?,?,?,?,?,strftime('%Y-%m-%d %H:%M:%f','now'),?,strftime('%Y-%m-%d %H:%M:%f','now'))
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,teacher_note=excluded.teacher_note,teacher_validated_at=strftime('%Y-%m-%d %H:%M:%f','now'),completed_at=COALESCE(progress.completed_at,excluded.completed_at),updated_at=strftime('%Y-%m-%d %H:%M:%f','now')",
             [$enrollmentId,$itemId,$level,$score,trim((string)($_POST['note'] ?? '')),$completedAt]);
         $rewardId = (int) ($_POST['reward_type_id'] ?? 0);
         if ($rewardId > 0) {

@@ -114,6 +114,35 @@ function student_reward_changes_for_session(PDO $pdo,array $window,int $enrollme
     return $query->fetchAll(PDO::FETCH_ASSOC);
 }
 
+/** Returns only the kinds of achievements changed by teacher validation. */
+function student_achievement_change_types_for_session(PDO $pdo,array $window,int $enrollmentId,int $studentId): array
+{
+    if((int)($window['student_id']??0)!==$studentId||!isset($window['since'][$enrollmentId]))return [];
+    $seen=trim((string)$window['since'][$enrollmentId]);$cutoff=trim((string)($window['until']??''));
+    if($seen===''||$cutoff==='')return [];
+    $query=$pdo->prepare("SELECT pi.id,pi.page_id,pi.is_evaluation,pi.framework_tracking_enabled,
+        CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)) THEN 1 ELSE 0 END AS accessible,
+        EXISTS(SELECT 1 FROM item_skills linked_skill WHERE linked_skill.pathway_item_id=pi.id) AS has_skills,
+        EXISTS(SELECT 1 FROM page_objectives objective WHERE objective.page_id=pi.page_id) AS has_objectives
+        FROM progress pr
+        JOIN enrollments e ON e.id=pr.enrollment_id
+        JOIN pathway_items pi ON pi.id=pr.pathway_item_id AND pi.course_id=e.course_id
+        WHERE pr.enrollment_id=? AND e.student_id=? AND e.status='active'
+          AND pr.teacher_validated_at IS NOT NULL
+          AND pr.teacher_validated_at>? AND pr.teacher_validated_at<=?");
+    $query->execute([$studentId,$enrollmentId,$studentId,$seen,$cutoff]);
+    $changed=['skill'=>false,'objective'=>false,'evaluation'=>false];
+    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
+        $isEvaluation=(bool)$row['is_evaluation'];
+        if($isEvaluation)$changed['evaluation']=true;
+        if(!(bool)$row['framework_tracking_enabled']||(!$isEvaluation&&!(bool)$row['accessible']))continue;
+        if((bool)$row['has_skills'])$changed['skill']=true;
+        if((bool)$row['has_objectives'])$changed['objective']=true;
+    }
+    return array_keys(array_filter($changed));
+}
+
 /** @return array<int,int> item id => visible position */
 function pathway_display_position_map(PDO $pdo,int $courseId,?int $studentId=null): array
 {
