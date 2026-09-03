@@ -181,7 +181,10 @@ function open_authenticated_session(array $user): never
     session_regenerate_id(true);
     unset($_SESSION['login_teacher_id']);
     $_SESSION['user_id']=(int)$user['id'];
-    if($studentSessionToken!==null)$_SESSION['student_session_token']=$studentSessionToken;
+    if($studentSessionToken!==null){
+        $_SESSION['student_session_token']=$studentSessionToken;
+        $_SESSION['student_pathway_change_window']=begin_student_pathway_change_session(db(),(int)$user['id']);
+    }
     $profileLanguage=normalize_language((string)($user['language']??''));
     if($profileLanguage!==null)use_language($profileLanguage);
     flash(t('Bienvenue :name !',['name'=>$user['first_name']]));
@@ -673,7 +676,7 @@ function handle_action(string $action): never
             if ($reward) {
                 $points = normalize_reward_points($_POST['points'] ?? $reward['default_points'],(int)$reward['default_points']);
                 $message = trim((string)($_POST['reward_message'] ?? ''));
-                run('INSERT INTO reward_awards(enrollment_id,pathway_item_id,reward_type_id,points,message,awarded_by) VALUES(?,?,?,?,?,?)', [$enrollmentId,$itemId,$rewardId,$points,$message,$user['id']]);
+                run("INSERT INTO reward_awards(enrollment_id,pathway_item_id,reward_type_id,points,message,awarded_by,awarded_at) VALUES(?,?,?,?,?,?,strftime('%Y-%m-%d %H:%M:%f','now'))", [$enrollmentId,$itemId,$rewardId,$points,$message,$user['id']]);
                 $studentLanguage=normalize_language((string)($context['language']??''))??'fr';
                 enqueue('reward.awarded', $context['email'], $reward['icon'].' '.t('Un encouragement pour votre travail',[],$studentLanguage), $reward['name'].' · '.format_signed_points($points).' '.t('points',[],$studentLanguage)."\n".$message);
             }
@@ -708,7 +711,7 @@ function handle_action(string $action): never
                 if($metadataChanged){
                     $revision=(int)($_POST['page_revision']??-1);
                     if(edit_lock_claim_for_save(db(),'page_metadata',$pageId,(int)$user['id'])&&$revision===(int)$storedPage['revision']){
-                        $update=db()->prepare('UPDATE pages SET title=?,summary=?,status=?,estimated_minutes=?,updated_at=CURRENT_TIMESTAMP,updated_by=?,revision=revision+1 WHERE id=? AND revision=?');
+                        $update=db()->prepare("UPDATE pages SET title=?,summary=?,status=?,estimated_minutes=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now'),updated_by=?,revision=revision+1 WHERE id=? AND revision=?");
                         $update->execute([$title,$summary,$status,$minutes,$user['id'],$pageId,$revision]);
                         if($update->rowCount()===1){run('DELETE FROM page_tags WHERE page_id=?',[$pageId]);foreach($tagIds as $tagId)run('INSERT OR IGNORE INTO page_tags VALUES(?,?)',[$pageId,$tagId]);run('DELETE FROM page_objectives WHERE page_id=?',[$pageId]);foreach($pageObjectives as $position=>$objective)run('INSERT INTO page_objectives(page_id,title,description,position) VALUES(?,?,?,?)',[$pageId,$objective['title'],$objective['description'],$position+1]);$changed=true;}
                         else $conflicts[]=t('Réglages de la page');
@@ -751,7 +754,7 @@ function handle_action(string $action): never
             $deletedIds=(array)($_POST['deleted_block_id']??[]);$deletedRevisions=(array)($_POST['deleted_block_revision']??[]);
             foreach($deletedIds as $i=>$deletedId){$blockId=(int)$deletedId;$revision=(int)($deletedRevisions[$i]??-1);$stored=one('SELECT position,revision FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);if(!$stored)continue;if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}$delete=db()->prepare('DELETE FROM page_blocks WHERE id=? AND page_id=? AND revision=?');$delete->execute([$blockId,$pageId,$revision]);if($delete->rowCount()===1)$changed=true;}
             Qcm::syncPageTag(db(),$pageId);
-            if($changed)run('UPDATE pages SET updated_at=CURRENT_TIMESTAMP,updated_by=? WHERE id=?',[$user['id'],$pageId]);
+            if($changed)run("UPDATE pages SET updated_at=strftime('%Y-%m-%d %H:%M:%f','now'),updated_by=? WHERE id=?",[$user['id'],$pageId]);
             db()->commit();
         } catch (Throwable $e) { db()->rollBack(); throw $e; }
         release_edit_locks(db(),(int)$user['id']);
@@ -859,7 +862,7 @@ function handle_action(string $action): never
         $item=one('SELECT * FROM pathway_items WHERE id=?',[$id]);
         if ($item&&teacher_can_access_course(db(),(int)$item['course_id'],(int)$user['id'])&&acquire_edit_lock(db(),'course_structure',(int)$item['course_id'],(int)$user['id'])['ok']) {
             $other=one('SELECT * FROM pathway_items WHERE course_id=? AND position '.($direction<0?'<':'>').' ? ORDER BY position '.($direction<0?'DESC':'ASC').' LIMIT 1',[$item['course_id'],$item['position']]);
-            if ($other) { run('UPDATE pathway_items SET position=-1 WHERE id=?',[$id]); run('UPDATE pathway_items SET position=? WHERE id=?',[$item['position'],$other['id']]); run('UPDATE pathway_items SET position=? WHERE id=?',[$other['position'],$id]); }
+            if ($other) { run('UPDATE pathway_items SET position=-1 WHERE id=?',[$id]); run("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?",[$item['position'],$other['id']]); run("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?",[$other['position'],$id]); }
             release_edit_locks(db(),(int)$user['id'],'course_structure',(int)$item['course_id']);
             redirect('pathway',['course'=>$item['course_id']]);
         }
@@ -893,7 +896,7 @@ function handle_action(string $action): never
             }
             $isEvaluation=isset($_POST['is_evaluation'])?1:0;$selfEvaluation=array_key_exists('self_evaluation_enabled',$_POST)?((int)$_POST['self_evaluation_enabled']===1?1:0):(int)$item['self_evaluation_enabled'];$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
             if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            $update=db()->prepare('UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,revision=revision+1 WHERE id=? AND revision=?');
+            $update=db()->prepare("UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,revision=revision+1,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
             $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$frameworkTracking,$id,$revision]);
             if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             if($isEvaluation!==(int)$item['is_evaluation'])run("UPDATE progress SET teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$id]);

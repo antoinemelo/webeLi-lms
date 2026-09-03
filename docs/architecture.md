@@ -51,7 +51,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 
 - `users` : prénom, nom, courriel, groupe classe, téléphone, rôle, identifiants et indicateur superadmin ;
 - `courses` : cours rattaché à un enseignant, référence stable d’échange et code unique utilisé par les invitations ;
-- `enrollments` : appartenance d’un élève à un cours, créée par un enseignant ou par l’élève avec le code du cours.
+- `enrollments` : appartenance d’un élève à un cours, créée par un enseignant ou par l’élève avec le code du cours ; `pathway_changes_seen_at` est l’unique repère de consultation des changements du parcours.
 
 ### Contenus
 
@@ -62,7 +62,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 
 ### Parcours et référentiel
 
-- `pathway_items` : usage ordonné d’une page dans un cours ;
+- `pathway_items` : usage ordonné d’une page dans un cours, avec ses horodatages de création et de dernière modification ;
 - `course_objectives`, `course_skills` : référentiel propre au cours ;
 - `item_objectives`, `item_skills` : rattachement du référentiel aux étapes.
 
@@ -75,6 +75,8 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 - `notification_outbox` : emails différés.
 
 Les clés étrangères sont activées à chaque connexion. Les contraintes `CHECK`, `UNIQUE` et les suppressions en cascade portent les invariants simples au plus près des données.
+
+Le signalement élève des étapes ajoutées ou modifiées ne crée aucune ligne d’historique. À la connexion, l’ancien repère `enrollments.pathway_changes_seen_at` et l’heure courante forment une fenêtre conservée dans la session PHP, puis le repère durable est avancé en préparation de la connexion suivante. La vue compare `pathway_items.created_at` ainsi que le maximum de `pages.updated_at` et `pathway_items.updated_at` à cette fenêtre, uniquement sur les étapes actuellement visibles. La liste reste ainsi stable pendant toute la session et la base ne conserve qu’un seul horodatage par inscription. `users.student_first_login_at` empêche toute liste d’apparaître lors de la première connexion d’un élève.
 
 ## Authentification et autorisation
 

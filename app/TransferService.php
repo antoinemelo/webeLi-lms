@@ -49,7 +49,7 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
     try{
         if($overwrite && $existing){
             $pageId=(int)$existing['id'];
-            $pdo->prepare('UPDATE pages SET title=?,summary=?,status=?,estimated_minutes=?,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?')
+            $pdo->prepare("UPDATE pages SET title=?,summary=?,status=?,estimated_minutes=?,updated_by=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?")
                 ->execute([$title,trim((string)($page['summary']??'')),($page['status']??'draft')==='ready'?'ready':'draft',max(1,(int)($page['estimated_minutes']??15)),$teacherId,$pageId]);
             $pdo->prepare('DELETE FROM page_blocks WHERE page_id=?')->execute([$pageId]);
             $pdo->prepare('DELETE FROM page_tags WHERE page_id=?')->execute([$pageId]);

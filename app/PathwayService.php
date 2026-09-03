@@ -31,7 +31,7 @@ function reorder_pathway_item(PDO $pdo,int $itemId,int $targetPosition,int $teac
         array_splice($ids,$targetPosition-1,0,[$itemId]);
         $pdo->beginTransaction();
         $pdo->prepare('UPDATE pathway_items SET position=-position WHERE course_id=?')->execute([$courseId]);
-        $update=$pdo->prepare('UPDATE pathway_items SET position=? WHERE id=? AND course_id=?');
+        $update=$pdo->prepare("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND course_id=?");
         foreach($ids as $index=>$id)$update->execute([$index+1,$id,$courseId]);
         $pdo->commit();
         return ['status'=>'updated','course_id'=>$courseId];
@@ -56,6 +56,62 @@ function number_pathway_items_for_display(array $items): array
     }
     unset($item);
     return $items;
+}
+
+/**
+ * Opens the one-session change window and advances the durable marker for the
+ * next login. The previous marker remains available only in the PHP session.
+ */
+function begin_student_pathway_change_session(PDO $pdo,int $studentId): array
+{
+    $cutoff=(string)$pdo->query("SELECT strftime('%Y-%m-%d %H:%M:%f','now')")->fetchColumn();
+    $studentQuery=$pdo->prepare("SELECT student_first_login_at FROM users WHERE id=? AND role='student' AND account_status='active'");
+    $studentQuery->execute([$studentId]);$firstLoginAt=$studentQuery->fetchColumn();
+    if($firstLoginAt===false)return ['student_id'=>$studentId,'since'=>[],'until'=>$cutoff,'first_login'=>true];
+    $isFirstLogin=trim((string)$firstLoginAt)==='';
+    $query=$pdo->prepare("SELECT id,pathway_changes_seen_at FROM enrollments WHERE student_id=? AND status='active'");
+    $query->execute([$studentId]);$since=[];
+    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $enrollment)if(!$isFirstLogin)$since[(int)$enrollment['id']]=(string)($enrollment['pathway_changes_seen_at']??'');
+    $update=$pdo->prepare("UPDATE enrollments SET pathway_changes_seen_at=? WHERE student_id=? AND status='active'");
+    $update->execute([$cutoff,$studentId]);
+    $pdo->prepare('UPDATE users SET student_first_login_at=COALESCE(student_first_login_at,?) WHERE id=?')->execute([$cutoff,$studentId]);
+    return ['student_id'=>$studentId,'since'=>$since,'until'=>$cutoff,'first_login'=>$isFirstLogin];
+}
+
+/** Returns visible changes for the whole current login session. */
+function student_pathway_changes_for_session(array $window,int $enrollmentId,int $studentId,array $visibleItems): array
+{
+    if((int)($window['student_id']??0)!==$studentId||!isset($window['since'][$enrollmentId]))return [];
+    $seen=trim((string)$window['since'][$enrollmentId]);$cutoff=trim((string)($window['until']??''));
+    if($seen===''||$cutoff==='')return [];
+    $changes=[];
+    foreach($visibleItems as $item){
+        $modified=max((string)($item['item_updated_at']??''),(string)($item['page_updated_at']??''));
+        if($modified<=$seen||$modified>$cutoff)continue;
+        $created=(string)($item['item_created_at']??'');
+        $item['change_kind']=$created>$seen&&$created<=$cutoff&&$modified<=$created?'added':'updated';
+        $changes[]=$item;
+    }
+    return $changes;
+}
+
+/** Returns encouragements awarded during the current login window. */
+function student_reward_changes_for_session(PDO $pdo,array $window,int $enrollmentId,int $studentId): array
+{
+    if((int)($window['student_id']??0)!==$studentId||!isset($window['since'][$enrollmentId]))return [];
+    $seen=trim((string)$window['since'][$enrollmentId]);$cutoff=trim((string)($window['until']??''));
+    if($seen===''||$cutoff==='')return [];
+    $query=$pdo->prepare("SELECT ra.id,ra.points,ra.message,ra.awarded_at,rt.name,rt.icon,p.title AS page_title
+        FROM reward_awards ra
+        JOIN enrollments e ON e.id=ra.enrollment_id
+        JOIN reward_types rt ON rt.id=ra.reward_type_id
+        JOIN pathway_items pi ON pi.id=ra.pathway_item_id
+        JOIN pages p ON p.id=pi.page_id
+        WHERE ra.enrollment_id=? AND e.student_id=? AND e.status='active'
+          AND ra.awarded_at>? AND ra.awarded_at<=?
+        ORDER BY ra.awarded_at DESC,ra.id DESC");
+    $query->execute([$enrollmentId,$studentId,$seen,$cutoff]);
+    return $query->fetchAll(PDO::FETCH_ASSOC);
 }
 
 /** @return array<int,int> item id => visible position */
@@ -390,7 +446,7 @@ function remove_pathway_item(PDO $pdo, int $itemId, int $teacherId): ?int
         $pdo->prepare('DELETE FROM pathway_items WHERE id=?')->execute([$itemId]);
         $positions = $pdo->prepare('SELECT id FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $positions->execute([$courseId]);
-        $update = $pdo->prepare('UPDATE pathway_items SET position=? WHERE id=?');
+        $update = $pdo->prepare("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?");
         foreach ($positions->fetchAll(PDO::FETCH_COLUMN) as $index => $remainingId) {
             $update->execute([$index + 1,$remainingId]);
         }

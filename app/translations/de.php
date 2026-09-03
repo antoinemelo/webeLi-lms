@@ -3,7 +3,7 @@ return [
     'Connexion'=>'Anmeldung','Inscription'=>'Registrierung','Langue'=>'Sprache','Élève'=>'Lernende/r','Enseignant'=>'Lehrperson','Code élève'=>'Lernendencode','Identifiant'=>'Benutzername','Mot de passe'=>'Passwort',
     'Se connecter'=>'Anmelden','S’inscrire'=>'Registrieren','Pas encore de compte ?'=>'Noch kein Konto?',
     'Didactique et pédagogie'=>'Didaktik und Pädagogik','Chemins différenciés, mais vision commune.'=>'Individuelle Wege, eine gemeinsame Vision.',
-    "Retrouvez les étapes du parcours d'apprentissage, acquis et encouragements, en un seul et même endroit, disponible 24/7."=>'Lernschritte, Erfolge und Ermutigungen an einem Ort, rund um die Uhr verfügbar.',
+    "Retrouvez les étapes du parcours d'apprentissage, acquis et encouragements, en un seul et même endroit, disponible 24/7."=>'Lernschritte, Erfolge und Belohnungen an einem Ort, rund um die Uhr verfügbar.',
     'Ton code personnel'=>'Dein persönlicher Code','2 premières lettres du prénom + 3 premières du nom.'=>'Die ersten 2 Buchstaben des Vornamens + die ersten 3 des Nachnamens.',
     'Espace enseignant'=>'Bereich für Lehrpersonen','Connectez-vous pour gérer les élèves, contenus et parcours.'=>'Melden Sie sich an, um Lernende, Inhalte und Lernpfade zu verwalten.',
     'Ex. nora'=>'Z. B. nora','Ex. LIROS'=>'Z. B. LIROS','Bienvenue'=>'Willkommen','Créer son espace.'=>'Eigenes Konto erstellen.','Retour à la connexion'=>'Zurück zur Anmeldung',

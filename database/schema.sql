@@ -32,6 +32,7 @@ CREATE TABLE users (
     language TEXT CHECK(language IS NULL OR language IN ('fr','en','de','it','es')),
     student_session_token_hash TEXT,
     student_session_seen_at INTEGER,
+    student_first_login_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     managed_by INTEGER,
     FOREIGN KEY(managed_by) REFERENCES users(id) ON DELETE SET NULL
@@ -67,6 +68,7 @@ CREATE TABLE enrollments (
     joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived')),
     archived_at TEXT,
+    pathway_changes_seen_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f','now')),
     UNIQUE(course_id, student_id),
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE
@@ -88,7 +90,7 @@ CREATE TABLE pages (
     summary TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','ready')),
     estimated_minutes INTEGER NOT NULL DEFAULT 15 CHECK(estimated_minutes > 0),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f','now')),
     owner_id INTEGER NOT NULL,
     updated_by INTEGER,
     revision INTEGER NOT NULL DEFAULT 0,
@@ -171,6 +173,8 @@ CREATE TABLE pathway_items (
     access_mode TEXT NOT NULL DEFAULT 'all' CHECK(access_mode IN ('all','restricted','none')),
     framework_tracking_enabled INTEGER NOT NULL DEFAULT 1 CHECK(framework_tracking_enabled IN (0,1)),
     revision INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f','now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f','now')),
     UNIQUE(course_id, position),
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY(page_id) REFERENCES pages(id) ON DELETE RESTRICT
@@ -183,6 +187,13 @@ CREATE TABLE pathway_item_students (
     FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE,
     FOREIGN KEY(student_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TRIGGER touch_pathway_item_after_update
+AFTER UPDATE OF course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled ON pathway_items
+WHEN NEW.updated_at IS OLD.updated_at
+BEGIN
+    UPDATE pathway_items SET updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=NEW.id;
+END;
 
 CREATE TABLE collaboration_comments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -328,7 +339,7 @@ CREATE TABLE reward_awards (
     points INTEGER NOT NULL CHECK(points BETWEEN -100 AND 100 AND points <> 0),
     message TEXT NOT NULL DEFAULT '',
     awarded_by INTEGER NOT NULL,
-    awarded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    awarded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f','now')),
     FOREIGN KEY(enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE,
     FOREIGN KEY(pathway_item_id) REFERENCES pathway_items(id) ON DELETE CASCADE,
     FOREIGN KEY(reward_type_id) REFERENCES reward_types(id) ON DELETE RESTRICT,
@@ -396,4 +407,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 14;
+PRAGMA user_version = 16;

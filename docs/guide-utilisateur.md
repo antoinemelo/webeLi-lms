@@ -42,7 +42,7 @@ Les codes sont comparés sans distinction de casse. Un cours archivé ne peut pa
 
 ## Parcours élève
 
-### Accueil « Aujourd’hui »
+### Onglet « Parcours »
 
 L’élève voit immédiatement :
 
@@ -54,6 +54,10 @@ L’élève voit immédiatement :
 - son score de rewards.
 
 La liste « Vue d’ensemble » distingue trois états : à faire, envoyé à l’enseignant et confirmé.
+
+Lorsqu’une étape visible a été ajoutée, déplacée ou modifiée, ou lorsqu’un encouragement a été attribué depuis la connexion précédente, un encadré **Depuis la dernière visite** apparaît avec des liens directs vers les éléments concernés. Les ajouts, les mises à jour et les encouragements y sont distingués. L’encadré est propre à chaque élève et à chaque parcours, et reste visible pendant toute la session. À la connexion suivante, le repère est réinitialisé : seul l’intervalle entre les deux dernières connexions est conservé, sans journal durable des changements. Aucune liste n’est affichée lors de la toute première connexion.
+
+Les parcours sont classés du plus récemment consulté au plus ancien. Les quatre premiers apparaissent côte à côte ; s’il y en a davantage, les suivants sont accessibles avec le bouton à trois points verticaux placé à droite.
 
 ### Réaliser une étape
 

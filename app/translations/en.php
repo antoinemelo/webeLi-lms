@@ -4,7 +4,7 @@ return [
     'Élève'=>'Student','Enseignant'=>'Teacher','Code élève'=>'Student code','Identifiant'=>'Username','Mot de passe'=>'Password',
     'Se connecter'=>'Sign in','S’inscrire'=>'Sign up','Pas encore de compte ?'=>'No account yet?',
     'Didactique et pédagogie'=>'Teaching and learning','Chemins différenciés, mais vision commune.'=>'Different paths, one shared vision.',
-    "Retrouvez les étapes du parcours d'apprentissage, acquis et encouragements, en un seul et même endroit, disponible 24/7."=>'Find learning steps, achievements and encouragement in one place, available 24/7.',
+    "Retrouvez les étapes du parcours d'apprentissage, acquis et encouragements, en un seul et même endroit, disponible 24/7."=>'Find learning steps, achievements and rewards in one place, available 24/7.',
     'Ton code personnel'=>'Your personal code','2 premières lettres du prénom + 3 premières du nom.'=>'First 2 letters of your first name + first 3 of your last name.',
     'Espace enseignant'=>'Teacher area','Connectez-vous pour gérer les élèves, contenus et parcours.'=>'Sign in to manage students, content and learning paths.',
     'Ex. nora'=>'E.g. nora','Ex. LIROS'=>'E.g. LIROS',
