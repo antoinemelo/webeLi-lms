@@ -617,9 +617,9 @@ function view_student_detail(): void
             <small><i class="bi bi-clock-history"></i> <?=e(learning_activity_datetime_label($item['last_visit_at']))?></small>
           </div>
         </header>
-        <?php if($canTeacherAssess): $pendingLevel=!$isEvaluation&&$needsReview;$editLabel=t($isEvaluation?($item['teacher_validated_at']?'Modifier la note':'Noter l’évaluation'):($item['teacher_validated_at']?'Modifier la confirmation':'Confirmer le niveau')); ?>
+        <?php if($canTeacherAssess): $editLabel=t($isEvaluation?($item['teacher_validated_at']?'Modifier la note':'Noter l’évaluation'):($item['teacher_validated_at']?'Modifier la confirmation':'Confirmer le niveau')); ?>
           <details class="review-edit">
-            <summary class="review-edit-toggle<?=$pendingLevel?' review-edit-pending':''?>" title="<?=e($editLabel)?>" aria-label="<?=e($editLabel)?>"><i class="bi <?=$pendingLevel?'bi-pencil-fill':'bi-pencil'?>" aria-hidden="true"></i></summary>
+            <summary class="review-edit-toggle<?=$needsReview?' review-edit-pending':''?>" title="<?=e($editLabel)?>" aria-label="<?=e($editLabel)?>"><i class="bi <?=$needsReview?'bi-pencil-fill':'bi-pencil'?>" aria-hidden="true"></i></summary>
             <?php if($selfEvaluation&&$item['student_validated_at']&&trim((string)$item['student_note'])!==''): ?><div class="student-self"><p><?=e($item['student_note'])?></p></div><?php endif; ?>
             <form method="post" class="review-form"><?=csrf_field()?>
               <input type="hidden" name="action" value="teacher_validate"><input type="hidden" name="enrollment_id" value="<?=$e['id']?>"><input type="hidden" name="item_id" value="<?=$item['id']?>">
