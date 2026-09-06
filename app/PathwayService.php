@@ -529,6 +529,22 @@ function save_student_private_note(PDO $pdo, int $studentId, int $itemId, string
     return true;
 }
 
+/** Average of each active student's weighted assessment average, as shown in their teacher profile. */
+function course_evaluation_average(PDO $pdo, int $courseId): ?float
+{
+    $query=$pdo->prepare("SELECT AVG(student_average) FROM (
+        SELECT SUM(pr.evaluation_score*pi.evaluation_weight)/SUM(pi.evaluation_weight) AS student_average
+        FROM enrollments e JOIN users u ON u.id=e.student_id
+        JOIN progress pr ON pr.enrollment_id=e.id
+        JOIN pathway_items pi ON pi.id=pr.pathway_item_id AND pi.course_id=e.course_id
+        WHERE e.course_id=? AND e.status='active' AND u.account_status='active'
+          AND pi.is_evaluation=1 AND pi.framework_tracking_enabled=1 AND pr.evaluation_score IS NOT NULL
+        GROUP BY e.id
+    )");
+    $query->execute([$courseId]);$average=$query->fetchColumn();
+    return $average===null||$average===false?null:(float)$average;
+}
+
 function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $trackedOnly=false): array
 {
     $context=$pdo->prepare("SELECT e.student_id FROM enrollments e WHERE e.id=? AND e.course_id=? AND e.status='active'");

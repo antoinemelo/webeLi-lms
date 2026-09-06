@@ -133,7 +133,7 @@ Depuis **Suivi**, ouvrir un élève. La dernière visite connue apparaît à dro
 
 Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps actif toutes les 60 secondes et à la fermeture ou au masquage de l’onglet. Les données de plus d’un mois sont automatiquement supprimées.
 
-Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
+Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
 
 Lorsqu’une annonce est publiée dans un parcours, tous les élèves qui y sont activement inscrits reçoivent également un courriel. Son objet suit la forme **Nom du parcours / Titre de l’annonce** et son corps reprend uniquement le contenu de l’annonce. Le message est préparé dans la boîte de notifications puis envoyé par la tâche d’exploitation habituelle.
 
