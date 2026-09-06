@@ -606,7 +606,7 @@ function view_student_detail(): void
       </div>
     </section>
     <div class="detail-grid"><section><div class="review-list">
-    <?php foreach($items as $item): $qcmSummary=Qcm::summary(db(),(int)$e['student_id'],(int)$item['id']);$selfEvaluation=(bool)$item['self_evaluation_enabled'];$isEvaluation=(bool)$item['is_evaluation'];$isConsultation=!$selfEvaluation&&!$isEvaluation;$hasQcm=$isEvaluation&&isset($quizCompletion['expected'][(int)$item['id']]);$qcmComplete=$hasQcm&&!empty($quizCompletion['completed'][(int)$e['student_id']][(int)$item['id']]);$canTeacherAssess=$isEvaluation?($hasQcm?$qcmComplete:(!$selfEvaluation||(bool)$item['student_validated_at'])):($selfEvaluation&&(bool)$item['student_validated_at']);$needsReview=$canTeacherAssess&&!$item['teacher_validated_at'];$status=$item['teacher_validated_at']?($isEvaluation?number_format((float)$item['evaluation_score'],2,',','').'/10':t('Niv.').' '.$item['teacher_level']):($isConsultation?t($item['completed_at']?'Consultée':'À consulter'):t($canTeacherAssess?($isEvaluation?'À noter':'À confirmer'):'À faire')); ?>
+    <?php $pendingReviewOpened=false; foreach($items as $item): $qcmSummary=Qcm::summary(db(),(int)$e['student_id'],(int)$item['id']);$selfEvaluation=(bool)$item['self_evaluation_enabled'];$isEvaluation=(bool)$item['is_evaluation'];$isConsultation=!$selfEvaluation&&!$isEvaluation;$hasQcm=$isEvaluation&&isset($quizCompletion['expected'][(int)$item['id']]);$qcmComplete=$hasQcm&&!empty($quizCompletion['completed'][(int)$e['student_id']][(int)$item['id']]);$canTeacherAssess=$isEvaluation?($hasQcm?$qcmComplete:(!$selfEvaluation||(bool)$item['student_validated_at'])):($selfEvaluation&&(bool)$item['student_validated_at']);$needsReview=$canTeacherAssess&&!$item['teacher_validated_at'];$status=$item['teacher_validated_at']?($isEvaluation?number_format((float)$item['evaluation_score'],2,',','').'/10':t('Niv.').' '.$item['teacher_level']):($isConsultation?t($item['completed_at']?'Consultée':'À consulter'):t($canTeacherAssess?($isEvaluation?'À noter':'À confirmer'):'À faire')); ?>
       <article class="review-card <?=$needsReview?'needs-review':''?><?=$canTeacherAssess?' review-card-editable':''?>">
         <header>
           <span><?=$item['position']?></span>
@@ -617,8 +617,8 @@ function view_student_detail(): void
             <small><i class="bi bi-clock-history"></i> <?=e(learning_activity_datetime_label($item['last_visit_at']))?></small>
           </div>
         </header>
-        <?php if($canTeacherAssess): $editLabel=t($isEvaluation?($item['teacher_validated_at']?'Modifier la note':'Noter l’évaluation'):($item['teacher_validated_at']?'Modifier la confirmation':'Confirmer le niveau')); ?>
-          <details class="review-edit">
+        <?php if($canTeacherAssess): $openReview=$needsReview&&!$pendingReviewOpened;if($openReview)$pendingReviewOpened=true;$editLabel=t($isEvaluation?($item['teacher_validated_at']?'Modifier la note':'Noter l’évaluation'):($item['teacher_validated_at']?'Modifier la confirmation':'Confirmer le niveau')); ?>
+          <details class="review-edit"<?=$openReview?' open':''?>>
             <summary class="review-edit-toggle<?=$needsReview?' review-edit-pending':''?>" title="<?=e($editLabel)?>" aria-label="<?=e($editLabel)?>"><i class="bi <?=$needsReview?'bi-pencil-fill':'bi-pencil'?>" aria-hidden="true"></i></summary>
             <?php if($selfEvaluation&&$item['student_validated_at']&&trim((string)$item['student_note'])!==''): ?><div class="student-self"><p><?=e($item['student_note'])?></p></div><?php endif; ?>
             <form method="post" class="review-form"><?=csrf_field()?>
