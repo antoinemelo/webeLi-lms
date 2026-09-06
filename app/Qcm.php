@@ -102,6 +102,25 @@ final class Qcm
      */
     public static function submit(PDO $pdo,int $studentId,int $itemId,int $blockId,string $key,array $submitted): array
     {
+        $context=self::quizContext($pdo,$studentId,$itemId,$blockId,$key);
+        if($context['status']!=='available')return $context;
+        $item=$context['item'];$section=$context['section'];
+        $result=self::score($section['questions'],$submitted);
+        $isEvaluation=(bool)$item['is_evaluation'];
+        $conflict=$isEvaluation?'DO NOTHING':"DO UPDATE SET
+              score_percent=excluded.score_percent,correct_questions=excluded.correct_questions,total_questions=excluded.total_questions,
+              attempt_count=qcm_attempts.attempt_count+1,answered_at=CURRENT_TIMESTAMP";
+        $save=$pdo->prepare("INSERT INTO qcm_attempts(student_id,pathway_item_id,page_block_id,qcm_key,score_percent,correct_questions,total_questions,attempt_count,answered_at)
+            VALUES(?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+            ON CONFLICT(student_id,pathway_item_id,page_block_id,qcm_key) $conflict");
+        $save->execute([$studentId,$itemId,$blockId,$key,$result['score'],$result['correct'],$result['total'],1]);
+        if($isEvaluation&&$save->rowCount()!==1)return ['status'=>'already_submitted','course_id'=>(int)$item['course_id']];
+        $pdo->prepare('DELETE FROM qcm_drafts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?')->execute([$studentId,$itemId,$blockId,$key]);
+        return ['status'=>'saved','score'=>$result['score'],'correct'=>$result['correct'],'total'=>$result['total'],'course_id'=>(int)$item['course_id'],'is_evaluation'=>$isEvaluation];
+    }
+
+    private static function quizContext(PDO $pdo,int $studentId,int $itemId,int $blockId,string $key): array
+    {
         $access=$pdo->prepare("SELECT pi.id,pi.page_id,pi.course_id,pi.is_evaluation FROM pathway_items pi
             JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
             WHERE pi.id=? AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
@@ -115,19 +134,39 @@ final class Qcm
             if($section['type']!=='qcm'||empty($section['valid']))continue;
             $candidate=self::key($blockId,(int)$section['index'],$section['source']);
             if(!hash_equals($candidate,$key))continue;
-            $result=self::score($section['questions'],$submitted);
-            $isEvaluation=(bool)$item['is_evaluation'];
-            $conflict=$isEvaluation?'DO NOTHING':"DO UPDATE SET
-                  score_percent=excluded.score_percent,correct_questions=excluded.correct_questions,total_questions=excluded.total_questions,
-                  attempt_count=qcm_attempts.attempt_count+1,answered_at=CURRENT_TIMESTAMP";
-            $save=$pdo->prepare("INSERT INTO qcm_attempts(student_id,pathway_item_id,page_block_id,qcm_key,score_percent,correct_questions,total_questions,attempt_count,answered_at)
-                VALUES(?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-                ON CONFLICT(student_id,pathway_item_id,page_block_id,qcm_key) $conflict");
-            $save->execute([$studentId,$itemId,$blockId,$key,$result['score'],$result['correct'],$result['total'],1]);
-            if($isEvaluation&&$save->rowCount()!==1)return ['status'=>'already_submitted','course_id'=>(int)$item['course_id']];
-            return ['status'=>'saved','score'=>$result['score'],'correct'=>$result['correct'],'total'=>$result['total'],'course_id'=>(int)$item['course_id'],'is_evaluation'=>$isEvaluation];
+            return ['status'=>'available','item'=>$item,'section'=>$section];
         }
         return ['status'=>'changed'];
+    }
+
+    public static function saveDraft(PDO $pdo,int $studentId,int $itemId,int $blockId,string $key,array $submitted,int $revision=0,int $attemptCount=0): array
+    {
+        $context=self::quizContext($pdo,$studentId,$itemId,$blockId,$key);
+        if($context['status']!=='available')return ['status'=>$context['status']];
+        $answers=[];
+        foreach($context['section']['questions'] as $index=>$question){
+            $selected=$submitted['q'.$index]??[];
+            if(!is_array($selected))return ['status'=>'invalid'];
+            $values=[];
+            foreach($selected as $value){
+                if(!is_scalar($value)||!preg_match('/^\d+$/D',(string)$value)||!isset($question['answers'][(int)$value]))return ['status'=>'invalid'];
+                $values[]=(int)$value;
+            }
+            $values=array_values(array_unique($values));
+            if(!$question['multiple']&&count($values)>1)return ['status'=>'invalid'];
+            $answers['q'.$index]=$values;
+        }
+        // One atomic statement rejects stale tabs and saves arriving after final submission.
+        $save=$pdo->prepare("INSERT INTO qcm_drafts(student_id,pathway_item_id,page_block_id,qcm_key,answers,revision)
+            SELECT ?,?,?,?,?,? WHERE
+              COALESCE((SELECT attempt_count FROM qcm_attempts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?),0)=CAST(? AS INTEGER)
+              AND (CAST(? AS INTEGER)=0 OR CAST(? AS INTEGER)=0)
+              AND COALESCE((SELECT revision FROM qcm_drafts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?),0)=CAST(? AS INTEGER)
+            ON CONFLICT(student_id,pathway_item_id,page_block_id,qcm_key)
+            DO UPDATE SET answers=excluded.answers,revision=excluded.revision,updated_at=CURRENT_TIMESTAMP");
+        $ids=[$studentId,$itemId,$blockId,$key];
+        $save->execute(array_merge($ids,[json_encode($answers,JSON_THROW_ON_ERROR),$revision+1],$ids,[$attemptCount,(int)$context['item']['is_evaluation'],$attemptCount],$ids,[$revision]));
+        return $save->rowCount()===1?['status'=>'saved','revision'=>$revision+1]:['status'=>'conflict'];
     }
 
     public static function summary(PDO $pdo,int $studentId,int $itemId): ?array
@@ -218,10 +257,11 @@ final class Qcm
     public static function syncAttemptsForBlock(PDO $pdo,int $blockId,string $source): void
     {
         $keys=self::quizKeys($source,$blockId);
-        if(!$keys){$pdo->prepare('DELETE FROM qcm_attempts WHERE page_block_id=?')->execute([$blockId]);return;}
-        $placeholders=implode(',',array_fill(0,count($keys),'?'));
-        $delete=$pdo->prepare('DELETE FROM qcm_attempts WHERE page_block_id=? AND qcm_key NOT IN ('.$placeholders.')');
-        $delete->execute(array_merge([$blockId],$keys));
+        foreach(['qcm_attempts','qcm_drafts'] as $table){
+            if(!$keys){$pdo->prepare("DELETE FROM $table WHERE page_block_id=?")->execute([$blockId]);continue;}
+            $placeholders=implode(',',array_fill(0,count($keys),'?'));
+            $pdo->prepare("DELETE FROM $table WHERE page_block_id=? AND qcm_key NOT IN ($placeholders)")->execute(array_merge([$blockId],$keys));
+        }
     }
 
     private static function key(int $blockId,int $index,string $source): string
@@ -273,19 +313,25 @@ final class Qcm
         $evaluationQuery->execute([$itemId]);$isEvaluation=(bool)$evaluationQuery->fetchColumn();
         $query=$pdo->prepare('SELECT score_percent,correct_questions,total_questions,attempt_count,answered_at FROM qcm_attempts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?');
         $query->execute([$studentId,$itemId,$blockId,$key]);$attempt=$query->fetch(PDO::FETCH_ASSOC);
-        $html='<section class="qcm-card" id="qcm-'.e($key).'"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t('QCM')).'</span>';
+        $draftId=$studentId.':'.$itemId.':'.$blockId.':'.$key;
+        $html='<section class="qcm-card" data-qcm-storage="'.e($draftId).'" id="qcm-'.e($key).'"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t('QCM')).'</span>';
         if($attempt)$html.='<div class="qcm-result"><strong>'.e(t('Résultat : :score %',['score'=>self::formatScore((float)$attempt['score_percent'])])).'</strong><small>'.e(t(':correct question(s) juste(s) sur :total',['correct'=>$attempt['correct_questions'],'total'=>$attempt['total_questions']])).'</small></div>';
         $html.='</header>';
         if($isEvaluation&&$attempt)return $html.'<div class="qcm-evaluation-complete"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><p><b>'.e(t('QCM terminé')).'</b><span>'.e(t('Vos réponses ont été enregistrées définitivement.')).'</span></p></div></section>';
-        $html.='<form method="post">'.csrf_field().'<input type="hidden" name="action" value="submit_qcm"><input type="hidden" name="item_id" value="'.$itemId.'"><input type="hidden" name="block_id" value="'.$blockId.'"><input type="hidden" name="qcm_key" value="'.e($key).'">';
+        $query=$pdo->prepare('SELECT answers,revision FROM qcm_drafts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?');
+        $query->execute([$studentId,$itemId,$blockId,$key]);$draft=$query->fetch(PDO::FETCH_ASSOC);
+        $selected=$draft?json_decode($draft['answers'],true):[];
+        $confirm=$isEvaluation?' data-qcm-confirm="'.e(t('Terminer définitivement ce QCM ? Vous ne pourrez plus modifier vos réponses.')).'"':'';
+        $html.='<form method="post" data-qcm-form data-revision="'.(int)($draft['revision']??0).'" data-attempt-count="'.(int)($attempt['attempt_count']??0).'"'.$confirm.'>'.csrf_field().'<input type="hidden" name="action" value="submit_qcm"><input type="hidden" name="item_id" value="'.$itemId.'"><input type="hidden" name="block_id" value="'.$blockId.'"><input type="hidden" name="qcm_key" value="'.e($key).'">';
         if($isEvaluation)$html.='<p class="qcm-evaluation-notice"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> '.e(t('Cette évaluation ne peut être envoyée qu’une seule fois.')).'</p>';
         foreach($questions as $questionIndex=>$question){
             $html.='<fieldset class="qcm-question"><legend><span>'.($questionIndex+1).'</span>'.e($question['title']).'</legend><div class="qcm-options">';
             $type=$question['multiple']?'checkbox':'radio';
-            foreach(self::shuffledAnswers($question['answers']) as $answer)$html.='<label><input type="'.$type.'" name="answers[q'.$questionIndex.'][]" value="'.$answer['index'].'"><span>'.e($answer['text']).'</span></label>';
+            foreach(self::shuffledAnswers($question['answers']) as $answer)$html.='<label><input type="'.$type.'" name="answers[q'.$questionIndex.'][]" value="'.$answer['index'].'"'.(in_array($answer['index'],$selected['q'.$questionIndex]??[],true)?' checked':'').'><span>'.e($answer['text']).'</span></label>';
             $html.='</div></fieldset>';
         }
         $button=$isEvaluation?t('Terminer le QCM'):($attempt?t('Réessayer'):t('Vérifier mes réponses'));
+        $html.='<p class="muted" role="status" aria-live="polite" data-qcm-status data-saved="'.e(t('Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.')).'" data-saving="'.e(t('Enregistrement du brouillon…')).'" data-error="'.e(t('Brouillon non enregistré sur le serveur. Gardez cette page ouverte et vérifiez votre connexion.')).'" data-conflict="'.e(t('Ce QCM a été modifié ou terminé ailleurs. Rechargez la page avant de continuer.')).'">'.e(t($draft?'Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.':'Vos réponses seront sauvegardées automatiquement pendant la saisie.')).'</p>';
         return $html.'<button class="button primary" type="submit">'.e($button).'</button></form></section>';
     }
 

@@ -626,6 +626,15 @@ function handle_action(string $action): never
         redirect('learn',['item'=>$itemId]);
     }
 
+    if($action==='save_qcm_draft'){
+        $result=$user['role']==='student'
+            ?Qcm::saveDraft(db(),(int)$user['id'],(int)($_POST['item_id']??0),(int)($_POST['block_id']??0),trim((string)($_POST['qcm_key']??'')),(array)($_POST['answers']??[]),(int)($_POST['revision']??0),(int)($_POST['attempt_count']??0))
+            :['status'=>'forbidden'];
+        http_response_code($result['status']==='saved'?200:($result['status']==='forbidden'?403:409));
+        header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store');
+        echo json_encode($result,JSON_THROW_ON_ERROR);exit;
+    }
+
     if($action==='submit_qcm'&&$user['role']==='student'){
         $itemId=(int)($_POST['item_id']??0);$blockId=(int)($_POST['block_id']??0);$key=trim((string)($_POST['qcm_key']??''));
         $result=Qcm::submit(db(),(int)$user['id'],$itemId,$blockId,$key,(array)($_POST['answers']??[]));

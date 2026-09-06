@@ -300,7 +300,7 @@ function purge_course_enrollment(PDO $pdo,int $enrollmentId,int $teacherId): boo
     if($ownsTransaction)$pdo->beginTransaction();else $pdo->exec('SAVEPOINT purge_course_enrollment');
     try{
         $itemScope='SELECT id FROM pathway_items WHERE course_id=?';
-        foreach(['learning_visits','qcm_attempts','student_private_notes'] as $table)$pdo->prepare("DELETE FROM $table WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
+        foreach(['learning_visits','qcm_attempts','qcm_drafts','student_private_notes'] as $table)$pdo->prepare("DELETE FROM $table WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
         $pdo->prepare("DELETE FROM pathway_item_students WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
         $pdo->prepare('DELETE FROM announcement_reads WHERE student_id=? AND announcement_id IN (SELECT id FROM course_announcements WHERE course_id=?)')->execute([$studentId,$courseId]);
         $pdo->prepare('DELETE FROM course_accesses WHERE user_id=? AND course_id=?')->execute([$studentId,$courseId]);

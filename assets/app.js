@@ -1075,3 +1075,112 @@ if (learningTracker && document.body.dataset.csrf) {
     window.clearInterval(heartbeat);
   });
 }
+
+// QCM drafts: only an explicit form submission grades the quiz.
+document.querySelectorAll('[data-qcm-storage]').forEach((card) => {
+  const storageKey = `liike:qcm:${window.location.pathname}:${card.dataset.qcmStorage}`;
+  const form = card.querySelector('[data-qcm-form]');
+  const removeLocal = () => { try { localStorage.removeItem(storageKey); } catch (_) { /* Storage may be unavailable. */ } };
+  if (!form) { removeLocal(); return; }
+  const inputs = Array.from(form.querySelectorAll('.qcm-options input'));
+  const status = form.querySelector('[data-qcm-status]');
+  let revision = Number(form.dataset.revision);
+  const attemptCount = Number(form.dataset.attemptCount);
+  let dirty = false;
+  let saving = false;
+  let submitting = false;
+  let conflict = false;
+  let sent = null;
+  const answers = () => {
+    const result = {};
+    inputs.forEach((input) => {
+      const name = input.name.match(/^answers\[(q\d+)\]\[\]$/)?.[1];
+      if (!name) return;
+      result[name] ||= [];
+      if (input.checked) result[name].push(Number(input.value));
+    });
+    Object.values(result).forEach((values) => values.sort((a, b) => a - b));
+    return result;
+  };
+  const snapshot = () => JSON.stringify(answers());
+  const persist = () => {
+    try { localStorage.setItem(storageKey, JSON.stringify({ answers: answers(), revision, attemptCount, sent })); }
+    catch (_) { /* Server autosave still works when browser storage is disabled. */ }
+  };
+  try {
+    const local = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    // A response may have been lost while the server successfully saved the request.
+    if (local && local.attemptCount === attemptCount
+      && (local.revision === revision || (local.revision + 1 === revision && local.sent === snapshot()))) {
+      inputs.forEach((input) => {
+        const name = input.name.match(/^answers\[(q\d+)\]\[\]$/)?.[1];
+        input.checked = Array.isArray(local.answers?.[name]) && local.answers[name].includes(Number(input.value));
+      });
+      dirty = true;
+    } else if (local) removeLocal();
+  } catch (_) { removeLocal(); }
+
+  const save = async () => {
+    if (!dirty || saving || submitting || conflict) return;
+    saving = true;
+    sent = snapshot();
+    persist();
+    status.textContent = status.dataset.saving;
+    const data = new FormData(form);
+    data.set('action', 'save_qcm_draft');
+    data.set('revision', String(revision));
+    data.set('attempt_count', String(attemptCount));
+    let saved = false;
+    try {
+      const response = await fetch(form.getAttribute('action') || window.location.href, { method: 'POST', body: data, headers: { Accept: 'application/json' }, keepalive: true });
+      const result = await response.json();
+      if (!response.ok || result.status !== 'saved') {
+        if (['conflict', 'changed', 'forbidden', 'invalid'].includes(result.status)) {
+          conflict = true;
+          status.textContent = status.dataset.conflict;
+        }
+        throw new Error('Draft save failed');
+      }
+      revision = result.revision;
+      dirty = snapshot() !== sent;
+      sent = null;
+      if (dirty) persist(); else removeLocal();
+      status.textContent = status.dataset.saved;
+      saved = true;
+    } catch (_) {
+      if (!conflict) status.textContent = status.dataset.error;
+    } finally {
+      saving = false;
+    }
+    if (saved && dirty) void save();
+  };
+  form.addEventListener('change', () => {
+    dirty = true;
+    persist();
+    void save();
+  });
+  form.addEventListener('submit', (event) => {
+    if (event.defaultPrevented) return;
+    if (conflict || (form.dataset.qcmConfirm && !window.confirm(form.dataset.qcmConfirm))) {
+      event.preventDefault();
+      return;
+    }
+    // Keep the local copy until a subsequent page confirms the submission.
+    persist();
+    submitting = true;
+  });
+  window.addEventListener('beforeunload', (event) => {
+    if (!dirty || submitting) return;
+    persist();
+    event.preventDefault();
+    event.returnValue = '';
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) void save(); });
+  window.addEventListener('pagehide', () => { if (dirty && !submitting) { persist(); void save(); } });
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) window.location.reload();
+  });
+  window.addEventListener('online', () => { void save(); });
+  window.setInterval(() => { void save(); }, 15000);
+  if (dirty) void save();
+});

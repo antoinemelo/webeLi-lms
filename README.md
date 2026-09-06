@@ -94,7 +94,7 @@ python3 scripts/apr.py \
 - recherche de pages par texte, statut, tags et objectifs ;
 - import/export JSON des pages, parcours et élèves ;
 - blocs Markdown, image, fichier et iframe, avec import local ;
-- QCM intégrés au Markdown, avec choix simple ou multiple, réponses mélangées, score agrégé et remise unique lorsque l’étape est une évaluation ;
+- QCM intégrés au Markdown, avec choix simple ou multiple, réponses mélangées, sauvegarde et reprise des brouillons, score agrégé et remise unique lorsque l’étape est une évaluation ;
 - aperçu élève non destructif d’un parcours et de ses pages pour l’équipe enseignante, incluant les contenus restreints ou masqués avec leur code couleur ;
 - catégories par tags ;
 - connexion enseignante protégée et codes personnels élèves ;
@@ -160,4 +160,8 @@ Les élèves ne reçoivent jamais les vues `students`, `pathway`, `library` ou `
 ```bash
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
+python3 tests/database_profiles.py
+node tests/qcm_browser.mjs
 ```
+
+Le scénario QCM utilise Chromium (`/usr/bin/chromium`, ou `CHROMIUM_BINARY`), Node.js 22 et PHP sur une instance et un profil navigateur temporaires. Il vérifie la reprise après fermeture, la sauvegarde hors ligne et la remise définitive.
