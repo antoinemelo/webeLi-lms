@@ -69,7 +69,7 @@ function pathway_page_pdf_render(PDO $pdo, array $item): string
     foreach($tags->fetchAll(PDO::FETCH_COLUMN) as $tag)$metaValues[]='#'.$tag;
     $meta=pdf_meta($metaValues);
     $body='<header class="header"><div class="eyebrow">'.e($item['course_title']).' · '.e($item['course_code']).'</div><h1>'.e($item['title']).'</h1><p class="muted">'.e($item['summary']).'</p><div class="meta">'.$meta.'</div></header>';
-    if(trim((string)$item['instructions'])!=='')$body.='<div class="notice"><strong>'.e(t('Consigne propre au parcours')).'</strong><p>'.nl2br(e($item['instructions'])).'</p></div>';
+    if(trim((string)$item['instructions'])!=='')$body.='<div class="notice"><strong>'.e(t('Consigne propre au parcours')).'</strong>'.Markdown::render((string)$item['instructions']).'</div>';
     $objectiveRows=$objectives->fetchAll(PDO::FETCH_COLUMN);$skillRows=$skills->fetchAll(PDO::FETCH_ASSOC);
     if($objectiveRows||$skillRows){$body.='<h2>'.e(t('Objectifs et compétences')).'</h2>';if($objectiveRows)$body.='<p><strong>'.e(t('Objectifs')).' :</strong> '.e(implode(' · ',$objectiveRows)).'</p>';if($skillRows)$body.='<p><strong>'.e(t('Compétences')).' :</strong> '.e(implode(' · ',array_map(fn($skill)=>$skill['code'].' — '.$skill['title'],$skillRows))).'</p>';}
     $blocks=$pdo->prepare('SELECT * FROM page_blocks WHERE page_id=? ORDER BY position');$blocks->execute([$item['page_id']]);$body.='<h2>'.e(t('Contenu détaillé')).'</h2>';

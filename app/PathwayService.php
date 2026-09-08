@@ -529,6 +529,26 @@ function save_student_private_note(PDO $pdo, int $studentId, int $itemId, string
     return true;
 }
 
+/** @return array<int,array{evaluation_average:?float,self_average:?float}> Indexed by enrollment. */
+function course_student_averages(PDO $pdo, int $courseId): array
+{
+    $query=$pdo->prepare("SELECT e.id AS enrollment_id,
+        SUM(CASE WHEN pi.is_evaluation=1 AND pr.evaluation_score IS NOT NULL THEN pr.evaluation_score*pi.evaluation_weight END)
+          /SUM(CASE WHEN pi.is_evaluation=1 AND pr.evaluation_score IS NOT NULL THEN pi.evaluation_weight END) AS evaluation_average,
+        AVG(CASE WHEN pi.self_evaluation_enabled=1 AND pr.student_validated_at IS NOT NULL THEN pr.student_level END) AS self_average
+        FROM enrollments e JOIN users u ON u.id=e.student_id
+        LEFT JOIN progress pr ON pr.enrollment_id=e.id
+        LEFT JOIN pathway_items pi ON pi.id=pr.pathway_item_id AND pi.course_id=e.course_id AND pi.framework_tracking_enabled=1
+        WHERE e.course_id=? AND e.status='active' AND u.account_status='active'
+        GROUP BY e.id");
+    $query->execute([$courseId]);$averages=[];
+    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row)$averages[(int)$row['enrollment_id']]=[
+        'evaluation_average'=>$row['evaluation_average']===null?null:(float)$row['evaluation_average'],
+        'self_average'=>$row['self_average']===null?null:(float)$row['self_average'],
+    ];
+    return $averages;
+}
+
 /** Average of each active student's weighted assessment average, as shown in their teacher profile. */
 function course_evaluation_average(PDO $pdo, int $courseId): ?float
 {

@@ -133,7 +133,7 @@ Depuis **Suivi**, ouvrir un élève. La dernière visite connue apparaît à dro
 
 Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps actif toutes les 60 secondes et à la fermeture ou au masquage de l’onglet. Les données de plus d’un mois sont automatiquement supprimées.
 
-Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
+Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Après **Progression**, la colonne **Moyennes** présente la moyenne pondérée des évaluations sur 10 puis la moyenne simple des niveaux autoévalués sur 3, chacune au dixième (par exemple **7,0 | 2,5**). Les calculs portent sur les étapes suivies du cours ; seules les autoévaluations remises et encore activées sont retenues. Une valeur absente est indiquée par **—**. Le tri **Moyennes** compare d’abord les notes d’évaluation, puis les niveaux autoévalués. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
 
 Lorsqu’une annonce est publiée dans un parcours, tous les élèves qui y sont activement inscrits reçoivent également un courriel. Son objet suit la forme **Nom du parcours / Titre de l’annonce** et son corps reprend uniquement le contenu de l’annonce. Le message est préparé dans la boîte de notifications puis envoyé par la tâche d’exploitation habituelle.
 
@@ -244,6 +244,14 @@ Dans **Parcours**, l’enseignant sélectionne un cours. Le bouton à trois poin
 - archive ou réactive un parcours sans perdre ses données ;
 - supprime définitivement un parcours archivé dont il est propriétaire ; les données propres au parcours sont purgées, mais ses pages restent dans la bibliothèque ;
 - duplique un parcours sans ses élèves ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
+
+La **Consigne propre à ce parcours** accepte le Markdown (liens, titres, listes, gras, italique…). Par exemple :
+
+```markdown
+LIEN >[LAB PY ](https://webe.li/tec/labs/python/ "LAB PY")
+```
+
+Le lien est cliquable dans la vue élève et dans l’aperçu enseignant. Le PDF interprète aussi la mise en forme ; le texte Markdown d’origine reste modifiable dans les réglages de l’étape.
 
 L’organisation complète du parcours n’est jamais proposée dans la navigation élève.
 

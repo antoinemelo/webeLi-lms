@@ -5,6 +5,9 @@ declare(strict_types=1);
 // French is the source language. These rows contain only interface copy; user-created
 // course and page content never passes through this catalogue.
 return [
+    'Moyennes'=>['en'=>'Averages','de'=>'Durchschnitte','it'=>'Medie','es'=>'Promedios'],
+    'Moyenne des autoévaluations'=>['en'=>'Average self-assessment level','de'=>'Durchschnittliche Selbsteinschätzung','it'=>'Media delle autovalutazioni','es'=>'Promedio de autoevaluaciones'],
+    'Markdown : [texte du lien](https://exemple.ch), **gras**, *italique*.'=>['en'=>'Markdown: [link text](https://example.com), **bold**, *italic*.','de'=>'Markdown: [Linktext](https://beispiel.ch), **fett**, *kursiv*.','it'=>'Markdown: [testo del link](https://esempio.ch), **grassetto**, *corsivo*.','es'=>'Markdown: [texto del enlace](https://ejemplo.com), **negrita**, *cursiva*.'],
     'Terminer définitivement ce QCM ? Vous ne pourrez plus modifier vos réponses.'=>['en'=>'Submit this quiz permanently? You will no longer be able to change your answers.','de'=>'Dieses Quiz endgültig abgeben? Sie können Ihre Antworten danach nicht mehr ändern.','it'=>'Inviare definitivamente questo quiz? Non potrai più modificare le risposte.','es'=>'¿Entregar definitivamente este cuestionario? Ya no podrás modificar tus respuestas.'],
     'Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.'=>['en'=>'Draft saved. You can close and resume this quiz.','de'=>'Entwurf gespeichert. Sie können dieses Quiz schließen und später fortsetzen.','it'=>'Bozza salvata. Puoi chiudere e riprendere questo quiz.','es'=>'Borrador guardado. Puedes cerrar y reanudar este cuestionario.'],
     'Enregistrement du brouillon…'=>['en'=>'Saving draft…','de'=>'Entwurf wird gespeichert…','it'=>'Salvataggio della bozza…','es'=>'Guardando borrador…'],
