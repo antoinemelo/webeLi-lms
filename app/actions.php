@@ -593,6 +593,28 @@ function handle_action(string $action): never
         redirect('profile');
     }
 
+    if(in_array($action,['save_work','submit_work'],true)&&$user['role']==='student'){
+        $itemId=(int)($_POST['item_id']??0);$blockId=(int)($_POST['block_id']??0);
+        $result=WorkSubmission::save(db(),(int)$user['id'],$itemId,$blockId,(int)($_POST['block_revision']??-1),(int)($_POST['revision']??-1),(string)($_POST['url']??''),(string)($_POST['body']??''),$action==='submit_work');
+        $success=in_array($result['status'],['saved','submitted','already_submitted'],true);
+        $result['message']=t($result['message']??match($result['status']){
+            'saved'=>'Brouillon enregistré','submitted','already_submitted'=>'Travail rendu',
+            default=>'Le travail a changé ailleurs. Copiez votre saisie puis rechargez la page.'});
+        if(str_contains($_SERVER['HTTP_ACCEPT']??'','application/json')){
+            header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
+            http_response_code($success?200:($result['status']==='forbidden'?403:409));echo json_encode($result,JSON_THROW_ON_ERROR);exit;
+        }
+        if(!$success)$_SESSION['work_rejected']=['student_id'=>(int)$user['id'],'item_id'=>$itemId,'block_id'=>$blockId,'url'=>mb_substr((string)($_POST['url']??''),0,2048),'body'=>mb_substr((string)($_POST['body']??''),0,8192)];
+        flash($result['message'],$success?'success':'error');header('Location: '.route('learn',['item'=>$itemId]).'#work-'.$blockId);exit;
+    }
+
+    if($action==='reopen_work'&&$user['role']==='teacher'){
+        $enrollmentId=(int)($_POST['enrollment_id']??0);
+        $reopened=WorkSubmission::reopen(db(),(int)$user['id'],$enrollmentId,(int)($_POST['item_id']??0),(int)($_POST['block_id']??0),(int)($_POST['revision']??-1));
+        flash(t($reopened?'Une nouvelle remise est autorisée. La version précédente est conservée.':'Cette remise ne peut pas être rouverte.'),$reopened?'success':'error');
+        redirect('student-detail',['enrollment'=>$enrollmentId]);
+    }
+
     if ($action === 'student_validate' && $user['role'] === 'student') {
         $itemId = (int) $_POST['item_id'];
         $level = max(0, min(3, (int) $_POST['level']));
@@ -602,6 +624,7 @@ function handle_action(string $action): never
             AND (pi.access_mode='all'
               OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))", [$user['id'],$itemId,$user['id']]);
         if (!$item) { flash('Étape introuvable.', 'error'); redirect('student'); }
+        if(!WorkSubmission::summary(db(),(int)$user['id'],$itemId)['complete']){flash(t('Rendez les travaux obligatoires avant de valider cette étape.'),'error');redirect('learn',['item'=>$itemId]);}
         if(!(bool)$item['self_evaluation_enabled']){flash(t('Cette étape ne demande pas d’autoévaluation.'),'error');redirect('learn',['item'=>$itemId]);}
         run("INSERT INTO progress(enrollment_id,pathway_item_id,student_level,student_note,student_validated_at,completed_at,updated_at)
             VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
@@ -654,15 +677,11 @@ function handle_action(string $action): never
             AND ((pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id))) OR pi.is_evaluation=1)", [$itemId,$enrollmentId]);
         if (!$context || !teacher_can_access_course(db(),(int)$context['course_id'],(int)$user['id'])) { flash('Validation impossible.', 'error'); redirect('teacher'); }
         $isEvaluation=(bool)$context['is_evaluation'];$selfEvaluation=(bool)$context['self_evaluation_enabled'];
-        $evaluationReady=false;
-        if($isEvaluation){
-            $quizCompletion=Qcm::courseEvaluationCompletion(db(),(int)$context['course_id']);
-            $hasQuiz=isset($quizCompletion['expected'][$itemId]);
-            $evaluationReady=$hasQuiz
-                ?!empty($quizCompletion['completed'][(int)$context['student_id']][$itemId])
-                :(!$selfEvaluation||(bool)$context['student_validated_at']);
+        $quizCompletion=Qcm::courseEvaluationCompletion(db(),(int)$context['course_id']);
+        $work=WorkSubmission::summary(db(),(int)$context['student_id'],$itemId);
+        if(!WorkSubmission::canReview($isEvaluation,$selfEvaluation,(bool)$context['student_validated_at'],isset($quizCompletion['expected'][$itemId]),!empty($quizCompletion['completed'][(int)$context['student_id']][$itemId]),$work['total']?$work:null)){
+            flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);
         }
-        if((!$isEvaluation&&!$selfEvaluation)||(!$isEvaluation&&$selfEvaluation&&!$context['student_validated_at'])||($isEvaluation&&!$evaluationReady)){flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
         $level=null;$score=null;
         if($isEvaluation){
             $rawScore=str_replace(',','.',trim((string)($_POST['score']??'')));
@@ -673,7 +692,7 @@ function handle_action(string $action): never
             }
             if(!is_numeric($rawScore)||(float)$rawScore<0||(float)$rawScore>10){flash('La note doit être comprise entre 0 et 10.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);}
             $score=round((float)$rawScore,2);
-        }else $level=max(0,min(3,(int)($_POST['level']??0)));
+        }elseif($selfEvaluation)$level=max(0,min(3,(int)($_POST['level']??0)));
         $completedAt=!$selfEvaluation&&$isEvaluation?gmdate('Y-m-d H:i:s'):null;
         run("INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,completed_at,updated_at)
             VALUES(?,?,?,?,?,strftime('%Y-%m-%d %H:%M:%f','now'),?,strftime('%Y-%m-%d %H:%M:%f','now'))
@@ -694,10 +713,17 @@ function handle_action(string $action): never
         $studentLanguage=normalize_language((string)($context['language']??''))??'fr';
         $resultText=$isEvaluation
             ?t('Note : :score/10 · pondération ×:weight.',['score'=>number_format((float)$score,2,',',''),'weight'=>number_format((float)$context['evaluation_weight'],1,',','')],$studentLanguage)
-            :t('Niveau confirmé : :level/3.',['level'=>$level],$studentLanguage);
+            :($selfEvaluation?t('Niveau confirmé : :level/3.',['level'=>$level],$studentLanguage):t('Travail confirmé',[],$studentLanguage));
         enqueue('teacher.confirmed', $context['email'], t($isEvaluation?'Votre évaluation « :page » est notée':'Votre étape « :page » est confirmée',['page'=>$context['page_title']],$studentLanguage), $resultText.($teacherNote!==''?"\n\n".t('Note / Commentaire',[],$studentLanguage).' : '.$teacherNote:''));
-        flash(t($isEvaluation?($rewardId?'Évaluation notée et encouragement attribué.':'Évaluation notée.') : ($rewardId ? 'Niveau confirmé et encouragement attribué.' : 'Niveau confirmé.')));
+        flash(t(!$isEvaluation&&!$selfEvaluation?'Travail confirmé':($isEvaluation?($rewardId?'Évaluation notée et encouragement attribué.':'Évaluation notée.') : ($rewardId ? 'Niveau confirmé et encouragement attribué.' : 'Niveau confirmé.'))));
         redirect('student-detail', ['enrollment'=>$enrollmentId]);
+    }
+
+    if($action==='preview_content_block'&&$user['role']==='teacher'){
+        $body=(string)($_POST['body']??'');
+        header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
+        if(strlen($body)>200000){http_response_code(413);echo json_encode(['error'=>t('Le texte est trop long pour cet aperçu.')]);exit;}
+        echo json_encode(['html'=>Qcm::renderPreview($body)],JSON_THROW_ON_ERROR);exit;
     }
 
     if ($action === 'save_page' && $user['role'] === 'teacher') {
@@ -708,6 +734,21 @@ function handle_action(string $action): never
         $tagIds=array_values(array_unique(array_map('intval',(array)($_POST['tags']??[]))));
         $objectiveTitles=(array)($_POST['page_objective_title']??[]);$objectiveDescriptions=(array)($_POST['page_objective_description']??[]);$pageObjectives=[];$seenObjectives=[];
         foreach($objectiveTitles as $index=>$objectiveTitle){$objectiveTitle=trim((string)$objectiveTitle);if($objectiveTitle==='')continue;$key=mb_strtolower($objectiveTitle,'UTF-8');if(isset($seenObjectives[$key]))continue;$seenObjectives[$key]=true;$pageObjectives[]=['title'=>$objectiveTitle,'description'=>trim((string)($objectiveDescriptions[$index]??''))];if(count($pageObjectives)>=50)break;}
+        if($pageId&&!teacher_can_access_page(db(),$pageId,(int)$user['id'])){flash('Page introuvable.','error');redirect('library');}
+        $storedBlocks=[];if($pageId)foreach(all('SELECT * FROM page_blocks WHERE page_id=?',[$pageId]) as $stored)$storedBlocks[(int)$stored['id']]=$stored;
+        $preparedBlocks=[];$blockErrors=[];
+        foreach((array)($_POST['block_type']??[]) as $index=>$kind){
+            $file=isset($_FILES['block_file']['error'][$index])?array_map(static fn(array $values)=>$values[$index]??null,$_FILES['block_file']):null;
+            $options=['alt'=>$_POST['block_image_alt'][$index]??null,'height'=>$_POST['block_embed_height'][$index]??null];
+            if(isset($_POST['block_source'][$index]))$options['source']=$_POST['block_source'][$index];
+            try{$preparedBlocks[$index]=ContentBlock::validate((string)$kind,(string)($_POST['block_body'][$index]??''),$options,$file,APR_PUBLIC_ROOT,$storedBlocks[(int)($_POST['block_id'][$index]??0)]??null);}
+            catch(InvalidArgumentException $exception){$blockErrors[]=t('Bloc :number',['number'=>$index+1]).' : '.t($exception->getMessage());}
+        }
+        if($blockErrors){
+            $_SESSION['page_editor_input']=['teacher_id'=>(int)$user['id'],'page_id'=>$pageId,'post'=>$_POST];
+            flash(implode(' ',$blockErrors),'error');redirect('page-edit',['id'=>$pageId,'course'=>(int)($_POST['return_course']??0)]);
+        }
+        $createdUploads=[];
         $conflicts=[];$changed=false;
         db()->beginTransaction();
         try {
@@ -737,35 +778,33 @@ function handle_action(string $action): never
             $bodies = $_POST['block_body'] ?? [];
             $captions = $_POST['block_caption'] ?? [];
             $blockIds=$_POST['block_id']??[];$blockRevisions=$_POST['block_revision']??[];
-            foreach ($types as $i => $type) {
-                if (!in_array($type, ['markdown','image','file','iframe'], true)) continue;
-                $body = trim((string)($bodies[$i] ?? ''));
-                if (isset($_FILES['block_file']['error'][$i]) && $_FILES['block_file']['error'][$i] === UPLOAD_ERR_OK) {
-                    $safe = preg_replace('/[^A-Za-z0-9._-]/', '-', basename((string)$_FILES['block_file']['name'][$i]));
-                    $safe = date('YmdHis') . '-' . $safe;
-                    move_uploaded_file($_FILES['block_file']['tmp_name'][$i], APR_PUBLIC_ROOT . '/uploads/' . $safe);
-                    $body = 'uploads/' . $safe;
-                }
+            foreach ($types as $i => $requestedType) {
+                $prepared=$preparedBlocks[$i];$type=$prepared['type'];$body=$prepared['body'];
+                $submissionMode=(string)($_POST['block_submission_mode'][$i]??'link');if(!in_array($submissionMode,WorkSubmission::MODES,true))$submissionMode='link';
+                $submissionRequired=(int)(($_POST['block_submission_required'][$i]??'1')==='1');
                 $caption=trim((string)($captions[$i]??''));$blockId=(int)($blockIds[$i]??0);$revision=(int)($blockRevisions[$i]??0);
                 if($blockId>0){
                     $stored=one('SELECT * FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);
                     if(!$stored){$conflicts[]=t('Bloc introuvable');continue;}
-                    if($type===$stored['type']&&$body===$stored['body']&&$caption===$stored['caption'])continue;
+                    if(!$prepared['upload']&&$type===$stored['type']&&$body===$stored['body']&&$caption===$stored['caption']&&$prepared['image_alt']===$stored['image_alt']&&$prepared['embed_kind']===$stored['embed_kind']&&$prepared['embed_height']===$stored['embed_height']&&($type!=='submission'||($submissionMode===$stored['submission_mode']&&$submissionRequired===(int)$stored['submission_required'])))continue;
                     if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}
-                    $update=db()->prepare('UPDATE page_blocks SET type=?,body=?,caption=?,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND page_id=? AND revision=?');
-                    $update->execute([$type,$body,$caption,$user['id'],$blockId,$pageId,$revision]);
+                    if($prepared['upload']){$body=ContentBlock::storeUpload($prepared['upload'],APR_PUBLIC_ROOT);$createdUploads[]=$body;}
+                    $update=db()->prepare('UPDATE page_blocks SET type=?,body=?,caption=?,submission_mode=?,submission_required=?,image_alt=?,embed_kind=?,embed_height=?,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND page_id=? AND revision=?');
+                    $update->execute([$type,$body,$caption,$submissionMode,$submissionRequired,$prepared['image_alt'],$prepared['embed_kind'],$prepared['embed_height'],$user['id'],$blockId,$pageId,$revision]);
                     if($update->rowCount()===1){Qcm::syncAttemptsForBlock(db(),$blockId,$type==='markdown'?$body:'');$changed=true;}else $conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);
-                }elseif($body!==''){
+                }elseif($body!==''||$type==='submission'||$prepared['upload']){
+                    if($prepared['upload']){$body=ContentBlock::storeUpload($prepared['upload'],APR_PUBLIC_ROOT);$createdUploads[]=$body;}
                     $position=(int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM page_blocks WHERE page_id=?',[$pageId])['n']??1);
-                    run('INSERT INTO page_blocks(page_id,type,body,caption,position,updated_by) VALUES(?,?,?,?,?,?)',[$pageId,$type,$body,$caption,$position,$user['id']]);$changed=true;
+                    run('INSERT INTO page_blocks(page_id,type,body,caption,position,updated_by,submission_mode,submission_required,image_alt,embed_kind,embed_height) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[$pageId,$type,$body,$caption,$position,$user['id'],$submissionMode,$submissionRequired,$prepared['image_alt'],$prepared['embed_kind'],$prepared['embed_height']]);$changed=true;
                 }
             }
             $deletedIds=(array)($_POST['deleted_block_id']??[]);$deletedRevisions=(array)($_POST['deleted_block_revision']??[]);
             foreach($deletedIds as $i=>$deletedId){$blockId=(int)$deletedId;$revision=(int)($deletedRevisions[$i]??-1);$stored=one('SELECT position,revision FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);if(!$stored)continue;if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}$delete=db()->prepare('DELETE FROM page_blocks WHERE id=? AND page_id=? AND revision=?');$delete->execute([$blockId,$pageId,$revision]);if($delete->rowCount()===1)$changed=true;}
             Qcm::syncPageTag(db(),$pageId);
+            WorkSubmission::reconcilePage(db(),$pageId);
             if($changed)run("UPDATE pages SET updated_at=strftime('%Y-%m-%d %H:%M:%f','now'),updated_by=? WHERE id=?",[$user['id'],$pageId]);
             db()->commit();
-        } catch (Throwable $e) { db()->rollBack(); throw $e; }
+        } catch (Throwable $e) { db()->rollBack();foreach($createdUploads as $uploaded)if(is_file(APR_PUBLIC_ROOT.'/'.$uploaded))unlink(APR_PUBLIC_ROOT.'/'.$uploaded); throw $e; }
         release_edit_locks(db(),(int)$user['id']);
         $recipients=$changed?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
         foreach($recipients as $recipient){$recipientLanguage=normalize_language((string)($recipient['language']??''))??'fr';enqueue('page.updated',$recipient['email'],t('Une ressource de votre parcours a changé',[],$recipientLanguage),t('La page « :page » vient d’être mise à jour.',['page'=>$title],$recipientLanguage));}

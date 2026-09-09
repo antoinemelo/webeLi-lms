@@ -101,9 +101,14 @@ CREATE TABLE pages (
 CREATE TABLE page_blocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     page_id INTEGER NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('markdown','image','file','iframe')),
+    type TEXT NOT NULL CHECK(type IN ('markdown','image','file','iframe','submission')),
     body TEXT NOT NULL DEFAULT '',
     caption TEXT NOT NULL DEFAULT '',
+    image_alt TEXT,
+    embed_kind TEXT NOT NULL DEFAULT 'auto' CHECK(embed_kind IN ('auto','media','integration')),
+    embed_height INTEGER CHECK(embed_height IS NULL OR embed_height BETWEEN 100 AND 2000),
+    submission_mode TEXT NOT NULL DEFAULT 'link' CHECK(submission_mode IN ('link','text','both')),
+    submission_required INTEGER NOT NULL DEFAULT 1 CHECK(submission_required IN (0,1)),
     position INTEGER NOT NULL,
     revision INTEGER NOT NULL DEFAULT 0,
     updated_by INTEGER,
@@ -112,6 +117,34 @@ CREATE TABLE page_blocks (
     FOREIGN KEY(page_id) REFERENCES pages(id) ON DELETE CASCADE,
     FOREIGN KEY(updated_by) REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE TABLE work_submissions (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pathway_item_id INTEGER NOT NULL REFERENCES pathway_items(id) ON DELETE CASCADE,
+    page_block_id INTEGER NOT NULL REFERENCES page_blocks(id) ON DELETE CASCADE,
+    url TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '' CHECK(length(body)<=512),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','submitted')),
+    revision INTEGER NOT NULL DEFAULT 0 CHECK(revision>=0),
+    submitted_at TEXT,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(student_id,pathway_item_id,page_block_id)
+);
+
+CREATE TABLE work_submission_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pathway_item_id INTEGER NOT NULL REFERENCES pathway_items(id) ON DELETE CASCADE,
+    page_block_id INTEGER NOT NULL REFERENCES page_blocks(id) ON DELETE CASCADE,
+    url TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '' CHECK(length(body)<=512),
+    prompt TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL DEFAULT '',
+    submitted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reopened_at TEXT,
+    reopened_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX idx_work_versions_lookup ON work_submission_versions(student_id,pathway_item_id,page_block_id,id);
 
 CREATE TABLE tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -421,4 +454,4 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 17;
+PRAGMA user_version = 19;

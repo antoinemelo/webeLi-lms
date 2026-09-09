@@ -154,6 +154,16 @@ La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilis�
 - zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
 - une suite ordonnée de blocs Markdown, image, fichier ou iframe.
 
+Pour intégrer une vidéo ou un lecteur audio, choisir le type de bloc **Iframe / vidéo**, puis coller une adresse HTTP(S) ou le code `<iframe …></iframe>` complet fourni par le site. Les liens YouTube de partage (`youtu.be`, `watch`, `shorts`, `live`) sont automatiquement convertis en adresse de lecteur, avec conservation du point de départ. Un code iframe conserve son titre et ses proportions ; un lecteur compact garde sa hauteur. Exception : les anciens codes RTS de 58 pixels sont affichés au format 16:9, nécessaire au lecteur RTS actuel pour rendre ses commandes accessibles. La légende saisie dans le bloc est prioritaire pour le titre accessible. Les exports proposent un lien vers le lecteur. Le site externe doit autoriser l’intégration de son contenu.
+
+Le bloc **Travail à rendre** permet de demander un **lien vers un document**, un **texte court**, ou un **lien et un commentaire**. La consigne s’écrit en Markdown dans le contenu du bloc ; la légende sert de titre. La remise peut être obligatoire ou facultative. Le texte et le commentaire sont limités à **512 caractères**, avec un compteur visible. Le lien, séparé du texte, accepte une adresse HTTP(S) de 2 048 caractères maximum.
+
+L’élève retrouve sa saisie après fermeture grâce à la sauvegarde automatique du brouillon et à une copie locale en cas de coupure réseau. Le bouton **Enregistrer le brouillon** permet aussi une sauvegarde explicite. Un brouillon reste privé et ne valide pas l’étape. **Rendre mon travail**, suivi d’une confirmation, enregistre une remise datée et verrouille les champs. Tous les blocs obligatoires doivent être remis avant l’autoévaluation ou la fin d’une étape sans autoévaluation. Une évaluation combinant QCM et travaux n’est disponible pour la notation qu’une fois ses QCM et ses travaux obligatoires remis.
+
+Dans la fiche de l’élève, l’enseignant peut consulter les liens et les textes remis, puis noter l’évaluation, confirmer le niveau ou confirmer la réception si l’étape n’a ni évaluation ni autoévaluation. Le pencil orange et rempli signale une confirmation attendue. **Autoriser une nouvelle remise** rouvre un bloc, conserve sa version précédente et retire la validation de l’étape pour permettre une nouvelle correction. Les remises précédentes restent consultables. L’adresse et le texte remis sont conservés ; le contenu du document externe peut évoluer chez son hébergeur.
+
+Les réponses sont propres à l’élève et à l’étape du parcours. Les copies et exports de pages reprennent les consignes et les réglages, sans les brouillons ni les travaux des élèves.
+
 Les titres Markdown sont disponibles du niveau `#` au niveau `######`. Une liste à puces peut commencer par `- ` ; contrairement à celle-ci, une ligne commençant par `* ` conserve son étoile comme du texte ordinaire. Une ligne contenant `---` produit un séparateur horizontal. Pour commencer la suite du contenu sur une nouvelle page dans l’export PDF, placer cette instruction sur sa propre ligne :
 
 ```html

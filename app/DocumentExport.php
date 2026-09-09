@@ -15,7 +15,7 @@ function pathway_page_document_export(PDO $pdo, int $itemId, int $teacherId): ar
     $tags=$pdo->prepare('SELECT t.name FROM tags t JOIN page_tags pt ON pt.tag_id=t.id WHERE pt.page_id=? ORDER BY t.name');$tags->execute([$item['page_id']]);
     $objectives=$pdo->prepare('SELECT title FROM page_objectives WHERE page_id=? ORDER BY position,id');$objectives->execute([$item['page_id']]);
     $skills=$pdo->prepare('SELECT s.code,s.title FROM course_skills s JOIN item_skills i ON i.skill_id=s.id WHERE i.pathway_item_id=? ORDER BY s.position');$skills->execute([$itemId]);
-    $blocks=$pdo->prepare('SELECT type,body,caption FROM page_blocks WHERE page_id=? ORDER BY position,id');$blocks->execute([$item['page_id']]);
+    $blocks=$pdo->prepare('SELECT type,body,caption,submission_mode,submission_required,image_alt FROM page_blocks WHERE page_id=? ORDER BY position,id');$blocks->execute([$item['page_id']]);
 
     $lines=['# '.document_markdown_text((string)$item['title']),''];
     if(trim((string)$item['summary'])!==''){$lines[]=document_markdown_text((string)$item['summary']);$lines[]='';}
@@ -39,9 +39,12 @@ function pathway_page_document_export(PDO $pdo, int $itemId, int $teacherId): ar
         $body=trim((string)$block['body']);$caption=trim((string)$block['caption']);
         if($block['type']==='markdown'){$lines[]=$body;continue;}
         $label=document_markdown_text($caption!==''?$caption:basename($body));
-        if($block['type']==='image'){$lines[]='!['.$label.']('.document_markdown_link($body).')';continue;}
+        if($block['type']==='image'){$lines[]='!['.document_markdown_text((string)($block['image_alt']??$caption)).']('.document_markdown_link($body).')';if($caption!==''){$lines[]='';$lines[]=$label;}continue;}
         if($block['type']==='file'){$lines[]='['.$label.']('.document_markdown_link($body).')';continue;}
-        $lines[]='['.($label!==''?$label:t('Contenu intégré / vidéo')).']('.document_markdown_link($body).')';
+        if($block['type']==='submission'){$lines[]='### '.document_markdown_text($caption?:t('Travail à rendre'));$lines[]='';$lines[]=$body;$lines[]='';$lines[]='> '.work_mode_label($block['submission_mode']).' · '.t($block['submission_required']?'Obligatoire':'Facultatif').' · '.t('Le texte est limité à 512 caractères.');continue;}
+        $embed=Embed::parse($body);
+        $label=document_markdown_text($caption?:($embed['title']??'')?:t('Contenu intégré / vidéo'));
+        $lines[]=$embed?'['.$label.']('.document_markdown_link($embed['url']).')':$label;
     }
     $markdown=rtrim(implode("\n",$lines))."\n";
     return ['title'=>(string)$item['title'],'markdown'=>$markdown];

@@ -1184,3 +1184,109 @@ document.querySelectorAll('[data-qcm-storage]').forEach((card) => {
   window.setInterval(() => { void save(); }, 15000);
   if (dirty) void save();
 });
+
+// Work submissions: a private draft is distinct from an explicit, locked hand-in.
+document.querySelectorAll('[data-work-storage]').forEach((card) => {
+  const key = `liike:work:${location.pathname}:${card.dataset.workStorage}`;
+  const form = card.querySelector('[data-work-form]');
+  const removeLocal = () => { try { localStorage.removeItem(key); } catch (_) {} };
+  if (!form) { removeLocal(); return; }
+  const messages = JSON.parse(form.dataset.workMessages);
+  const text = form.querySelector('[data-work-text]');
+  const url = form.querySelector('[data-work-url]');
+  const status = form.querySelector('[data-work-status]');
+  const revisionInput = form.querySelector('[name=revision]');
+  const blockRevision = Number(form.querySelector('[name=block_revision]').value);
+  let revision = Number(revisionInput.value), dirty = false, submitting = false, conflict = false;
+  let pending = null, timer = null, sent = null;
+  const values = () => ({ url: url?.value || '', body: text?.value || '' });
+  const snapshot = () => JSON.stringify(values());
+  const persist = () => {
+    try { localStorage.setItem(key, JSON.stringify({ values: values(), revision, blockRevision, sent })); } catch (_) {}
+  };
+  const count = () => {
+    if (!text) return true;
+    const length = Array.from(text.value.replace(/\r\n?/g, '\n')).length;
+    form.querySelector('[data-work-counter]').textContent = `${length} / 512`;
+    text.setCustomValidity(length > 512 ? messages.limit : '');
+    return length <= 512;
+  };
+  const reportConflict = () => {
+    conflict = true; status.textContent = messages.conflict;
+    form.querySelector('[data-work-reload]').hidden = false;
+  };
+  try {
+    const local = JSON.parse(localStorage.getItem(key) || 'null');
+    if (local?.values && typeof local.values.body === 'string' && typeof local.values.url === 'string') {
+      const matches = local.blockRevision === blockRevision &&
+        (local.revision === revision || (local.revision + 1 === revision && local.sent === snapshot()));
+      if (text) text.value = local.values.body;
+      if (url) url.value = local.values.url;
+      dirty = true;
+      if (!matches) reportConflict();
+    }
+  } catch (_) { removeLocal(); }
+  count();
+  form.querySelector('[data-work-reload]').addEventListener('click', () => { removeLocal(); dirty = false; location.reload(); });
+  const request = async (submit) => {
+    sent = snapshot(); persist();
+    const data = new FormData(form);
+    data.set('action', submit ? 'submit_work' : 'save_work');
+    data.set('revision', String(revision));
+    const response = await fetch(form.getAttribute('action') || location.href, {
+      method: 'POST', body: data, headers: { Accept: 'application/json' }, keepalive: true,
+    });
+    const result = await response.json();
+    if (result.status === 'already_submitted' || result.status === 'submitted') {
+      dirty = false; removeLocal(); location.reload(); return true;
+    }
+    if (!response.ok || result.status !== 'saved') {
+      if (['conflict', 'changed', 'forbidden'].includes(result.status)) reportConflict();
+      else status.textContent = result.message || messages.error;
+      return false;
+    }
+    revision = result.revision; revisionInput.value = String(revision);
+    dirty = snapshot() !== sent; sent = null;
+    if (dirty) persist(); else removeLocal();
+    status.textContent = messages.saved;
+    return true;
+  };
+  const save = () => {
+    if (!dirty || pending || submitting || conflict || !count()) return pending || Promise.resolve(false);
+    status.textContent = messages.saving;
+    pending = request(false).catch(() => { status.textContent = messages.error; return false; });
+    const active = pending;
+    active.then((saved) => { pending = null; if (saved && dirty) void save(); });
+    return active;
+  };
+  form.addEventListener('input', () => {
+    dirty = true; persist();
+    const valid = count();
+    if (!conflict) status.textContent = valid ? messages.saving : messages.limit;
+    clearTimeout(timer); timer = setTimeout(() => { void save(); }, 450);
+  });
+  form.addEventListener('change', () => { dirty = true; persist(); void save(); });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const draft = !!event.submitter?.matches('[data-work-save]');
+    if (submitting || conflict || !count()) { if (!count()) form.reportValidity(); return; }
+    if (draft) { dirty = true; await save(); return; }
+    if (!form.reportValidity() || !window.confirm(messages.confirm)) return;
+    submitting = true; clearTimeout(timer); persist();
+    form.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+    try {
+      if (pending) await pending;
+      if (!conflict) await request(true);
+    } catch (_) { status.textContent = messages.error; }
+    finally { submitting = false; form.querySelectorAll('button').forEach((button) => { button.disabled = false; }); }
+  });
+  window.addEventListener('beforeunload', (event) => {
+    if (dirty && !submitting) { persist(); event.preventDefault(); event.returnValue = ''; }
+  });
+  window.addEventListener('pagehide', () => { if (dirty) { persist(); void save(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) void save(); });
+  window.addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+  window.addEventListener('online', () => { void save(); });
+  setInterval(() => { void save(); }, 15000);
+  if (dirty) void save();
+});

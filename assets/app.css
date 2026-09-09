@@ -378,6 +378,15 @@ button,a,summary{touch-action:manipulation}
 .block-editor header button{margin-left:auto;border:0;background:transparent;font-size:1.3rem}
 .drag{color:#aaa}
 .block-fields{display:grid;gap:.5rem}
+.block-editor [hidden]{display:none!important}
+.block-editor .block-kind-hint{color:var(--muted);margin:0 0 .4rem}
+.block-editor:not([data-content-kind="markdown"]):not([data-content-kind="submission"]) .block-fields textarea{min-height:0;font-family:inherit}
+.block-preview-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.block-author-preview{padding:1rem;border:1px solid var(--line);border-radius:.6rem;background:var(--paper,#fff);overflow-wrap:anywhere;min-width:0}
+.block-author-preview img{display:block;max-width:100%;max-height:320px;object-fit:contain;margin:auto}
+.block-feedback{color:var(--muted);font-size:.9rem;margin:0}
+.block-media{display:block;width:100%;max-height:75vh;border-radius:.6rem}
+.block-height-field{max-width:20rem}
 .block-fields textarea{min-height:10rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.55}
 .file-upload{color:var(--purple);font-size:.72rem;font-weight:750}
 .file-upload input{display:block;width:100%;margin-top:.3rem}
@@ -660,3 +669,23 @@ h1{font-size:2.25rem}
 .qcm-authoring-modal pre{margin:0 0 1rem;padding:1rem;border-radius:.7rem;background:#29273b;color:#fff;white-space:pre-wrap}.qcm-authoring-modal p{margin:0;color:var(--muted)}
 .qcm-dashboard{margin-top:2rem}.qcm-dashboard .section-title h2{display:flex;align-items:center;gap:.5rem}.qcm-dashboard .section-title h2 i{color:var(--purple)}.qcm-step-averages{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.7rem}.qcm-step-averages article{display:grid;grid-template-columns:2rem minmax(0,1fr) auto;gap:.75rem;align-items:center;padding:.9rem 1rem;border:1px solid var(--line);border-radius:1rem;background:#fff}.qcm-step-averages article>span{display:grid;width:2rem;height:2rem;place-items:center;border-radius:50%;background:var(--purple-soft);color:var(--purple);font-size:.78rem;font-weight:850}.qcm-step-averages h3{margin:0;overflow:hidden;text-overflow:ellipsis;font-size:.95rem;white-space:nowrap}.qcm-step-averages small{color:var(--muted)}.qcm-step-averages strong{color:var(--purple);font-size:1.25rem;white-space:nowrap}
 @media(max-width:600px){.qcm-card>header{align-items:flex-start;flex-direction:column}.qcm-result{align-items:flex-start}.qcm-options{margin-left:0}.qcm-card form{padding:1rem}}
+
+.submission-settings{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;padding:.8rem;border-radius:.6rem;background:var(--purple-soft)}
+.submission-settings>small{grid-column:1/-1}
+.block-editor:not(:has([data-block-type] option[value="submission"]:checked)) .submission-settings{display:none}
+.block-editor:has([data-block-type] option[value="submission"]:checked) .file-upload{display:none}
+.work-card{margin:1rem 0;padding:1.1rem;border:1px solid var(--line);border-radius:1rem;background:var(--white,#fff)}
+.work-card>header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;margin-bottom:.8rem;color:var(--purple)}
+.work-card>header small,.work-save-status,.work-review>small{color:var(--muted);font-size:.8rem}
+.work-card fieldset{min-width:0;border:0;padding:0;margin:0}
+.work-card .work-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.8rem}
+.work-save-status{margin:.8rem 0 0}
+.work-submitted{color:var(--purple);font-weight:700}
+.work-answer,.work-review a{overflow-wrap:anywhere}
+.work-card a,.work-review a{text-decoration:underline}
+.work-review{padding:.85rem;margin:.6rem 0;border:1px solid var(--line);border-radius:.6rem;background:var(--white,#fff)}
+.work-review>small{display:block;margin-top:.3rem}
+.review-card .work-history{padding:.7rem 0 0;border:0}
+.work-history article{padding:.6rem 0;border-top:1px solid var(--line)}
+.work-card input,.work-card textarea{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
+@media(max-width:600px){.submission-settings{grid-template-columns:1fr}.work-actions>.button{width:100%}}

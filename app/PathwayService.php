@@ -269,6 +269,7 @@ function student_detail_neighbors(PDO $pdo, int $courseId, int $enrollmentId): a
 function course_pending_review_counts(PDO $pdo,int $courseId): array
 {
     $quiz=Qcm::courseEvaluationCompletion($pdo,$courseId);
+    $works=WorkSubmission::courseStates($pdo,$courseId);
     $query=$pdo->prepare("SELECT e.id AS enrollment_id,e.student_id,pi.id AS item_id,pi.is_evaluation,pi.self_evaluation_enabled,
         pr.student_validated_at,pr.teacher_validated_at,
         CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
@@ -284,7 +285,9 @@ function course_pending_review_counts(PDO $pdo,int $courseId): array
         if($row['teacher_validated_at']!==null)continue;
         $selfPending=(bool)$row['self_evaluation_enabled']&&$row['student_validated_at']!==null&&((bool)$row['accessible']||(bool)$row['is_evaluation']);
         $qcmPending=(bool)$row['is_evaluation']&&!empty($quiz['completed'][$studentId][$itemId]);
-        if(!$selfPending&&!$qcmPending)continue;
+        $work=$works[$studentId][$itemId]??null;
+        if($work){if((!$row['accessible']&&!$row['is_evaluation'])||!WorkSubmission::canReview((bool)$row['is_evaluation'],(bool)$row['self_evaluation_enabled'],(bool)$row['student_validated_at'],isset($quiz['expected'][$itemId]),!empty($quiz['completed'][$studentId][$itemId]),$work))continue;}
+        elseif(!$selfPending&&!$qcmPending)continue;
         $byStudent[$studentId]++;$byEnrollment[$enrollmentId]++;
     }
     return ['by_student'=>$byStudent,'by_enrollment'=>$byEnrollment,'students'=>count(array_filter($byStudent)),'total'=>array_sum($byStudent),'quiz'=>$quiz];
@@ -300,7 +303,7 @@ function purge_course_enrollment(PDO $pdo,int $enrollmentId,int $teacherId): boo
     if($ownsTransaction)$pdo->beginTransaction();else $pdo->exec('SAVEPOINT purge_course_enrollment');
     try{
         $itemScope='SELECT id FROM pathway_items WHERE course_id=?';
-        foreach(['learning_visits','qcm_attempts','qcm_drafts','student_private_notes'] as $table)$pdo->prepare("DELETE FROM $table WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
+        foreach(['learning_visits','qcm_attempts','qcm_drafts','student_private_notes','work_submissions','work_submission_versions'] as $table)$pdo->prepare("DELETE FROM $table WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
         $pdo->prepare("DELETE FROM pathway_item_students WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
         $pdo->prepare('DELETE FROM announcement_reads WHERE student_id=? AND announcement_id IN (SELECT id FROM course_announcements WHERE course_id=?)')->execute([$studentId,$courseId]);
         $pdo->prepare('DELETE FROM course_accesses WHERE user_id=? AND course_id=?')->execute([$studentId,$courseId]);
@@ -351,7 +354,7 @@ function complete_consultation_step(PDO $pdo, int $studentId, int $itemId): bool
           AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
               SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
     $query->execute([$studentId,$itemId,$studentId]);$enrollmentId=(int)($query->fetchColumn()?:0);
-    if($enrollmentId<1)return false;
+    if($enrollmentId<1||!WorkSubmission::summary($pdo,$studentId,$itemId)['complete'])return false;
     $complete=$pdo->prepare("INSERT INTO progress(enrollment_id,pathway_item_id,completed_at,updated_at)
         VALUES(?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
         ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP

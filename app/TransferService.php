@@ -18,7 +18,7 @@ function export_page_document(PDO $pdo, int $pageId, int $teacherId, ?string $pu
 {
     $query=$pdo->prepare('SELECT * FROM pages WHERE id=?'); $query->execute([$pageId]);
     $page=$query->fetch(PDO::FETCH_ASSOC); if(!$page||!teacher_can_access_page($pdo,$pageId,$teacherId))throw new TransferException('Page introuvable.');
-    $blocks=$pdo->prepare('SELECT type,body,caption,position FROM page_blocks WHERE page_id=? ORDER BY position'); $blocks->execute([$pageId]);
+    $blocks=$pdo->prepare('SELECT type,body,caption,position,submission_mode,submission_required,image_alt,embed_kind,embed_height FROM page_blocks WHERE page_id=? ORDER BY position'); $blocks->execute([$pageId]);
     $tags=$pdo->prepare('SELECT t.name,t.color FROM tags t JOIN page_tags pt ON pt.tag_id=t.id WHERE pt.page_id=? ORDER BY t.name'); $tags->execute([$pageId]);
     $objectives=$pdo->prepare('SELECT title,description,position FROM page_objectives WHERE page_id=? ORDER BY position,id'); $objectives->execute([$pageId]);
     $exportedBlocks=$blocks->fetchAll(PDO::FETCH_ASSOC);
@@ -37,7 +37,7 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
     if($reference===''||$title==='')throw new TransferException('La référence et le titre de la page sont requis.');
     $blocks=$page['blocks']??[]; $tags=$page['tags']??[]; $objectives=$page['objectives']??[];
     if(!is_array($blocks)||count($blocks)>100||!is_array($tags)||count($tags)>100||!is_array($objectives)||count($objectives)>50)throw new TransferException('Le contenu de la page dépasse les limites acceptées.');
-    foreach($blocks as $block){if(!is_array($block)||!in_array($block['type']??'', ['markdown','image','file','iframe'],true))throw new TransferException('Un bloc de page est invalide.');if(isset($block['embedded_file'])){$embedded=$block['embedded_file'];$decoded=is_array($embedded)?base64_decode((string)($embedded['data_base64']??''),true):false;if($decoded===false||strlen($decoded)>10*1024*1024)throw new TransferException('Une pièce jointe intégrée est invalide ou dépasse 10 Mo.');}}
+    foreach($blocks as $block){if(!is_array($block)||!in_array($block['type']??'', ['markdown','image','file','iframe','submission'],true))throw new TransferException('Un bloc de page est invalide.');if(isset($block['image_alt'])&&mb_strlen((string)$block['image_alt'])>512)throw new TransferException('La description alternative est limitée à 512 caractères.');if(!in_array($block['embed_kind']??'auto',['auto','media','integration'],true)||isset($block['embed_height'])&&(!is_int($block['embed_height'])||$block['embed_height']<100||$block['embed_height']>2000))throw new TransferException('Un bloc de page est invalide.');if(isset($block['embedded_file'])){if(!in_array($block['type'],['image','file'],true))throw new TransferException('Ce type de bloc ne permet pas l’import de fichier.');$embedded=$block['embedded_file'];$decoded=is_array($embedded)?base64_decode((string)($embedded['data_base64']??''),true):false;if($decoded===false||strlen($decoded)>10*1024*1024)throw new TransferException('Une pièce jointe intégrée est invalide ou dépasse 10 Mo.');}}
     foreach($objectives as $objective)if(!is_array($objective)||trim((string)($objective['title']??''))==='')throw new TransferException('Un objectif de page est invalide.');
 
     $existingQuery=$pdo->prepare('SELECT * FROM pages WHERE reference=?'); $existingQuery->execute([$reference]); $existing=$existingQuery->fetch(PDO::FETCH_ASSOC);
@@ -61,8 +61,8 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
                 ->execute([$newReference,$importTitle,trim((string)($page['summary']??'')),($page['status']??'draft')==='ready'?'ready':'draft',max(1,(int)($page['estimated_minutes']??15)),$teacherId,$teacherId]);
             $pageId=(int)$pdo->lastInsertId();
         }
-        $insertBlock=$pdo->prepare('INSERT INTO page_blocks(page_id,type,body,caption,position) VALUES(?,?,?,?,?)');
-        foreach(array_values($blocks) as $index=>$block){$body=(string)($block['body']??'');if(isset($block['embedded_file'])&&$publicRoot){$embedded=$block['embedded_file'];$decoded=base64_decode((string)$embedded['data_base64'],true);$safe=preg_replace('/[^A-Za-z0-9._-]/','-',basename((string)($embedded['filename']??'fichier')));$safe=strtolower(new_entity_reference('ASSET')).'-'.$safe;$uploadDir=rtrim($publicRoot,'/').'/uploads';if(!is_dir($uploadDir)&&!mkdir($uploadDir,0775,true)&&!is_dir($uploadDir))throw new TransferException('Le dossier des fichiers importés ne peut pas être créé.');if(file_put_contents($uploadDir.'/'.$safe,$decoded)===false)throw new TransferException('Une pièce jointe ne peut pas être importée.');$body='uploads/'.$safe;}$insertBlock->execute([$pageId,$block['type'],$body,trim((string)($block['caption']??'')),$index+1]);}
+        $insertBlock=$pdo->prepare('INSERT INTO page_blocks(page_id,type,body,caption,position,submission_mode,submission_required,image_alt,embed_kind,embed_height) VALUES(?,?,?,?,?,?,?,?,?,?)');
+        foreach(array_values($blocks) as $index=>$block){$body=(string)($block['body']??'');if(isset($block['embedded_file'])&&$publicRoot){$embedded=$block['embedded_file'];$decoded=base64_decode((string)$embedded['data_base64'],true);$safe=preg_replace('/[^A-Za-z0-9._-]/','-',basename((string)($embedded['filename']??'fichier')));$safe=strtolower(new_entity_reference('ASSET')).'-'.$safe;$uploadDir=rtrim($publicRoot,'/').'/uploads';if(!is_dir($uploadDir)&&!mkdir($uploadDir,0775,true)&&!is_dir($uploadDir))throw new TransferException('Le dossier des fichiers importés ne peut pas être créé.');if(file_put_contents($uploadDir.'/'.$safe,$decoded)===false)throw new TransferException('Une pièce jointe ne peut pas être importée.');$body='uploads/'.$safe;}$insertBlock->execute([$pageId,$block['type'],$body,trim((string)($block['caption']??'')),$index+1,in_array($block['submission_mode']??'link',WorkSubmission::MODES,true)?($block['submission_mode']??'link'):'link',(int)(bool)($block['submission_required']??true),$block['image_alt']??null,$block['embed_kind']??'auto',$block['embed_height']??null]);}
         $findTag=$pdo->prepare('SELECT id FROM tags WHERE name=?'); $insertTag=$pdo->prepare('INSERT INTO tags(name,color) VALUES(?,?)'); $linkTag=$pdo->prepare('INSERT OR IGNORE INTO page_tags(page_id,tag_id) VALUES(?,?)');
         foreach($tags as $tag){
             if(!is_array($tag)||trim((string)($tag['name']??''))==='')continue;
@@ -73,6 +73,7 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
         $insertObjective=$pdo->prepare('INSERT INTO page_objectives(page_id,title,description,position) VALUES(?,?,?,?)');$seenObjectives=[];
         foreach(array_values($objectives) as $index=>$objective){$name=trim((string)$objective['title']);$key=mb_strtolower($name,'UTF-8');if(isset($seenObjectives[$key]))continue;$seenObjectives[$key]=true;$insertObjective->execute([$pageId,$name,trim((string)($objective['description']??'')),$index+1]);}
         Qcm::syncPageTag($pdo,$pageId);
+        WorkSubmission::reconcilePage($pdo,$pageId);
         $pdo->commit(); return $pageId;
     }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }

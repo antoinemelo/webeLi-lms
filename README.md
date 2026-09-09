@@ -93,7 +93,8 @@ python3 scripts/apr.py \
 - bibliothèque de pages indépendantes, prêtes ou en brouillon ;
 - recherche de pages par texte, statut, tags et objectifs ;
 - import/export JSON des pages, parcours et élèves ;
-- blocs Markdown, image, fichier et iframe, avec import local ;
+- six blocs : texte Markdown avec aperçu, image avec description alternative et légende, document téléchargeable, vidéo/audio, intégration externe (iframe) et travail à rendre ;
+- champs adaptés au type : import ou adresse pour les images et documents, hauteur réglable pour les intégrations, lecture native des fichiers audio/vidéo ;
 - QCM intégrés au Markdown, avec choix simple ou multiple, réponses mélangées, sauvegarde et reprise des brouillons, score agrégé et remise unique lorsque l’étape est une évaluation ;
 - aperçu élève non destructif d’un parcours et de ses pages pour l’équipe enseignante, incluant les contenus restreints ou masqués avec leur code couleur ;
 - catégories par tags ;
@@ -160,8 +161,20 @@ Les élèves ne reçoivent jamais les vues `students`, `pathway`, `library` ou `
 ```bash
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
+php tests/embeds.php
+php tests/content_blocks.php
+php tests/work_submissions.php
 python3 tests/database_profiles.py
 node tests/qcm_browser.mjs
+node tests/embeds_browser.mjs
+node tests/content_blocks_browser.mjs
+node tests/work_submissions_browser.mjs
 ```
 
 Le scénario QCM utilise Chromium (`/usr/bin/chromium`, ou `CHROMIUM_BINARY`), Node.js 22 et PHP sur une instance et un profil navigateur temporaires. Il vérifie la reprise après fermeture, la sauvegarde hors ligne et la remise définitive.
+
+Le scénario iframe / vidéo utilise le même environnement temporaire. Il vérifie les liens YouTube, le code iframe RTS, les vues enseignant et élève sur bureau et mobile, les exports et une iframe locale interactive. Les contrôles de chargement externe sont informatifs, car ils dépendent du fournisseur et du réseau.
+
+Le scénario de remise vérifie la création du bloc, les trois formats, la limite de 512 caractères, les brouillons et la reprise hors ligne, la remise explicite, la notation et la réouverture avec historique. Le test PHP couvre aussi la migration v18, la conservation des QCM existants et les contrôles d’accès et de concurrence.
+
+Le scénario des blocs vérifie dans Chromium les champs contextuels, l’aperçu Markdown, la récupération de la saisie lors d’un changement de type, les imports image/document, les erreurs sans perte de saisie et les affichages mobiles. La migration v19 ajoute les options aux blocs existants sans reconstruire leur table ; les copies JSON conservent ces options.
