@@ -75,7 +75,6 @@
           const result = await post('messaging_push_subscribe', { subscription: JSON.stringify(subscription.toJSON()) });
           registration.active?.postMessage({ type: 'notification-owner', subscription: result.subscription });
           active = true;
-          if (feedback) feedback.textContent = text('notifications', 'Notifications activées.');
           await updateBadges();
         }
       } catch (e) { if (feedback) feedback.textContent = e.message; }
