@@ -871,6 +871,7 @@ return [
     'Code du parcours'=>['en'=>'Learning path code','de'=>'Lernpfadcode','it'=>'Codice del percorso','es'=>'Código del itinerario'],
     'Un élève connecté rejoint directement le parcours ; un nouvel élève crée d’abord son compte et valide son courriel.'=>['en'=>'A signed-in student joins the learning path immediately; a new student first creates an account and confirms their email.','de'=>'Angemeldete Lernende treten dem Lernpfad direkt bei; neue Lernende erstellen zuerst ein Konto und bestätigen ihre E-Mail.','it'=>'Uno studente connesso si iscrive subito al percorso; un nuovo studente crea prima l’account e conferma l’email.','es'=>'Un alumno conectado se une directamente al itinerario; uno nuevo crea primero su cuenta y confirma el correo.'],
     'Modifier le nom et le code'=>['en'=>'Edit name and code','de'=>'Name und Code bearbeiten','it'=>'Modifica nome e codice','es'=>'Editar nombre y código'],
+    'Paramètres du parcours'=>['en'=>'Learning path settings','de'=>'Lernpfadeinstellungen','it'=>'Impostazioni del percorso','es'=>'Configuración del itinerario'],
     'Actions du parcours'=>['en'=>'Learning path actions','de'=>'Aktionen für den Lernpfad','it'=>'Azioni del percorso','es'=>'Acciones del itinerario'],
     'Actions des parcours'=>['en'=>'Learning path management','de'=>'Lernpfade verwalten','it'=>'Gestione dei percorsi','es'=>'Gestión de itinerarios'],
     'Nom du parcours'=>['en'=>'Learning path name','de'=>'Name des Lernpfads','it'=>'Nome del percorso','es'=>'Nombre del itinerario'],

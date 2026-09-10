@@ -19,13 +19,34 @@ function messaging_push_config(bool $create=false): ?array
 function messaging_push_endpoint(string $endpoint): bool
 {
     $url=parse_url($endpoint);if(!$url||($url['scheme']??'')!=='https'||isset($url['user'])||isset($url['pass'])||isset($url['fragment'])||isset($url['port'])&&$url['port']!==443||strlen($endpoint)>2048)return false;
-    $host=strtolower($url['host']??'');return in_array($host,['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'],true)||str_ends_with($host,'.push.apple.com');
+    $host=strtolower($url['host']??'');
+    if(!preg_match('/^[a-z0-9]+(?:[a-z0-9.-]*[a-z0-9])?$/D',$host))return false;
+    // Browser providers: Google FCM, Mozilla Autopush, Apple APNs and Microsoft WNS.
+    // Chromium also exposes the Google staging endpoint jmt17.google.com.
+    // WNS assigns regional hosts beneath notify.windows.com.
+    return in_array($host,['fcm.googleapis.com','jmt17.google.com','push.services.mozilla.com','updates.push.services.mozilla.com','web.push.apple.com'],true)
+        ||str_ends_with($host,'.push.apple.com')||str_ends_with($host,'.notify.windows.com');
+}
+function messaging_push_key(mixed $value,int $bytes): string
+{
+    if(!is_string($value)||strlen($value)>4*(int)ceil($bytes/3)||!preg_match('~^[A-Za-z0-9_+/-]+={0,2}$~D',$value))throw new InvalidArgumentException('Clés de notification invalides. Réactivez les notifications dans les paramètres du navigateur.');
+    $decoded=base64_decode(strtr($value,'-_','+/'),true);
+    if($decoded===false||strlen($decoded)!==$bytes)throw new InvalidArgumentException('Clés de notification invalides. Réactivez les notifications dans les paramètres du navigateur.');
+    return rtrim(strtr(base64_encode($decoded),'+/','-_'),'=');
 }
 function messaging_push_register(array $user,array $data): string
 {
-    $endpoint=(string)($data['endpoint']??'');$key=(string)($data['keys']['p256dh']??'');$auth=(string)($data['keys']['auth']??'');
-    $decode=fn($s)=>base64_decode(strtr($s,'-_','+/'),true);
-    if(!messaging_push_endpoint($endpoint)||!preg_match('/^[A-Za-z0-9_-]+={0,2}$/D',$key)||!preg_match('/^[A-Za-z0-9_-]+={0,2}$/D',$auth)||strlen($decode($key)?:'')!==65||strlen($decode($auth)?:'')!==16)throw new InvalidArgumentException('Abonnement aux notifications invalide.');
+    $endpoint=$data['endpoint']??null;$keys=$data['keys']??null;
+    if(!is_string($endpoint)||!is_array($keys))throw new InvalidArgumentException('Abonnement aux notifications invalide.');
+    if(!messaging_push_endpoint($endpoint)){
+        $host=parse_url($endpoint,PHP_URL_HOST);
+        $host=is_string($host)&&preg_match('/^[a-zA-Z0-9.-]{1,253}$/D',$host)?$host:'?';
+        throw new InvalidArgumentException(t('Service de notifications non pris en charge : :service.',['service'=>$host]));
+    }
+    // Accept padded/unpadded Base64 and Base64URL, then store the canonical URL-safe form.
+    // The decoded Web Push key sizes remain mandatory.
+    $key=messaging_push_key($keys['p256dh']??null,65);
+    $auth=messaging_push_key($keys['auth']??null,16);
     $store=messaging_store();$id=bin2hex(random_bytes(24));
     $store->transaction(function()use($store,$endpoint,$user,$key,$auth,$id){
         $store->run('DELETE FROM push_subscriptions WHERE endpoint=?',[$endpoint]);

@@ -749,3 +749,6 @@ h1{font-size:2.25rem}
 .followup-save-note{margin-top:1rem;font-size:.9rem;color:var(--muted)}
 .followup-preview{padding:1rem;border:1px solid var(--line);border-radius:.6rem}
 @media(max-width:700px){.followup-grid{grid-template-columns:1fr}.followup-participants{max-height:13rem}.student-admin-information{grid-template-columns:1fr}.student-history-heading{align-items:flex-start;flex-direction:column}.student-history-entry>header{flex-wrap:wrap}.student-management-trigger{justify-content:flex-start}}
+
+.student-directory-badges,.student-directory-actions{display:flex;align-items:center;gap:.7rem}.student-directory-badges>.avatar,.student-directory-badges>.status,.student-directory-actions>.student-code,.student-directory-actions>.student-management-trigger{flex-shrink:0}
+@media(max-width:850px){.student-directory-badges,.student-directory-actions,.student-directory-badges+.directory-identity{grid-column:1/-1}}

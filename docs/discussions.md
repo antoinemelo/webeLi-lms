@@ -28,7 +28,7 @@ Pour une livraison régulière même quand le site n’a pas de visiteurs, ajout
 * * * * * /usr/bin/php /chemin/instance/scripts/push_notifications.php
 ```
 
-Le script traite un lot borné (100 livraisons au plus, environ 10 secondes, requêtes individuelles limitées à 5 secondes). Sans cron actif, les visites déclenchent de petits lots de secours. En PHP-FPM, ce travail s’effectue après la réponse ; avec d’autres modes PHP, la réponse peut attendre la fin du lot. Le serveur doit autoriser les connexions HTTPS sortantes vers les services push Google, Mozilla et Apple. Les abonnements expirés sont supprimés, les erreurs temporaires sont réessayées au plus cinq fois. Les informations techniques de notification sont purgées après sept jours. La messagerie fonctionne sans notifications push.
+Le script traite un lot borné (100 livraisons au plus, environ 10 secondes, requêtes individuelles limitées à 5 secondes). Sans cron actif, les visites déclenchent de petits lots de secours. En PHP-FPM, ce travail s’effectue après la réponse ; avec d’autres modes PHP, la réponse peut attendre la fin du lot. Le serveur doit autoriser les connexions HTTPS sortantes vers les services push Google, Mozilla, Apple et Microsoft (notamment les sous-domaines de `notify.windows.com`). L’adresse Google `jmt17.google.com`, utilisée par certaines versions de Chromium, est également acceptée ; l’adresse fournie par le navigateur est conservée telle quelle. Les abonnements expirés sont supprimés, les erreurs temporaires sont réessayées au plus cinq fois. Les informations techniques de notification sont purgées après sept jours. La messagerie fonctionne sans notifications push.
 
 ## Données, mises à jour et limites
 
@@ -50,6 +50,7 @@ Les sauvegardes/restaurations métier habituelles du LMS continuent à porter su
 php tests/messaging.php
 php tests/messaging_updates.php
 node tests/messaging_browser.mjs
+node tests/messaging_push_browser.mjs
 php tests/pwa_sessions.php
 php tests/smoke.php
 python3 tests/database_profiles.py

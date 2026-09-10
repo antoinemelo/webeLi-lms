@@ -318,6 +318,18 @@ return json_decode(<<<'JSON'
     "de": "Die ausgewählten Gespräche wurden gelöscht.",
     "it": "Le conversazioni selezionate sono state eliminate.",
     "es": "Se han eliminado las conversaciones seleccionadas."
+  },
+  "Service de notifications non pris en charge : :service.": {
+    "en": "Unsupported notification service: :service.",
+    "de": "Nicht unterstützter Benachrichtigungsdienst: :service.",
+    "it": "Servizio di notifiche non supportato: :service.",
+    "es": "Servicio de notificaciones no compatible: :service."
+  },
+  "Clés de notification invalides. Réactivez les notifications dans les paramètres du navigateur.": {
+    "en": "Invalid notification keys. Re-enable notifications in your browser settings.",
+    "de": "Ungültige Benachrichtigungsschlüssel. Aktivieren Sie Benachrichtigungen in den Browsereinstellungen erneut.",
+    "it": "Chiavi di notifica non valide. Riattiva le notifiche nelle impostazioni del browser.",
+    "es": "Claves de notificación no válidas. Vuelva a activar las notificaciones en la configuración del navegador."
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);
