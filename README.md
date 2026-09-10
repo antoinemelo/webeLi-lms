@@ -163,11 +163,15 @@ find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
 php tests/embeds.php
 php tests/content_blocks.php
+php tests/announcement_messages.php
+php tests/student_admin_history.php
 php tests/work_submissions.php
 python3 tests/database_profiles.py
 node tests/qcm_browser.mjs
 node tests/embeds_browser.mjs
 node tests/content_blocks_browser.mjs
+node tests/announcement_messages_browser.mjs
+node tests/student_admin_history_browser.mjs
 node tests/work_submissions_browser.mjs
 ```
 
@@ -178,3 +182,23 @@ Le scénario iframe / vidéo utilise le même environnement temporaire. Il véri
 Le scénario de remise vérifie la création du bloc, les trois formats, la limite de 512 caractères, les brouillons et la reprise hors ligne, la remise explicite, la notation et la réouverture avec historique. Le test PHP couvre aussi la migration v18, la conservation des QCM existants et les contrôles d’accès et de concurrence.
 
 Le scénario des blocs vérifie dans Chromium les champs contextuels, l’aperçu Markdown, la récupération de la saisie lors d’un changement de type, les imports image/document, les erreurs sans perte de saisie et les affichages mobiles. La migration v19 ajoute les options aux blocs existants sans reconstruire leur table ; les copies JSON conservent ces options.
+
+Depuis le suivi enseignant, le menu Actions sous la liste des élèves ouvre l’envoi de messages ou la gestion des modèles personnels. Les modèles sont utilisables dans tous les parcours de leur auteur et acceptent `{prenom}`, `{nom}` et `{cours}` dans le titre et le corps Markdown. Le texte peut être adapté pour un envoi sans modifier le modèle ; aucun prénom ni signature n’est ajouté automatiquement.
+
+La fenêtre d’envoi permet de sélectionner les élèves du parcours et d’inclure leur deuxième adresse en CC. Chaque élève reçoit un seul courriel, avec l’adresse principale en destinataire, la deuxième adresse cochée en CC et l’expéditeur enseignant en CCI. Un aperçu personnalisé précède l’envoi. Les versions envoyées sont conservées dans une seule annonce, visible uniquement des destinataires sélectionnés et de l’équipe enseignante. L’envoi à toute la classe concerne les inscriptions actives au moment de l’envoi. Les annonces globales existantes gardent leur visibilité habituelle.
+
+Les envois partiels apparaissent en gris dans la liste des annonces du parcours, avec leurs destinataires et états de lecture dans l’application. La corbeille supprime l’annonce et les courriels encore en attente ; elle ne rappelle pas les courriels déjà envoyés. La migration v20 conserve les anciennes annonces et étend la file des courriels aux copies CC/CCI. Les scénarios PHP et Chromium vérifient ces comportements sur des données temporaires ; le test navigateur neutralise la livraison réelle des courriels.
+
+
+Sous `?view=students`, **Gérer** ouvre une fenêtre avec les onglets Informations, Inscriptions et Historique. Les actions existantes sur les comptes, les participations et la deuxième adresse restent disponibles ; après enregistrement, l’élève, l’onglet et les filtres sont conservés. Le suivi pédagogique reste sous `?view=student-detail`.
+
+**Ajouter un suivi**, depuis l’historique ou le menu Actions de la liste, enregistre une réunion, une correspondance ou un paiement pour un ou plusieurs élèves. Le compte rendu est commun aux participants et stocké une seule fois. Il comprend la date et l’heure, l’auteur, un titre (160 caractères), un texte Markdown (5 000 caractères) et éventuellement un parcours. Les modèles personnels d’envoi sont réutilisables ; dans un compte rendu collectif, `{prenom}` et `{nom}` donnent la liste des participants. `{cours}` nécessite de choisir un parcours auquel les participants sont inscrits. Enregistrer ce suivi ne déclenche aucun courriel. Aucune pièce jointe n’est proposée.
+
+L’historique charge 50 éléments par page et rassemble ces comptes rendus et les annonces ciblées déjà adressées à l’élève, avec leur contenu personnalisé, leurs copies CC/CCI et leurs états d’envoi et de lecture. Les annonces restent les données de référence : leur suppression habituelle les retire aussi de cet historique. L’auteur peut modifier ou supprimer son compte rendu pour tous ses participants, avec contrôle de révision pour éviter d’écraser une modification concurrente. Les suivis généraux sont consultables par les enseignants autorisés à gérer l’élève ; ceux liés à un parcours sont réservés à son équipe enseignante, à l’auteur ou au superadministrateur. Les élèves n’accèdent pas au suivi administratif.
+
+La migration v21 ajoute les deux tables de suivi sans modifier les progressions et efface les corps des copies techniques de courriels déjà envoyées. Des déclencheurs SQLite appliquent ensuite cette règle à chaque envoi réussi, quel que soit le transport. La file conserve les métadonnées (date, destinataire, objet, copies, état), ainsi que les corps des messages en attente ou en échec pour permettre une nouvelle tentative. Le contenu utile reste dans l’annonce d’origine ou le compte rendu. L’ancienne action de nettoyage ne supprime plus les métadonnées. Les tests PHP vérifient les accès, la migration, les liens collectifs, les révisions et la pagination ; Chromium vérifie les fenêtres sur ordinateur et mobile, les formulaires existants et les refus d’accès élèves sur une instance temporaire sans livraison réelle de courriels.
+
+Sous `?view=teacher`, le menu Actions propose aussi **Réunion**, **Correspondance** et **Paiement**. Il ouvre le même suivi administratif avec la catégorie et le parcours sélectionnés ; les participants proposés appartiennent au parcours choisi. Les modèles créés ou modifiés dans cette page sont immédiatement disponibles dans le suivi. La migration v22 regroupe les anciennes discussions sous Réunion, en conservant leurs identifiants, textes, dates et participants. Paiement est une catégorie de compte rendu, sans transaction financière.
+
+
+La fiche administrative présente chaque activité avec son type, son auteur et sa date de création, puis les autres participants actifs (sans l’élève consulté) et « Concerne : … ». Le chevron déplie le contenu et les détails ; les textes de l’historique utilisent une taille de police uniforme. Le menu à trois points de la fiche regroupe **Exporter en PDF**, **Exporter en Markdown** et **Fermer**. Chaque export contient les informations, les inscriptions affichables et toutes les pages de l’historique autorisé, avec le texte complet des activités et messages, indépendamment de leur état replié. Ces exports sont réservés aux enseignants autorisés ; ils ne contiennent pas les données techniques d’authentification. Les images Markdown sont représentées par leur description et leur adresse dans le PDF, sans chargement de ressource externe.

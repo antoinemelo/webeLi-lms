@@ -689,3 +689,63 @@ h1{font-size:2.25rem}
 .work-history article{padding:.6rem 0;border-top:1px solid var(--line)}
 .work-card input,.work-card textarea{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
 @media(max-width:600px){.submission-settings{grid-template-columns:1fr}.work-actions>.button{width:100%}}
+
+.teacher-message-actions{margin:1rem 0 2rem;max-width:32rem}
+.message-composer-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;min-width:0}
+.message-composer-grid>section{min-width:0}
+.message-composer-grid h3,[data-message-preview] h3{font-size:1.1rem;margin-bottom:1rem}
+.message-select-all{display:grid;gap:.5rem;padding-bottom:.8rem;border-bottom:1px solid var(--line)}
+.message-select-all label,.message-recipient-row>label{display:flex;align-items:flex-start;gap:.6rem}
+.message-recipient-list{max-height:23rem;overflow-y:auto}
+.message-recipient-row{padding:.65rem .15rem;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.message-recipient-row input,.message-select-all input{flex-shrink:0;margin-top:.2rem}
+.message-recipient-row small{display:block;color:var(--muted)}
+.message-recipient-cc{font-size:.85rem;margin:.5rem 0 0 1.6rem;color:var(--muted)}
+.message-variables{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin:.7rem 0}
+.message-copy-note,.message-count{font-size:.9rem;color:var(--muted);margin-top:1rem}
+[data-message-preview]{border-top:1px solid var(--line);padding-top:1rem;overflow-wrap:anywhere}
+[data-message-preview][hidden],[data-message-feedback][hidden],[data-template-feedback][hidden]{display:none!important}
+#teacher-message-modal form,#message-template-modal form{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.announcement-admin article.announcement-targeted{background:#f0f1f4;border-color:#d8dbe2}
+.announcement-recipients{font-size:.85rem;margin-top:.6rem;overflow-wrap:anywhere}
+.announcement-recipients details{margin:.6rem 0;padding-top:.5rem;border-top:1px solid var(--line)}
+.announcement-recipients details>b{display:block;margin-top:.5rem}
+.announcement-recipients .announcement-body{margin-top:.5rem;font-size:.9rem}
+@media(max-width:700px){.message-composer-grid{grid-template-columns:1fr}.message-recipient-list{max-height:16rem}#teacher-message-modal .modal-footer{gap:.4rem}.message-recipient-cc{margin-left:0}}
+
+.student-management-trigger{display:flex;align-items:center;gap:.7rem;justify-content:flex-end}
+#student-admin-modal .modal-content,#student-followup-modal .modal-content{min-height:0}
+#student-followup-modal form{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.student-admin-information{display:grid;grid-template-columns:1fr 1fr;gap:.8rem 1.5rem;overflow-wrap:anywhere}
+.student-admin-information dt{font-size:.85rem;color:var(--muted)}
+.student-admin-information dd{margin:0}
+.student-admin-account .management-actions,.student-admin-account .management-row{flex-wrap:wrap}
+.student-history-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0}
+.student-history-heading h3{font-size:1.1rem;margin:0}
+.student-history-entry{border:1px solid var(--line);border-radius:.7rem;padding:1rem;margin-bottom:1rem;overflow-wrap:anywhere;font-size:1rem}
+.student-history-entry>header{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}
+.student-history-entry p{margin:0}
+.student-history-byline{flex:1;text-align:left}
+.student-history-entry-actions{display:flex;gap:.4rem;flex-shrink:0}
+.student-history-entry .student-history-participants{margin:.5rem 0}
+.student-history-content{margin-top:.5rem}
+.student-history-content>summary{display:flex;align-items:baseline;gap:.5rem;cursor:pointer;list-style:none}
+.student-history-content>summary::-webkit-details-marker{display:none}
+.student-history-content>summary .bi{flex-shrink:0;transition:transform .15s}
+.student-history-content[open]>summary .bi{transform:rotate(90deg)}
+.student-history-expanded{margin-top:.8rem}
+.student-history-entry .content-block{margin:.8rem 0}
+.student-history-entry footer{display:grid;gap:.4rem;padding-top:.6rem;border-top:1px solid var(--line)}
+.student-history-entry :is(p,span,strong,small,time,summary,h1,h2,h3,h4,h5,h6,li,td,th,a,code,pre){font-size:inherit}
+.student-admin-menu{margin-left:auto;flex-shrink:0}
+.student-admin-information dt{font-size:1rem}
+.student-history-pagination{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.followup-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:1.5rem}
+.followup-grid h3{font-size:1.1rem}
+.followup-participants{max-height:25rem;overflow-y:auto;margin-top:.7rem}
+.followup-participants>label{display:flex;gap:.6rem;align-items:flex-start;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.followup-participants>label[hidden],.followup-preview[hidden]{display:none!important}
+.followup-participants small{display:block;color:var(--muted)}
+.followup-save-note{margin-top:1rem;font-size:.9rem;color:var(--muted)}
+.followup-preview{padding:1rem;border:1px solid var(--line);border-radius:.6rem}
+@media(max-width:700px){.followup-grid{grid-template-columns:1fr}.followup-participants{max-height:13rem}.student-admin-information{grid-template-columns:1fr}.student-history-heading{align-items:flex-start;flex-direction:column}.student-history-entry>header{flex-wrap:wrap}.student-management-trigger{justify-content:flex-start}}

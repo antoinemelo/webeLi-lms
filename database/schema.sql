@@ -305,9 +305,37 @@ CREATE TABLE course_announcements (
     body TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0,1)),
+    audience TEXT NOT NULL DEFAULT 'all' CHECK(audience IN ('all','class','selected')),
+    request_key TEXT,
+    request_hash TEXT,
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE UNIQUE INDEX idx_announcement_request ON course_announcements(created_by,request_key);
+
+CREATE TABLE message_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    revision INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_message_templates_teacher ON message_templates(teacher_id,name);
+
+CREATE TABLE announcement_recipients (
+    announcement_id INTEGER NOT NULL REFERENCES course_announcements(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    email TEXT NOT NULL,
+    cc TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY(announcement_id,student_id)
+);
+CREATE INDEX idx_announcement_recipients_student ON announcement_recipients(student_id,announcement_id);
 
 CREATE TABLE announcement_reads (
     announcement_id INTEGER NOT NULL,
@@ -399,6 +427,8 @@ CREATE TABLE notification_outbox (
     recipient TEXT NOT NULL,
     subject TEXT NOT NULL,
     body TEXT NOT NULL,
+    cc TEXT NOT NULL DEFAULT '',
+    bcc TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sent','failed')),
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
@@ -454,4 +484,36 @@ BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
 
-PRAGMA user_version = 19;
+CREATE TABLE student_followups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
+            course_title TEXT NOT NULL DEFAULT '',
+            kind TEXT NOT NULL CHECK(kind IN ('meeting','correspondence','payment')),
+            occurred_at TEXT NOT NULL,
+            title TEXT NOT NULL,
+            body TEXT NOT NULL,
+            revision INTEGER NOT NULL DEFAULT 0,
+            request_key TEXT NOT NULL,
+            request_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(created_by,request_key)
+        );
+        CREATE TABLE student_followup_participants (
+            followup_id INTEGER NOT NULL REFERENCES student_followups(id) ON DELETE CASCADE,
+            student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            PRIMARY KEY(followup_id,student_id)
+        );
+        CREATE INDEX idx_followups_date ON student_followups(occurred_at DESC,id DESC);
+        CREATE INDEX idx_followup_participants_student ON student_followup_participants(student_id,followup_id);
+        CREATE INDEX idx_outbox_announcement_recipient ON notification_outbox(announcement_id,recipient);
+        CREATE TRIGGER remove_empty_student_followup AFTER DELETE ON student_followup_participants
+        BEGIN DELETE FROM student_followups WHERE id=OLD.followup_id AND NOT EXISTS(SELECT 1 FROM student_followup_participants WHERE followup_id=OLD.followup_id); END;
+        UPDATE notification_outbox SET body='' WHERE status='sent' AND body<>'';
+        CREATE TRIGGER clear_sent_mail_body_insert AFTER INSERT ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
+        BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
+        CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
+        BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
+
+PRAGMA user_version = 22;

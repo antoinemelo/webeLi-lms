@@ -55,7 +55,11 @@ function import_failure_message(Throwable $exception): string
 function student_directory_return_params(?int $studentId=null): array
 {
     $params=[];
-    if($studentId!==null&&$studentId>0)$params['student']=$studentId;
+    if($studentId!==null&&$studentId>0){
+        $params['student']=$studentId;
+        $tab=(string)($_POST['return_admin_tab']??'');
+        if(in_array($tab,['information','enrollments','history'],true))$params['admin_tab']=$tab;
+    }
     $search=mb_substr(trim((string)($_POST['return_search']??'')),0,200);
     $group=mb_substr(trim((string)($_POST['return_group']??'')),0,100);
     $course=max(0,(int)($_POST['return_course']??0));
@@ -482,8 +486,8 @@ function handle_action(string $action): never
         }
         $deleted=clear_sent_notification_history(db(),(int)$user['id']);
         flash(t($deleted
-            ? ':count notification(s) envoyée(s) supprimée(s) de l’historique.'
-            : 'Aucune notification envoyée à supprimer.', ['count'=>$deleted]));
+            ? ':count copie(s) technique(s) effacée(s). Les métadonnées sont conservées.'
+            : 'Aucune copie technique à effacer.', ['count'=>$deleted]));
         redirect('outbox');
     }
     if ($action === 'superadmin_delete' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
@@ -962,6 +966,49 @@ function handle_action(string $action): never
             redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);
         }
     }
+    if(in_array($action,['load_student_admin','load_student_history','preview_student_followup','save_student_followup','delete_student_followup'],true)){
+        header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
+        try{
+            if($user['role']!=='teacher'){http_response_code(403);echo json_encode(['error'=>t('Accès interdit.')]);exit;}
+            $teacherId=(int)$user['id'];
+            if($action==='load_student_admin'){
+                $student=StudentAdminHistory::requireStudent(db(),(int)($_POST['student_id']??0),$teacherId);ob_start();render_student_admin_panel($student);$html=ob_get_clean();echo json_encode(['html'=>$html],JSON_THROW_ON_ERROR);
+            }elseif($action==='load_student_history'){
+                $history=StudentAdminHistory::history(db(),(int)($_POST['student_id']??0),$teacherId,(int)($_POST['page']??1));ob_start();render_student_history($history);$html=ob_get_clean();echo json_encode(['html'=>$html],JSON_THROW_ON_ERROR);
+            }elseif($action==='preview_student_followup'){
+                $data=StudentAdminHistory::prepare(db(),$teacherId,$_POST);echo json_encode(['title'=>$data['title'],'html'=>Markdown::render($data['body'])],JSON_THROW_ON_ERROR);
+            }elseif($action==='save_student_followup'){
+                $id=StudentAdminHistory::save(db(),$teacherId,$_POST);echo json_encode(['id'=>$id],JSON_THROW_ON_ERROR);
+            }else{
+                StudentAdminHistory::delete(db(),$teacherId,(int)($_POST['followup_id']??0),(int)($_POST['revision']??-1));echo json_encode(['deleted'=>true]);
+            }
+        }catch(InvalidArgumentException $exception){http_response_code(422);echo json_encode(['error'=>t($exception->getMessage())]);}
+        catch(Throwable $exception){error_log('Student history: '.$exception->getMessage());http_response_code(500);echo json_encode(['error'=>t('L’opération a échoué. Votre saisie est conservée.')]);}
+        exit;
+    }
+
+    if(in_array($action,['preview_targeted_announcement','send_targeted_announcement','save_message_template','delete_message_template'],true)){
+        header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
+        try{
+            if($user['role']!=='teacher'){http_response_code(403);echo json_encode(['error'=>t('Accès interdit.')]);exit;}
+            $teacherId=(int)$user['id'];
+            if($action==='preview_targeted_announcement'){
+                $result=AnnouncementMessages::prepare(db(),$teacherId,$_POST);
+                foreach($result['recipients'] as &$recipient)$recipient['html']=Markdown::render($recipient['body']);unset($recipient);
+                echo json_encode($result,JSON_THROW_ON_ERROR);
+            }elseif($action==='send_targeted_announcement'){
+                $id=AnnouncementMessages::send(db(),$teacherId,$_POST);echo json_encode(['id'=>$id,'url'=>route('pathway',['course'=>(int)$_POST['course_id']]).'#announcement-'.$id],JSON_THROW_ON_ERROR);
+            }else{
+                $id=0;
+                if($action==='save_message_template')$id=AnnouncementMessages::saveTemplate(db(),$teacherId,$_POST);
+                else AnnouncementMessages::deleteTemplate(db(),$teacherId,(int)($_POST['template_id']??0),(int)($_POST['revision']??-1));
+                echo json_encode(['id'=>$id,'templates'=>AnnouncementMessages::templates(db(),$teacherId)],JSON_THROW_ON_ERROR);
+            }
+        }catch(InvalidArgumentException $exception){http_response_code(422);echo json_encode(['error'=>t($exception->getMessage())]);}
+        catch(Throwable $exception){error_log('Message action: '.$exception->getMessage());http_response_code(500);echo json_encode(['error'=>t('L’opération a échoué. Votre saisie est conservée.')]);}
+        exit;
+    }
+
     if($action==='create_announcement'&&$user['role']==='teacher'){
         $courseId=(int)($_POST['course_id']??0);
         $created=create_course_announcement(db(),$courseId,(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['body']??''));

@@ -19,10 +19,15 @@ require_once __DIR__ . '/SessionPolicy.php';
 require_once __DIR__ . '/LearningActivity.php';
 require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/PathwayService.php';
+require_once __DIR__ . '/AnnouncementMessages.php';
+require_once __DIR__ . '/AnnouncementMessageViews.php';
 require_once __DIR__ . '/CourseEnrollment.php';
 require_once __DIR__ . '/TransferService.php';
 require_once __DIR__ . '/FrameworkCsv.php';
 require_once __DIR__ . '/AdminService.php';
+require_once __DIR__ . '/StudentAdminHistory.php';
+require_once __DIR__ . '/StudentAdminViews.php';
+require_once __DIR__ . '/StudentAdminExport.php';
 require_once __DIR__ . '/UpdateService.php';
 require_once __DIR__ . '/PdfExport.php';
 require_once __DIR__ . '/DocumentExport.php';
@@ -201,7 +206,7 @@ function try_send_outbox(int $messageId): bool
 {
     $message = one("SELECT * FROM notification_outbox WHERE id=? AND status='pending'", [$messageId]);
     if (!$message) return false;
-    $sent = deliver_app_mail($message['recipient'], $message['subject'], $message['body']);
+    $sent = deliver_app_mail($message['recipient'], $message['subject'], $message['body'], $message['cc']??'', $message['bcc']??'');
     if ($sent) {
         run("UPDATE notification_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE id=?", [$messageId]);
     } else {

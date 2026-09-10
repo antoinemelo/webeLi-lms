@@ -40,7 +40,7 @@ function outbox_send_pending_batch(PDO $pdo, int $limit=MAIL_OUTBOX_BATCH_SIZE, 
           ))
         ORDER BY COALESCE(o.available_at,o.created_at),o.id
         LIMIT $limit")->fetchAll(PDO::FETCH_ASSOC);
-    $delivery??=static fn(string $recipient,string $subject,string $body):bool=>deliver_app_mail($recipient,$subject,$body);
+    $delivery??=static fn(string $recipient,string $subject,string $body,string $cc='',string $bcc=''):bool=>deliver_app_mail($recipient,$subject,$body,$cc,$bcc);
     $results=[];
     foreach($messages as $message){
         if($message['event']==='course.announcement'&&$message['announcement_id']!==null){
@@ -51,7 +51,7 @@ function outbox_send_pending_batch(PDO $pdo, int $limit=MAIL_OUTBOX_BATCH_SIZE, 
                 continue;
             }
         }
-        $ok=(bool)$delivery((string)$message['recipient'],(string)$message['subject'],(string)$message['body']);
+        $ok=(bool)$delivery((string)$message['recipient'],(string)$message['subject'],(string)$message['body'],(string)($message['cc']??''),(string)($message['bcc']??''));
         $statement=$pdo->prepare($ok
             ? "UPDATE notification_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'"
             : "UPDATE notification_outbox SET attempts=attempts+1,last_error='mail() a retourné false',available_at=datetime('now','+5 minutes') WHERE id=? AND status='pending'");
@@ -71,7 +71,7 @@ function teacher_can_clear_notification_history(PDO $pdo, int $teacherId): bool
 function clear_sent_notification_history(PDO $pdo, int $teacherId): int
 {
     if(!teacher_can_clear_notification_history($pdo,$teacherId))return 0;
-    $statement=$pdo->prepare("DELETE FROM notification_outbox WHERE status='sent'");
+    $statement=$pdo->prepare("UPDATE notification_outbox SET body='' WHERE status='sent' AND body<>''");
     $statement->execute();
     return $statement->rowCount();
 }

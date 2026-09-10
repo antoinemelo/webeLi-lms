@@ -743,11 +743,12 @@ function course_announcements_for_student(PDO $pdo, int $courseId, int $studentI
     $access=$pdo->prepare("SELECT 1 FROM enrollments WHERE course_id=? AND student_id=? AND status='active'");
     $access->execute([$courseId,$studentId]);
     if(!$access->fetchColumn())return [];
-    $query=$pdo->prepare("SELECT a.*,u.name AS author_name,r.read_at
+    $query=$pdo->prepare("SELECT a.*,COALESCE(ar.title,a.title) AS title,COALESCE(ar.body,a.body) AS body,u.name AS author_name,r.read_at
         FROM course_announcements a LEFT JOIN users u ON u.id=a.created_by
         LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=?
-        WHERE a.course_id=? AND a.archived=0 ORDER BY a.created_at DESC,a.id DESC");
-    $query->execute([$studentId,$courseId]);
+        LEFT JOIN announcement_recipients ar ON ar.announcement_id=a.id AND ar.student_id=?
+        WHERE a.course_id=? AND a.archived=0 AND (a.audience='all' OR ar.student_id IS NOT NULL) ORDER BY a.created_at DESC,a.id DESC");
+    $query->execute([$studentId,$studentId,$courseId]);
     return $query->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -761,7 +762,7 @@ function course_announcement_status(PDO $pdo, int $courseId, int $studentId): ar
     $query=$pdo->prepare("SELECT COUNT(a.id) AS total,
         COUNT(CASE WHEN a.id IS NOT NULL AND r.announcement_id IS NULL THEN 1 END) AS unread
         FROM enrollments e
-        LEFT JOIN course_announcements a ON a.course_id=e.course_id AND a.archived=0
+        LEFT JOIN course_announcements a ON a.course_id=e.course_id AND a.archived=0 AND (a.audience='all' OR EXISTS(SELECT 1 FROM announcement_recipients ar WHERE ar.announcement_id=a.id AND ar.student_id=e.student_id))
         LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=e.student_id
         WHERE e.course_id=? AND e.student_id=? AND e.status='active'");
     $query->execute([$courseId,$studentId]);$status=$query->fetch(PDO::FETCH_ASSOC)?:[];
@@ -774,8 +775,8 @@ function mark_course_announcements_read(PDO $pdo, int $courseId, int $studentId)
     $access->execute([$courseId,$studentId]);
     if(!$access->fetchColumn())return false;
     $pdo->prepare("INSERT OR IGNORE INTO announcement_reads(announcement_id,student_id,read_at)
-        SELECT id,?,CURRENT_TIMESTAMP FROM course_announcements WHERE course_id=? AND archived=0")
-        ->execute([$studentId,$courseId]);
+        SELECT a.id,?,CURRENT_TIMESTAMP FROM course_announcements a WHERE a.course_id=? AND a.archived=0 AND (a.audience='all' OR EXISTS(SELECT 1 FROM announcement_recipients ar WHERE ar.announcement_id=a.id AND ar.student_id=?))")
+        ->execute([$studentId,$courseId,$studentId]);
     return true;
 }
 
@@ -784,12 +785,13 @@ function unread_announcements_for_user(PDO $pdo, int $userId): array
     $role=$pdo->prepare("SELECT role FROM users WHERE id=? AND account_status='active'");
     $role->execute([$userId]);$role=(string)($role->fetchColumn()?:'');
     if($role==='student'){
-        $query=$pdo->prepare("SELECT a.id,a.course_id,a.title,a.body,a.created_at,c.title AS course_title,u.name AS author_name
+        $query=$pdo->prepare("SELECT a.id,a.course_id,COALESCE(ar.title,a.title) AS title,COALESCE(ar.body,a.body) AS body,a.created_at,c.title AS course_title,u.name AS author_name
             FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0
             JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active'
             LEFT JOIN users u ON u.id=a.created_by
             LEFT JOIN announcement_reads r ON r.announcement_id=a.id AND r.student_id=?
-            WHERE a.archived=0 AND r.announcement_id IS NULL ORDER BY a.created_at DESC,a.id DESC");
+            LEFT JOIN announcement_recipients ar ON ar.announcement_id=a.id AND ar.student_id=e.student_id
+            WHERE a.archived=0 AND r.announcement_id IS NULL AND (a.audience='all' OR ar.student_id IS NOT NULL) ORDER BY a.created_at DESC,a.id DESC");
         $query->execute([$userId,$userId]);
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -813,7 +815,7 @@ function mark_announcement_read_for_user(PDO $pdo, int $announcementId, int $use
     $user->execute([$userId]);$role=(string)($user->fetchColumn()?:'');
     if($role==='student'){
         $query=$pdo->prepare("SELECT a.id,a.course_id FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0
-            JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active' WHERE a.id=? AND a.archived=0");
+            JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active' WHERE a.id=? AND a.archived=0 AND (a.audience='all' OR EXISTS(SELECT 1 FROM announcement_recipients ar WHERE ar.announcement_id=a.id AND ar.student_id=e.student_id))");
         $query->execute([$userId,$announcementId]);
     }elseif($role==='teacher'){
         $query=$pdo->prepare("SELECT a.id,a.course_id FROM course_announcements a JOIN courses c ON c.id=a.course_id AND c.archived=0

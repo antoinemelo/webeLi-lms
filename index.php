@@ -61,6 +61,25 @@ if (!actor()) {
 $user = require_actor();
 if((int)($_GET['announcement']??0)>0)mark_announcement_read_for_user(db(),(int)$_GET['announcement'],(int)$user['id']);
 $view = (string) ($_GET['view'] ?? ($user['role'] === 'teacher' ? 'teacher' : 'student'));
+if($view==='student-admin-export'){
+    header('Cache-Control: private, no-store');
+    try{
+        if($user['role']!=='teacher')throw new InvalidArgumentException('Accès interdit.');
+        $format=(string)($_GET['format']??'pdf');
+        if(!in_array($format,['pdf','markdown'],true))throw new InvalidArgumentException('Export indisponible');
+        $studentId=(int)($_GET['student']??0);
+        $data=student_admin_export_data(db(),$studentId,(int)$user['id']);
+        $filename='suivi-administratif-'.$studentId;
+        if($format==='markdown')send_markdown_download(student_admin_export_markdown($data),$filename.'.md');
+        send_pdf_download(student_admin_export_pdf_html($data),$filename.'.pdf');
+    }catch(InvalidArgumentException $exception){
+        http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo t($exception->getMessage());
+    }catch(Throwable $exception){
+        error_log('Student administrative export: '.$exception->getMessage());
+        http_response_code(503);header('Content-Type: text/plain; charset=UTF-8');echo t('Export indisponible');
+    }
+    exit;
+}
 if($view==='pdf-document'&&$user['role']==='teacher'){
     try{
         $type=($_GET['type']??'course')==='item'?'item':'course';$id=(int)($_GET['id']??0);
