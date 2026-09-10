@@ -516,7 +516,7 @@ CREATE TABLE student_followups (
         CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
         BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
 
-PRAGMA user_version = 23;
+PRAGMA user_version = 24;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -528,3 +528,13 @@ AFTER UPDATE OF password_hash,login_code,account_status,role ON users
 WHEN OLD.password_hash IS NOT NEW.password_hash OR OLD.login_code IS NOT NEW.login_code
   OR OLD.account_status IS NOT NEW.account_status OR OLD.role IS NOT NEW.role
 BEGIN DELETE FROM pwa_logins WHERE user_id=NEW.id; END;
+
+ALTER TABLE users ADD COLUMN messaging_uuid TEXT NOT NULL DEFAULT '';
+CREATE UNIQUE INDEX users_messaging_uuid ON users(messaging_uuid) WHERE messaging_uuid<>'';
+CREATE TRIGGER users_messaging_identity AFTER INSERT ON users WHEN NEW.messaging_uuid='' BEGIN UPDATE users SET messaging_uuid=lower(hex(randomblob(16))) WHERE id=NEW.id; END;
+ALTER TABLE courses ADD COLUMN messaging_uuid TEXT NOT NULL DEFAULT '';
+CREATE UNIQUE INDEX courses_messaging_uuid ON courses(messaging_uuid) WHERE messaging_uuid<>'';
+CREATE TRIGGER courses_messaging_identity AFTER INSERT ON courses WHEN NEW.messaging_uuid='' BEGIN UPDATE courses SET messaging_uuid=lower(hex(randomblob(16))) WHERE id=NEW.id; END;
+ALTER TABLE courses ADD COLUMN messaging_enabled INTEGER NOT NULL DEFAULT 0 CHECK(messaging_enabled IN (0,1));
+CREATE TABLE messaging_instance (id INTEGER PRIMARY KEY CHECK(id=1),uuid TEXT NOT NULL);
+INSERT INTO messaging_instance VALUES(1,lower(hex(randomblob(16))));

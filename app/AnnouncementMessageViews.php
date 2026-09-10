@@ -10,7 +10,7 @@ function render_message_variables(): void
 function render_teacher_message_actions(array $course,array $students): void
 {
     $templates=AnnouncementMessages::templates(db(),(int)actor()['id']);
-    $actions=['send'=>t('Message'),'templates'=>t('Créer / modifier les modèles')];
+    $actions=['send'=>t('Courriel / Annonce'),'templates'=>t('Créer / modifier les modèles')];
     foreach(StudentAdminHistory::KINDS as $kind=>$label)$actions['followup-'.$kind]=t($label);
     uasort($actions,'pathway_natural_compare');
     $messages=['sender'=>(string)actor()['email'],'open'=>t('Voir l’annonce'),'select'=>t('Choisir un modèle'),'new'=>t('Nouveau modèle'),'preview'=>t('Aperçu'),'send'=>t('Envoyer à :count élèves'),'count'=>t(':count élèves · :copies copies CC · CCI à :email'),'saved'=>t('Modèle enregistré.'),'deleted'=>t('Modèle supprimé.'),'deleteConfirm'=>t('Supprimer ce modèle ? Les messages déjà envoyés seront conservés.'),'error'=>t('L’opération a échoué. Votre saisie est conservée.'),'sent'=>t('Annonce publiée et courriels préparés.'),'waiting'=>t('En cours…')];

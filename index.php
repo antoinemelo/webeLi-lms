@@ -17,6 +17,7 @@ require_once $applicationRoot . '/app/actions.php';
 require_once $applicationRoot . '/app/views.php';
 
 register_shutdown_function(static function()use($applicationRoot):void{
+    try{if(!is_file($applicationRoot.'/storage/maintenance.flag')&&messaging_push_config()&&(!is_file($applicationRoot.'/storage/push-cron.heartbeat')||filemtime($applicationRoot.'/storage/push-cron.heartbeat')<time()-120)){if(session_status()===PHP_SESSION_ACTIVE)session_write_close();if(function_exists('fastcgi_finish_request'))fastcgi_finish_request();messaging_push_batch(5);}}catch(Throwable $e){error_log('liike push: '.$e->getMessage());}
     if(mail_cron_is_active($applicationRoot))return;
     try{outbox_send_pending_batch(db(),500);}catch(Throwable){}
 });
@@ -24,6 +25,8 @@ register_shutdown_function(static function()use($applicationRoot):void{
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['restart_login'])) {
     unset($_SESSION['login_teacher_id']);
 }
+
+if($_SERVER['REQUEST_METHOD']==='GET'&&in_array($_GET['view']??'',['discussion-data','discussion-export','notification-status'],true))messaging_http_get((string)$_GET['view']);
 
 if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
     $sessionUser=actor();
@@ -134,8 +137,8 @@ if($view==='document-download'){
     }
 }
 $allowed = $user['role'] === 'teacher'
-    ? ['teacher','student-detail','students','library','page-edit','pathway','teacher-preview','teacher-preview-page','pdf-preview','outbox','profile']
-    : ['student','learn','competencies','announcements','rewards','profile','join'];
+    ? ['discussions','teacher','student-detail','students','library','page-edit','pathway','teacher-preview','teacher-preview-page','pdf-preview','outbox','profile']
+    : ['discussions','student','learn','competencies','announcements','rewards','profile','join'];
 if ($user['role'] === 'teacher' && (int)($user['is_superadmin'] ?? 0) === 1) $allowed[] = 'admin';
 if (!in_array($view, $allowed, true)) {
     $view = $user['role'] === 'teacher' ? 'teacher' : 'student';

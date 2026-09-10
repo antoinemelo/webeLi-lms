@@ -1,0 +1,6 @@
+{
+  "name": "webeli/messaging",
+  "description": "Transport Web Push du module de discussions",
+  "require": {"php": "^8.2", "minishlink/web-push": "^10.0"},
+  "config": {"sort-packages": true}
+}

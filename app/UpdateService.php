@@ -33,6 +33,8 @@ function maintenance_validate_manifest(array $manifest): array
     if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/',$version))throw new UpdateException('La version publiée est invalide.');
     $databaseVersion=$manifest['database_version']??0;
     if(!is_int($databaseVersion)||$databaseVersion<0||$databaseVersion>100000)throw new UpdateException('La version de base publiée est invalide.');
+    $messagingVersion=$manifest['messaging_database_version']??0;
+    if(!is_int($messagingVersion)||$messagingVersion<0||$messagingVersion>100000)throw new UpdateException('La version de base publiée est invalide.');
     $databaseReleaseVersion=trim((string)($manifest['database_release_version']??''));
     if($databaseReleaseVersion!==''&&!preg_match('/^\d{4}S[12]\.\d+$/',$databaseReleaseVersion))throw new UpdateException('La version semestrielle de la base publiée est invalide.');
     if(($manifest['repository']??'')!==LIIKE_RELEASE_REPOSITORY||($manifest['branch']??'')!=='main')throw new UpdateException('La source de mise à jour n’est pas autorisée.');
@@ -42,9 +44,10 @@ function maintenance_validate_manifest(array $manifest): array
         if(!is_string($path)||!maintenance_safe_release_path($path)||!is_string($hash)||!preg_match('/^[a-f0-9]{64}$/',$hash))throw new UpdateException('Le manifeste contient un chemin ou une empreinte invalide.');
     }
     foreach(['index.php','app/bootstrap.php','app/Database.php','database/schema.sql','VERSION'] as $required)if(!isset($files[$required]))throw new UpdateException('Le manifeste ne contient pas tous les fichiers indispensables.');
+    if($messagingVersion>0)foreach(['app/Messaging/Database.php','app/Messaging/vendor/autoload.php','database/messaging/migrations/001_discussions.php','scripts/push_notifications.php'] as $required)if(!isset($files[$required]))throw new UpdateException('Le manifeste ne contient pas tous les fichiers indispensables.');
     $preserve=$manifest['preserve_on_update']??['storage/apr.sqlite','uploads/','vendor/'];
     if(!is_array($preserve)||array_values($preserve)!==$preserve||array_diff($preserve,['storage/apr.sqlite','uploads/','vendor/'])||!in_array('storage/apr.sqlite',$preserve,true)||!in_array('uploads/',$preserve,true))throw new UpdateException('La politique de préservation de la publication est invalide.');
-    $manifest['version']=$version;$manifest['database_version']=$databaseVersion;$manifest['database_release_version']=$databaseReleaseVersion?:null;$manifest['files']=$files;$manifest['preserve_on_update']=$preserve;
+    $manifest['messaging_database_version']=$messagingVersion;$manifest['version']=$version;$manifest['database_version']=$databaseVersion;$manifest['database_release_version']=$databaseReleaseVersion?:null;$manifest['files']=$files;$manifest['preserve_on_update']=$preserve;
     return $manifest;
 }
 
@@ -158,7 +161,7 @@ function maintenance_extract_verified_release(string $archive,string $destinatio
     foreach($manifest['files'] as $relative=>$hash)if(!hash_equals($hash,hash_file('sha256',$releaseRoot.'/'.$relative)))throw new UpdateException('L’empreinte du fichier '.$relative.' est invalide.');
     $archiveManifest=(string)file_get_contents($releaseRoot.'/RELEASE.json');
     try{$decoded=json_decode($archiveManifest,true,512,JSON_THROW_ON_ERROR);$validated=maintenance_validate_manifest($decoded);}catch(Throwable){throw new UpdateException('Le manifeste inclus dans l’archive est invalide.');}
-    if($validated['version']!==$manifest['version']||$validated['database_version']!==$manifest['database_version']||$validated['database_release_version']!==$manifest['database_release_version']||$validated['preserve_on_update']!==$manifest['preserve_on_update']||$validated['files']!==$manifest['files'])throw new UpdateException('Le manifeste et l’archive ne désignent pas la même publication.');
+    if($validated['messaging_database_version']!==$manifest['messaging_database_version']||$validated['version']!==$manifest['version']||$validated['database_version']!==$manifest['database_version']||$validated['database_release_version']!==$manifest['database_release_version']||$validated['preserve_on_update']!==$manifest['preserve_on_update']||$validated['files']!==$manifest['files'])throw new UpdateException('Le manifeste et l’archive ne désignent pas la même publication.');
     return $releaseRoot;
 }
 
@@ -226,16 +229,17 @@ function maintenance_apply_release(PDO $pdo,string $root,array $manifest): array
     if(!is_writable($root)||!is_writable($storage))throw new UpdateException('Les dossiers de l’application et de stockage doivent être inscriptibles.');
     $updates=$storage.'/updates';if(!is_dir($updates)&&!mkdir($updates,0775,true)&&!is_dir($updates))throw new UpdateException('Le dossier des mises à jour ne peut pas être créé.');
     $lockHandle=fopen($updates.'/update.lock','c+');if(!$lockHandle||!flock($lockHandle,LOCK_EX|LOCK_NB))throw new UpdateException('Une autre mise à jour est déjà en cours.');
-    $work=$updates.'/work-'.bin2hex(random_bytes(6));$backup=$updates.'/backup-'.date('Ymd-His').'-'.$manifest['version'];$archive=$work.'/release.tar.gz';$extract=$work.'/extract';$touched=[];
+    $work=$updates.'/work-'.bin2hex(random_bytes(6));$backup=$updates.'/backup-'.date('Ymd-His').'-'.$manifest['version'];$archive=$work.'/release.tar.gz';$extract=$work.'/extract';$touched=[];$messagingChanged=false;
     try{
         mkdir($work,0775,true);mkdir($extract,0775,true);mkdir($backup,0775,true);
         $manifestRaw=maintenance_http_get(LIIKE_RELEASE_MANIFEST_URL,2_000_000);$fresh=json_decode($manifestRaw,true,512,JSON_THROW_ON_ERROR);$fresh=maintenance_validate_manifest($fresh);
-        if($fresh['version']!==$manifest['version']||$fresh['database_version']!==$manifest['database_version']||$fresh['database_release_version']!==$manifest['database_release_version']||$fresh['preserve_on_update']!==$manifest['preserve_on_update']||$fresh['files']!==$manifest['files'])throw new UpdateException('Une nouvelle publication est apparue : vérifiez à nouveau la version disponible.');
+        if($fresh['messaging_database_version']!==$manifest['messaging_database_version']||$fresh['version']!==$manifest['version']||$fresh['database_version']!==$manifest['database_version']||$fresh['database_release_version']!==$manifest['database_release_version']||$fresh['preserve_on_update']!==$manifest['preserve_on_update']||$fresh['files']!==$manifest['files'])throw new UpdateException('Une nouvelle publication est apparue : vérifiez à nouveau la version disponible.');
         file_put_contents($archive,maintenance_http_get(LIIKE_RELEASE_ARCHIVE_URL,80_000_000,45));
         $releaseRoot=maintenance_extract_verified_release($archive,$extract,$manifest,$manifestRaw);
         $schemaSql=(string)file_get_contents($releaseRoot.'/database/schema.sql');
         if(!preg_match('/PRAGMA\s+user_version\s*=\s*(\d+)\s*;/i',$schemaSql,$schemaVersion)||((int)$schemaVersion[1])!==(int)$manifest['database_version'])throw new UpdateException('La version de base du schéma ne correspond pas au manifeste Git.');
         try{$databaseCompatibility=database_compatibility_contract($releaseRoot.'/database/compatibility.php');database_plan_packaged_migrations($pdo,$releaseRoot.'/database/migrations',(int)$manifest['database_version']);}catch(Throwable $exception){throw new UpdateException('La chaîne de migrations Git est incomplète : '.$exception->getMessage(),0,$exception);}
+        maintenance_messaging_plan($root,$releaseRoot,(int)$manifest['messaging_database_version']);
         maintenance_backup_database($pdo,$backup.'/apr.sqlite');
         $oldManifest=maintenance_installed_manifest($root);$oldFiles=array_keys($oldManifest['files']??[]);$newFiles=array_keys($manifest['files']);$managed=array_values(array_unique(array_merge($oldFiles,$newFiles,['RELEASE.json'])));$preserveVendor=in_array('vendor/',$manifest['preserve_on_update'],true);
         foreach($managed as $relative){if(maintenance_preserved_external_path($relative,$preserveVendor)||(!maintenance_safe_release_path($relative)&&$relative!=='RELEASE.json'))continue;$target=$root.'/'.$relative;if(is_file($target)){$copy=$backup.'/code/'.$relative;$directory=dirname($copy);if(!is_dir($directory))mkdir($directory,0775,true);if(!copy($target,$copy))throw new UpdateException('La sauvegarde du code a échoué.');}}
@@ -244,11 +248,41 @@ function maintenance_apply_release(PDO $pdo,string $root,array $manifest): array
         foreach($newFiles as $relative){if(maintenance_preserved_external_path($relative,$preserveVendor))continue;$target=$root.'/'.$relative;$touched[]=$relative;maintenance_copy_file_atomic($releaseRoot.'/'.$relative,$target);}
         $touched[]='RELEASE.json';maintenance_copy_file_atomic($releaseRoot.'/RELEASE.json',$root.'/RELEASE.json');
         foreach(array_diff($oldFiles,$newFiles) as $relative){if(!maintenance_preserved_external_path($relative,$preserveVendor)&&maintenance_safe_release_path($relative)&&is_file($root.'/'.$relative)){$touched[]=$relative;unlink($root.'/'.$relative);}}
+        $messagingChanged=maintenance_messaging_update($root,$releaseRoot,(int)$manifest['messaging_database_version'],$backup);
         try{$databaseUpdate=database_apply_packaged_migrations($pdo,$releaseRoot.'/database/migrations',(int)$manifest['database_version'],$databaseCompatibility);}catch(Throwable $exception){throw new UpdateException('La migration automatique de la base a échoué : '.$exception->getMessage(),0,$exception);}
         @unlink(maintenance_cache_path($root));@unlink($storage.'/maintenance.flag');maintenance_remove_tree($work);flock($lockHandle,LOCK_UN);fclose($lockHandle);
         return ['version'=>$manifest['version'],'database'=>$databaseUpdate,'backup'=>$backup];
     }catch(Throwable $exception){
         foreach(array_reverse($touched) as $relative){$saved=$backup.'/code/'.$relative;$target=$root.'/'.$relative;if(is_file($saved))maintenance_copy_file_atomic($saved,$target);elseif(is_file($target))@unlink($target);}
+        if($messagingChanged&&is_file($backup.'/messaging.sqlite')){
+            // SQLite backup API also handles existing WAL connections safely.
+            $saved=new SQLite3($backup.'/messaging.sqlite',SQLITE3_OPEN_READONLY);$target=new SQLite3($storage.'/messaging.sqlite');$target->busyTimeout(5000);
+            if(!$saved->backup($target)){ $target->close();$saved->close();throw new UpdateException('Restauration de la messagerie impossible. Maintenance conservée.'); }
+            $target->close();$saved->close();
+        }
         @unlink($storage.'/maintenance.flag');maintenance_remove_tree($work);if(is_resource($lockHandle)){flock($lockHandle,LOCK_UN);fclose($lockHandle);}throw $exception instanceof UpdateException?$exception:new UpdateException('La mise à jour a échoué : '.$exception->getMessage());
     }
+}
+
+/** Separate schema planning supports messaging-only upgrades and refuses downgrades. */
+function maintenance_messaging_plan(string $root,string $releaseRoot,int $version): array
+{
+    $path=$root.'/storage/messaging.sqlite';
+    $p=new PDO(is_file($path)?'sqlite:'.$path:'sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+    return database_plan_packaged_migrations($p,$releaseRoot.'/database/messaging/migrations',$version);
+}
+function maintenance_messaging_update(string $root,string $releaseRoot,int $version,string $backup): bool
+{
+    if(!$version)return false;
+    $path=$root.'/storage/messaging.sqlite';
+    $lock=fopen($path.'.migration.lock','c+');if(!$lock||!flock($lock,LOCK_EX))throw new UpdateException('Messaging migration lock unavailable');
+    try{
+        $p=new PDO('sqlite:'.$path,null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$p->exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA secure_delete=ON');
+        $plan=database_plan_packaged_migrations($p,$releaseRoot.'/database/messaging/migrations',$version);
+        if(!$plan['pending'])return false;
+        if(!class_exists('SQLite3'))throw new UpdateException('SQLite3 extension required for messaging update recovery');
+        maintenance_backup_database($p,$backup.'/messaging.sqlite');
+        database_apply_packaged_migrations($p,$releaseRoot.'/database/messaging/migrations',$version);
+        $p->exec('PRAGMA journal_mode=WAL');return true;
+    }finally{flock($lock,LOCK_UN);fclose($lock);}
 }

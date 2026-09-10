@@ -969,6 +969,7 @@ return [
     'Enregistrer la note'=>['en'=>'Save score','de'=>'Note speichern','it'=>'Salva voto','es'=>'Guardar nota'],
     'Publier une annonce'=>['en'=>'Post an announcement','de'=>'Ankündigung veröffentlichen','it'=>'Pubblica un annuncio','es'=>'Publicar un anuncio'],
     'Message'=>['en'=>'Message','de'=>'Nachricht','it'=>'Messaggio','es'=>'Mensaje'],
+    'Courriel / Annonce'=>['en'=>'Email / Announcement','de'=>'E-Mail / Ankündigung','it'=>'E-mail / Annuncio','es'=>'Correo electrónico / Anuncio'],
     'Vous pouvez utiliser la mise en forme Markdown.'=>['en'=>'You can use Markdown formatting.','de'=>'Sie können Markdown-Formatierung verwenden.','it'=>'Puoi usare la formattazione Markdown.','es'=>'Puedes usar formato Markdown.'],
     'Publier'=>['en'=>'Post','de'=>'Veröffentlichen','it'=>'Pubblica','es'=>'Publicar'],
     'Pondération de l’évaluation'=>['en'=>'Assessment weight','de'=>'Gewichtung der Bewertung','it'=>'Peso della valutazione','es'=>'Ponderación de la evaluación'],

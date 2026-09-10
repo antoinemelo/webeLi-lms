@@ -16,6 +16,7 @@ require_once __DIR__ . '/NotificationOutbox.php';
 require_once __DIR__ . '/RegistrationPolicy.php';
 require_once __DIR__ . '/PasswordReset.php';
 require_once __DIR__ . '/SessionPolicy.php';
+require_once __DIR__.'/Messaging/Http.php';
 require_once __DIR__ . '/LearningActivity.php';
 require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/PathwayService.php';

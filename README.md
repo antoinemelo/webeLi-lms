@@ -202,3 +202,5 @@ Sous `?view=teacher`, le menu Actions propose aussi **Réunion**, **Correspondan
 
 
 La fiche administrative présente chaque activité avec son type, son auteur et sa date de création, puis les autres participants actifs (sans l’élève consulté) et « Concerne : … ». Le chevron déplie le contenu et les détails ; les textes de l’historique utilisent une taille de police uniforme. Le menu à trois points de la fiche regroupe **Exporter en PDF**, **Exporter en Markdown** et **Fermer**. Chaque export contient les informations, les inscriptions affichables et toutes les pages de l’historique autorisé, avec le texte complet des activités et messages, indépendamment de leur état replié. Ces exports sont réservés aux enseignants autorisés ; ils ne contiennent pas les données techniques d’authentification. Les images Markdown sont représentées par leur description et leur adresse dans le PDF, sans chargement de ressource externe.
+
+- [Discussions privées, gestion par parcours et superadmin, notifications PWA](docs/discussions.md)

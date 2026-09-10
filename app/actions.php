@@ -203,6 +203,7 @@ function open_authenticated_session(array $user): never
 
 function handle_action(string $action): never
 {
+    if(str_starts_with($action,'messaging_'))messaging_http_action($action);
     if($action==='pwa_resume'){
         header('Content-Type: application/json; charset=UTF-8');
         header('Cache-Control: no-store, private');
@@ -291,6 +292,7 @@ function handle_action(string $action): never
     }
 
     if ($action === 'logout') {
+        messaging_push_forget();
         $account=actor();
         if(isset($_SESSION['pwa_session_hash']))revoke_pwa_login(db(),(int)($_SESSION['user_id']??0),(string)$_SESSION['pwa_session_hash']);
         forget_pwa_cookie(db());
@@ -928,7 +930,7 @@ function handle_action(string $action): never
     if($action==='update_course_identity'&&$user['role']==='teacher'){
         $courseId=(int)($_POST['course_id']??0);
         $result=update_course_identity(db(),$courseId,(int)$user['id'],(string)($_POST['title']??''),(string)($_POST['code']??''),(string)($_POST['description']??''));
-        if($result==='updated')flash('Informations du parcours mises à jour.');
+        if($result==='updated'){run('UPDATE courses SET messaging_enabled=? WHERE id=? AND teacher_id=?',[isset($_POST['messaging_enabled'])?1:0,$courseId,$user['id']]);flash('Informations du parcours mises à jour.');}
         elseif($result==='duplicate')flash('Ce code de parcours est déjà utilisé. Choisissez-en un autre.','error');
         elseif($result==='invalid')flash('Le nom est requis, la description est limitée à 2000 caractères et le code doit contenir 3 à 40 caractères valides.','error');
         else flash('Seul le créateur du parcours peut modifier ses informations.','error');
