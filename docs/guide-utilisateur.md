@@ -69,7 +69,7 @@ Les parcours sont classés du plus récemment consulté au plus ancien. Les quat
 
 ### Réaliser une étape
 
-Une page peut contenir plusieurs blocs : Markdown, image, fichier téléchargeable ou iframe. Les objectifs et compétences mobilisés sont affichés en tête de page.
+Une page peut contenir du texte Markdown, une image, un document, une vidéo ou un lecteur audio, une intégration externe et un travail à rendre sous forme de lien ou de texte court. Les objectifs et compétences mobilisés sont affichés en tête de page.
 
 À la fin, l’élève choisit son niveau :
 
@@ -143,7 +143,11 @@ Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps a
 
 Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Après **Progression**, la colonne **Moyennes** présente la moyenne pondérée des évaluations sur 10 puis la moyenne simple des niveaux autoévalués sur 3, chacune au dixième (par exemple **7,0 | 2,5**). Les calculs portent sur les étapes suivies du cours ; seules les autoévaluations remises et encore activées sont retenues. Une valeur absente est indiquée par **—**. Le tri **Moyennes** compare d’abord les notes d’évaluation, puis les niveaux autoévalués. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
 
-Lorsqu’une annonce est publiée dans un parcours, tous les élèves qui y sont activement inscrits reçoivent également un courriel. Son objet suit la forme **Nom du parcours / Titre de l’annonce** et son corps reprend uniquement le contenu de l’annonce. Le message est préparé dans la boîte de notifications puis envoyé par la tâche d’exploitation habituelle.
+Une annonce globale du parcours s’adresse à tous ses élèves actifs. Pour choisir les destinataires, utiliser **Courriel / Annonce** dans le menu Actions à trois points du tableau de bord. Ce menu regroupe aussi les modèles, Correspondance, Réunion, Paiement et Notifications ; ses entrées sont triées selon la langue affichée.
+
+La fenêtre d’envoi permet de choisir un modèle personnel, d’adapter le titre et le contenu Markdown et de sélectionner un ou plusieurs élèves. Les modèles sont disponibles dans tous les parcours de leur auteur et acceptent `{prenom}`, `{nom}` et `{cours}` ; aucun prénom ni signature n’est ajouté automatiquement. Pour chaque élève, sa deuxième adresse peut être cochée : elle figure alors en CC dans son unique courriel. L’enseignant reçoit un seul récapitulatif de l’envoi groupé, avec le titre, le contenu original (variables conservées) et la liste des destinataires et CC. Ce récapitulatif ne confirme pas la livraison des messages.
+
+Les annonces ciblées apparaissent en gris dans le parcours. Un chevron **Destinataires** affiche les noms et les états de lecture dans l’application. Supprimer l’annonce retire aussi les courriels encore en attente, sans rappeler ceux déjà envoyés. Les envois et les modèles n’acceptent pas de pièce jointe.
 
 En ouvrant un élève, l’enseignant peut :
 
@@ -154,15 +158,35 @@ En ouvrant un élève, l’enseignant peut :
 - attribuer facultativement un reward, des points et un message ;
 - consulter la moyenne pondérée des évaluations suivies, les compétences confirmées et les derniers rewards.
 
+Les actions de confirmation et de notation utilisent un crayon à droite de l’étape. Le crayon orange rempli indique un niveau à confirmer ou une évaluation à noter : le premier formulaire en attente reste ouvert, les suivants s’ouvrent au clic.
+
+### Suivi administratif
+
+Dans **Élèves**, le statut actif/inactif apparaît à côté des initiales et **Gérer**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. Le suivi pédagogique détaillé reste accessible depuis **Suivi**.
+
+**Ajouter un suivi** enregistre une Réunion (y compris une discussion), une Correspondance ou un Paiement pour un ou plusieurs élèves. Ces actions sont également accessibles depuis le menu Actions du tableau de bord. Le compte rendu commun comporte une date et une heure, un titre de 160 caractères maximum, un contenu Markdown de 5 000 caractères maximum et, facultativement, un parcours. Il peut reprendre un modèle. Son enregistrement n’envoie pas de courriel ; Paiement est une catégorie de compte rendu, sans transaction financière.
+
+L’historique réunit les comptes rendus et les annonces ciblées accessibles à l’enseignant, par pages de 50 éléments. L’auteur peut modifier ou supprimer un compte rendu pour tous ses participants. Chaque entrée présente son type, « créé par …, le … », les **Autres participants** actifs lorsqu’il y en a, puis **Concerne** : parcours / titre (ou seulement le titre). Un chevron ouvre le contenu ; une modification est indiquée en italique.
+
+Le menu à trois points de la fenêtre propose **Exporter en PDF**, **Exporter en Markdown** et **Fermer**. Les exports portent le titre **SUIVI ADMINISTRATIF / PÉDAGOGIQUE** et regroupent **INFORMATIONS**, **INSCRIPTIONS** et **HISTORIQUE**, avec le contenu complet de toutes les activités autorisées, même repliées ou situées sur une autre page. Les discussions privées ont leur propre historique et leurs propres exports.
+
+### Discussions privées
+
+Dans **Paramètres du parcours**, le responsable peut activer **Autoriser les élèves à contacter les enseignants**. L’icône de discussion à droite du nom du compte ouvre les échanges. Les messages sont limités à 256 caractères et modifiables par leur auteur durant trois minutes. Sur téléphone, les commandes de notification et **Nouvelle discussion** sont dans le menu à trois points du titre ; le fil s’adapte à l’espace visible du clavier.
+
+**Activer les notifications** devient **Désactiver les notifications** lorsque l’abonnement de cet appareil est actif. Le badge additionne annonces et messages non lus lorsque le système le permet. La demande d’effacement, la gestion par le responsable du parcours et l’accès global du superadmin sont détaillés dans le [guide des discussions](discussions.md).
+
 ### Gérer les contenus
 
 La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilisées dans un parcours. Une page possède :
 
 - un titre, un résumé, un statut et une durée estimée ;
 - zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
-- une suite ordonnée de blocs Markdown, image, fichier ou iframe.
+- une suite ordonnée de blocs **Texte Markdown**, **Image**, **Document**, **Vidéo / audio**, **Intégration externe (iframe)** ou **Travail à rendre**.
 
-Pour intégrer une vidéo ou un lecteur audio, choisir le type de bloc **Iframe / vidéo**, puis coller une adresse HTTP(S) ou le code `<iframe …></iframe>` complet fourni par le site. Les liens YouTube de partage (`youtu.be`, `watch`, `shorts`, `live`) sont automatiquement convertis en adresse de lecteur, avec conservation du point de départ. Un code iframe conserve son titre et ses proportions ; un lecteur compact garde sa hauteur. Exception : les anciens codes RTS de 58 pixels sont affichés au format 16:9, nécessaire au lecteur RTS actuel pour rendre ses commandes accessibles. La légende saisie dans le bloc est prioritaire pour le titre accessible. Les exports proposent un lien vers le lecteur. Le site externe doit autoriser l’intégration de son contenu.
+Seuls **Image** et **Document** proposent un import de fichier ou une adresse, avec une seule source active à la fois. Image affiche l’image et sa description alternative ; Document propose le téléchargement. La taille maximale dépend des limites PHP, sans dépasser 10 Mo. Le bloc Markdown propose un aperçu et n’accepte pas d’import de fichier.
+
+Pour intégrer une vidéo ou un lecteur audio, choisir **Vidéo / audio**, puis coller une adresse HTTP(S) de média ou le code `<iframe …></iframe>` du lecteur. Les liens YouTube de partage (`youtu.be`, `watch`, `shorts`, `live`) sont automatiquement convertis en adresse de lecteur, avec conservation du point de départ. Un code iframe conserve son titre et ses proportions ; un lecteur compact garde sa hauteur. Exception : les anciens codes RTS de 58 pixels sont affichés au format 16:9. Pour une simulation, une carte, une application ou une page externe, choisir **Intégration externe (iframe)** et régler sa hauteur entre 100 et 2 000 pixels. Le titre saisi dans le bloc est prioritaire pour l’accessibilité. Les exports proposent un lien vers le lecteur ou la page externe. Le site externe doit autoriser l’intégration de son contenu.
 
 Le bloc **Travail à rendre** permet de demander un **lien vers un document**, un **texte court**, ou un **lien et un commentaire**. La consigne s’écrit en Markdown dans le contenu du bloc ; la légende sert de titre. La remise peut être obligatoire ou facultative. Le texte et le commentaire sont limités à **512 caractères**, avec un compteur visible. Le lien, séparé du texte, accepte une adresse HTTP(S) de 2 048 caractères maximum.
 
@@ -248,20 +272,20 @@ L’import se lance depuis **Bibliothèque** avec deux modes :
 
 ### Organiser un parcours
 
-Dans **Parcours**, l’enseignant sélectionne un cours. Le bouton à trois points situé à droite du titre regroupe notamment la gestion de l’équipe enseignante dans une fenêtre dédiée. L’enseignant peut ensuite :
+Dans **Parcours**, l’enseignant sélectionne un cours. Le menu à trois points situé à droite du titre est trié alphabétiquement selon la langue. Il regroupe notamment **Paramètres du parcours** et la gestion de l’équipe enseignante dans des fenêtres dédiées. L’enseignant peut ensuite :
 
 - ajouter une page prête ;
 - ouvrir directement son contenu avec **Éditer**, puis revenir au parcours d’origine avec **Parcours →** dans l’en-tête de l’éditeur ;
-- modifie le nom du parcours et son code unique d’invitation ;
+- modifier le nom du parcours et son code unique d’invitation ;
 - changer l’ordre en saisissant directement le numéro d’une étape ou en faisant glisser ce numéro à la position voulue, à la souris comme au tactile ;
-- fixe une échéance ;
-- marque une étape comme évaluation ;
-- ajoute une consigne propre au cours ;
-- rattache les objectifs et compétences du référentiel du cours.
-- retire une page du parcours, avec confirmation explicite de la suppression des progressions liées à cette étape ;
-- archive ou réactive un parcours sans perdre ses données ;
-- supprime définitivement un parcours archivé dont il est propriétaire ; les données propres au parcours sont purgées, mais ses pages restent dans la bibliothèque ;
-- duplique un parcours sans ses élèves ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
+- fixer une échéance ;
+- marquer une étape comme évaluation ;
+- ajouter une consigne propre au cours en Markdown, notamment avec des liens ;
+- rattacher les objectifs et compétences du référentiel du cours ;
+- retirer une page du parcours, avec confirmation explicite de la suppression des progressions liées à cette étape ;
+- archiver ou réactiver un parcours sans perdre ses données ;
+- supprimer définitivement un parcours archivé dont il est propriétaire ; les données propres au parcours sont purgées, mais ses pages restent dans la bibliothèque ;
+- dupliquer un parcours sans ses élèves ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
 
 La **Consigne propre à ce parcours** accepte le Markdown (liens, titres, listes, gras, italique…). Par exemple :
 
@@ -301,6 +325,8 @@ L’option **Activation des nouveaux comptes** propose deux comportements :
 
 Cette fonction est visible uniquement par le superadmin dans **Superadministration**. Le tableau **Versions et mises à jour** indique la version installée et la dernière version stable publiée. **Vérifier maintenant** actualise ces informations ; lorsqu’une version plus récente existe, **Mettre à jour la version actuelle avec…** sauvegarde la base, vérifie les fichiers téléchargés et installe le nouveau code sans supprimer la base ni les documents importés. L’heure de la dernière vérification est affichée dans le fuseau Europe/Zurich.
 
+Avec le nouvel outil de maintenance, seuls les fichiers nouveaux ou différents sont remplacés ; seuls les anciens fichiers remplacés ou supprimés sont sauvegardés. Le téléchargement et sa vérification restent complets. Le gain commence après l’installation de cet outil, pour les mises à jour suivantes. **Nettoyer les sauvegardes et mises à jour** retire les sauvegardes techniques, y compris les anciennes copies complètes, sans supprimer les bases actives ni les clés de notifications. Voir le [guide d’exploitation](exploitation.md#mettre-à-jour-depuis-la-superadministration) pour la restauration et les deux bases.
+
 ## Superadministration
 
 Un enseignant peut porter l’indicateur `is_superadmin`. Le compte de démonstration Nora possède ce droit. **Superadministration** est accessible depuis le menu **Connecté·e comme** ; elle ne possède pas d’onglet supplémentaire dans la navigation principale. Cet espace permet d’effacer définitivement :
@@ -313,9 +339,8 @@ Ces opérations suppriment en cascade les inscriptions, étapes, progressions et
 
 ### Définir le référentiel et les rewards
 
-Le panneau latéral de l’écran Parcours permet d’ajouter :
+Le panneau latéral de l’écran Parcours présente les objectifs issus automatiquement des pages qui le composent et permet d’ajouter :
 
-- des objectifs propres au cours ;
 - des compétences avec un code court ;
 - des types de rewards avec une icône et un nombre de points proposé.
 

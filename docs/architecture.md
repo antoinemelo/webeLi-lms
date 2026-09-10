@@ -2,7 +2,7 @@
 
 ## Principes
 
-Le projet n’utilise ni framework PHP ni étape de compilation. Composer sert uniquement à installer les dépendances PHP externes, notamment mPDF, dans un dossier `vendor/` non versionné par défaut. Bootstrap 5.3.8 et Bootstrap Icons 1.13.1 sont les seules bibliothèques de présentation ; elles sont versionnées dans le projet et ne nécessitent ni CDN ni connexion Internet. Une requête traverse :
+Le projet n’utilise ni framework PHP ni étape de compilation. Composer installe les dépendances générales, notamment mPDF, dans un dossier `vendor/` non versionné par défaut. Le module de discussions possède son propre `app/Messaging/vendor/`, embarqué dans les publications pour les notifications push. Bootstrap 5.3.8 et Bootstrap Icons 1.13.1 sont les seules bibliothèques de présentation ; elles sont versionnées dans le projet et ne nécessitent ni CDN ni connexion Internet. Une requête traverse :
 
 ```text
 public/index.php
@@ -32,6 +32,12 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 | `app/AdminService.php` | suppressions globales réservées au superadmin |
 | `app/PdfExport.php` | tableaux et fiches détaillées rendus en PDF par mPDF |
 | `app/DocumentExport.php` | document Markdown détaillé, paquet DOCX OOXML portable sans dépendance ZIP et source LaTeX compilable |
+| `app/ContentBlock.php`, `app/Embed.php` | validation des six types de blocs, imports et lecteurs externes |
+| `app/WorkSubmission.php` | brouillons, remises de liens/textes et réouvertures |
+| `app/AnnouncementMessages.php` | modèles personnels, annonces ciblées, courriels élèves et récapitulatif enseignant |
+| `app/StudentAdminHistory.php`, `app/StudentAdminExport.php` | comptes rendus partagés, accès et exports administratifs complets |
+| `app/Messaging/` | discussions et notifications push ; adaptateur LMS dans `Lms.php` |
+| `app/UpdateService.php` | vérification des publications, sauvegardes sélectives, migrations et retour arrière |
 | `./vendor/` ou `../vendor/` | moteur mPDF et dépendances PHP externes, hors des instances et publications Git par défaut |
 | `app/bootstrap.php` | constantes, accès SQL et helpers de présentation |
 | `app/actions.php` | validations, édition, parcours, référentiels et rewards |
@@ -41,6 +47,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 | `public/` | racine HTTP de l’arborescence de développement ; son contenu est remonté à la racine d’une instance préparée |
 | `public/assets/vendor/` | Bootstrap et Bootstrap Icons, toujours embarqués et disponibles hors ligne |
 | `scripts/mail_outbox.php` | aperçu ou envoi des emails en attente |
+| `scripts/push_notifications.php` | traitement borné de la file push |
 | `scripts/apr.py` | menu, reconstruction des profils SQLite et préparation d’une instance locale sans transfert |
 | `database/seed_blank.sql` | superadmin unique pour une base vierge |
 | `tests/smoke.php` | contrôles métier SQLite |
@@ -60,6 +67,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 - `tags`, `page_tags` : catégories réutilisables.
 - `qcm_drafts` : réponses en cours, privées à l’élève et liées à la version du QCM ; sauvegarde avec contrôle de révision, reprise sans score, suppression à la remise ou au retrait de participation.
 - `qcm_attempts` : dernier score agrégé d’un QCM Markdown, sans conservation des réponses choisies ; une étape évaluative verrouille chaque QCM après sa première remise.
+- `work_submissions`, `work_submission_versions` : brouillons et remises propres à l’élève et à l’étape, avec conservation des versions lors d’une nouvelle remise autorisée.
 
 ### Parcours et référentiel
 
@@ -73,7 +81,14 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 - `learning_visits` : sessions de consultation d’une étape, temps actif et dernière activité, supprimés après un mois ;
 - `reward_types` : catalogue de rewards du cours ;
 - `reward_awards` : occurrences et points attribués ;
-- `notification_outbox` : emails différés.
+- `message_templates` : modèles personnels réutilisables entre parcours ;
+- `announcement_recipients` : destinataires des annonces ciblées, contenu personnalisé, copies et lecture ;
+- `student_followups`, `student_followup_participants` : un compte rendu administratif partagé et ses liens vers les élèves ;
+- `notification_outbox` : emails différés ; le corps technique est effacé après envoi réussi, les métadonnées restent conservées.
+
+### Discussions séparées
+
+Le socle utilise `storage/apr.sqlite` (schéma 24). La migration 24 attribue des identités durables aux personnes, parcours et à l’instance, et ajoute l’activation de la messagerie par parcours. Les fils, messages, lectures, demandes d’effacement et abonnements push sont dans `storage/messaging.sqlite` (schéma 1), avec leur propre chaîne sous `database/messaging/migrations/`. Ils ne rejoignent pas les tables de suivi administratif. Les clés VAPID sont privées dans `storage/messaging-push.json`. Voir [discussions](discussions.md) pour les droits de gestion, exports, effacements et limites de conservation.
 
 Les clés étrangères sont activées à chaque connexion. Les contraintes `CHECK`, `UNIQUE` et les suppressions en cascade portent les invariants simples au plus près des données.
 
@@ -126,6 +141,7 @@ Le paramètre `view` sélectionne une vue. Les vues autorisées dépendent du r�
 |  | `students` |
 | `competencies` | `library` |
 | `rewards` | `page-edit` |
+| `discussions` | `discussions` |
 |  | `pathway` |
 |  | `teacher-preview` |
 |  | `teacher-preview-page` |
@@ -143,13 +159,18 @@ Après une connexion manuelle réussie, l’option explicite de mémorisation cr
 Une collision classique révoque également le jeton PWA pour éviter une reconnexion après invalidation globale. La déconnexion PWA révoque le jeton correspondant ; celle d’un navigateur classique dépourvu de ce cookie conserve le jeton PWA. Un déclencheur SQL révoque le jeton lors d’un changement de mot de passe, de code, de rôle ou de statut. Les sessions restaurées cessent d’être valides à expiration ou révocation du jeton. La table n’accumule aucun historique d’appareils.
 
 
-Le manifest demande le mode `standalone` et fournit le sigle « ii » en 192 et 512 px, avec une variante adaptée aux masques Android. Une icône Apple Touch de 180 px permet le même raccourci sur iPhone et iPad. Le service worker ne met en cache que les assets publics explicitement listés, y compris Bootstrap et ses fontes. Les pages dynamiques authentifiées et les réponses métier ne sont jamais placées dans son cache. L’interface possède :
+Le manifest demande le mode `standalone` et fournit le sigle « ii » en 192 et 512 px, avec une variante adaptée aux masques Android. Une icône Apple Touch de 180 px permet le même raccourci sur iPhone et iPad. Le service worker ne met en cache que les assets publics explicitement listés, y compris Bootstrap et ses fontes. Les pages dynamiques authentifiées et les réponses métier ne sont jamais placées dans son cache. Les brouillons QCM et travaux disposent séparément d’une copie locale de reprise. Le service worker reçoit aussi les notifications push génériques et actualise le badge des annonces et messages non lus, selon les capacités du navigateur. L’interface possède :
 
 - une navigation basse sous 850 px ;
 - des tableaux transformés en cartes ;
-- des zones tactiles d’au moins 44 px ;
+- des commandes adaptées au mobile et un fil de discussion ajusté à `visualViewport` lors de l’ouverture du clavier ;
 - la prise en compte de `safe-area-inset-bottom` ;
 - un lecteur de page limité en largeur sur grand écran ;
 - une réduction automatique des animations si le système demande moins de mouvement.
 
 Les chemins relatifs du manifest, du service worker et des assets permettent d’installer l’application à la racine d’un domaine ou sous un préfixe tel que `/lms/`, sans dépendre d’un routeur partagé fourni avec le projet.
+
+
+## Maintenance et sauvegardes du code
+
+`UpdateService.php` télécharge puis vérifie l’ensemble de la publication. `maintenance_file_changes()` compare les empreintes aux fichiers réellement installés, ce qui détecte aussi les modifications locales et fichiers manquants. Le nouvel outil ne copie que les fichiers nouveaux ou différents et ne sauvegarde que les anciennes versions remplacées ou supprimées, avec `file-changes.json`. Les bibliothèques identiques restent en place. Un échec géré restaure les fichiers concernés et retire les nouveaux fichiers ; les migrations conservent leurs protections transactionnelles et sauvegardes SQLite. Le téléchargement reste complet et les sauvegardes partielles ne sont pas des copies autonomes du site. Voir [exploitation](exploitation.md#mettre-à-jour-depuis-la-superadministration) pour le déploiement de cet outil et la restauration.

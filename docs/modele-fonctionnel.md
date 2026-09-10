@@ -94,6 +94,18 @@ Les actions métier insèrent un email dans `notification_outbox` :
 | `teacher.confirmed` | élève | confirmation du niveau |
 | `reward.awarded` | élève | attribution d’un reward |
 | `page.updated` | élèves concernés | mise à jour d’une page présente dans leur cours |
-| `course.announcement` | élèves inscrits | publication d’une annonce dans leur parcours |
+| `course.announcement` | élèves destinataires et enseignant pour le récapitulatif d’un envoi groupé | annonce globale ou ciblée dans leur parcours |
 
 L’écriture métier ne dépend donc pas du succès immédiat de `mail()`.
+
+Les annonces ciblées conservent le contenu personnalisé pour chaque destinataire. Chaque élève reçoit un seul courriel, avec sa deuxième adresse en CC si elle a été sélectionnée. L’enseignant reçoit un seul récapitulatif du groupe, avec les variables originales et les destinataires ; il n’est pas ajouté systématiquement en CCI. Les modèles appartiennent à leur auteur et sont réutilisables dans tous ses parcours. Le corps des copies techniques de la file est effacé après envoi réussi ; date, destinataire, objet, copies et état restent conservés. Le contenu utile demeure dans l’annonce.
+
+## Remises et suivi administratif
+
+Un bloc **Travail à rendre** recueille un lien HTTP(S), un texte limité à 512 caractères, ou les deux. Un brouillon ne valide pas l’étape. La remise explicite verrouille la réponse ; l’enseignant peut autoriser une nouvelle remise, ce qui conserve la version précédente et retire la validation de l’étape. Les remises obligatoires et les QCM doivent être terminés avant la notation d’une évaluation qui les combine.
+
+Une Réunion, une Correspondance ou un Paiement est un compte rendu administratif partagé entre un ou plusieurs élèves. Son enregistrement ne déclenche aucun courriel ni paiement. La fiche **Gestion de l’élève** rassemble les comptes rendus et annonces ciblées autorisés ; ses exports PDF et Markdown incluent tous leurs contenus. Ce suivi est distinct de la progression pédagogique.
+
+## Discussions privées
+
+L’activation par parcours ouvre les échanges élève–enseignant. Chaque fil relie un élève, un enseignant et un parcours ; ses messages sont limités à 256 caractères et modifiables durant trois minutes par leur auteur. Les responsables peuvent gérer les fils de leurs parcours ; le superadmin peut gérer ceux d’une personne sur tous les parcours. Les exports et effacements portent sur les fils autorisés, avec confirmation pour l’effacement. La base de discussions est séparée et ne fournit aucune entrée à l’historique administratif. Les [règles de discussion et de notification push](discussions.md) précisent les accès et la conservation.

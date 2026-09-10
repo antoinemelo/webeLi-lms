@@ -9,7 +9,10 @@ Liike est un CMS pédagogique volontairement simple : PHP 8.2, SQLite et HTML/JS
 - [Modèle fonctionnel et règles métier](docs/modele-fonctionnel.md)
 - [Architecture technique et base SQLite](docs/architecture.md)
 - [Installation, exploitation et emails](docs/exploitation.md)
+- [Discussions privées et notifications PWA](docs/discussions.md)
 - [Limites connues et prochaines étapes](docs/limitations-roadmap.md)
+
+La documentation décrit les sources de développement. Avec le nouvel outil, la mise à jour via **Maintenance de l’application** télécharge et vérifie la publication complète, puis remplace seulement les fichiers nouveaux ou différents. Les sauvegardes de code contiennent les anciennes versions des fichiers remplacés ou supprimés et un journal des changements ; les bibliothèques inchangées ne sont pas dupliquées. Ce gain nécessite l’installation du code de maintenance correspondant ; une publication de documentation seule ne l’active pas. Les détails de déploiement et de restauration figurent dans le [guide d’exploitation](docs/exploitation.md#mettre-à-jour-depuis-la-superadministration).
 
 ## Accès de démonstration
 
@@ -74,14 +77,14 @@ Le dossier Composer complet peut aussi être placé dans le parent immédiat de 
 
 ```bash
 python3 scripts/apr.py \
-  --git-release ../git
+  --git-release ../git-release
 ```
 
 Cette commande crée le dépôt local, configure `origin`, génère `VERSION` et `RELEASE.json`, puis crée un commit. Elle ne contacte pas GitHub. Après contrôle du contenu, le push doit être demandé explicitement :
 
 ```bash
 python3 scripts/apr.py \
-  --git-release ../git \
+  --git-release ../git-release \
   --force \
   --git-push
 ```
@@ -114,6 +117,9 @@ python3 scripts/apr.py \
 - historique enseignant des pages consultées, du temps actif et de la dernière visite, avec rétention d’un mois ;
 - rewards configurables par cours, attribués à la confirmation et score cumulatif ;
 - boîte de notifications alimentée lors d’une mise à jour ou validation ;
+- courriels/annonces ciblés avec modèles personnels et récapitulatif enseignant ;
+- suivi administratif collectif et exports complets PDF/Markdown par élève ;
+- discussions privées par parcours, gestion et exports, notifications push et reconnexion PWA de 90 jours ;
 - interface responsive, mobile-first et PWA installable (Bootstrap local, manifest, cache des assets, navigation basse et safe areas).
 
 Une page reste neutre et réutilisable. Les objectifs et compétences sont liés à son **étape dans un cours**, car la même ressource peut servir des intentions différentes selon le cours.
@@ -161,6 +167,10 @@ Les élèves ne reçoivent jamais les vues `students`, `pathway`, `library` ou `
 ```bash
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
+php tests/incremental_updates.php
+php tests/messaging_updates.php
+php tests/messaging.php
+php tests/pwa_sessions.php
 php tests/embeds.php
 php tests/content_blocks.php
 php tests/announcement_messages.php
@@ -173,6 +183,9 @@ node tests/content_blocks_browser.mjs
 node tests/announcement_messages_browser.mjs
 node tests/student_admin_history_browser.mjs
 node tests/work_submissions_browser.mjs
+node tests/messaging_browser.mjs
+node tests/messaging_push_browser.mjs
+node tests/messaging_layout_browser.mjs
 ```
 
 Le scénario QCM utilise Chromium (`/usr/bin/chromium`, ou `CHROMIUM_BINARY`), Node.js 22 et PHP sur une instance et un profil navigateur temporaires. Il vérifie la reprise après fermeture, la sauvegarde hors ligne et la remise définitive.

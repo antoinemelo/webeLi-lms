@@ -1,6 +1,6 @@
 # Discussions privées et notifications PWA
 
-Dans **Parcours**, ouvrir les informations du parcours et cocher **Autoriser les élèves à contacter les enseignants**. Cette option est désactivée par défaut. Un élève inscrit peut ensuite ouvrir une discussion avec un enseignant de ce parcours depuis l’icône de discussion en haut de page ou **Contacter un enseignant**. L’enseignant peut aussi initier l’échange.
+Dans **Parcours**, ouvrir **Paramètres du parcours** et cocher **Autoriser les élèves à contacter les enseignants**. Cette option est désactivée par défaut. Un élève inscrit peut ensuite ouvrir une discussion avec un enseignant de ce parcours depuis l’icône de discussion à droite du nom du compte ou **Contacter un enseignant**. L’enseignant peut aussi initier l’échange.
 
 Chaque fil relie un élève, un enseignant et un parcours. Les messages sont du texte simple, avec liens HTTP/HTTPS cliquables, limités à **256 caractères Unicode**. Seul l’auteur peut modifier son message pendant **180 secondes** après l’envoi. Les corrections portent une mention « Modifié ». Les versions précédentes ne sont pas conservées. Désactiver l’option ou archiver le parcours ferme les nouveaux envois et conserve la consultation des échanges encore autorisés.
 
@@ -20,7 +20,7 @@ Tout utilisateur peut demander l’effacement de ses discussions depuis cet écr
 
 **Activer les notifications** demande l’autorisation du navigateur pour cette installation. Le site doit utiliser HTTPS (localhost est accepté pour le développement). Sur iPhone/iPad, utiliser une PWA ajoutée à l’écran d’accueil et une version d’iOS compatible avec Web Push. Le badge additionne annonces non lues et messages non lus ; le système d’exploitation peut afficher un point plutôt qu’un nombre. Les notifications restent soumises aux autorisations, au réseau et aux réglages du téléphone.
 
-Le bouton devient **Désactiver les notifications** lorsque l’abonnement du navigateur est encore enregistré pour le compte connecté. Cet état est vérifié au chargement et au retour sur la page. La désactivation retire l’abonnement de cet appareil côté serveur et tente de le supprimer dans le navigateur, sans toucher aux autres appareils. Le bouton permet ensuite de réactiver les notifications. L’autorisation générale du navigateur reste inchangée.
+Le bouton devient **Désactiver les notifications** lorsque l’abonnement du navigateur est encore enregistré pour le compte connecté. Cet état est vérifié au chargement et au retour sur la page. Sur téléphone, cette commande et **Nouvelle discussion** sont regroupées dans le menu à trois points à droite du titre. La désactivation retire l’abonnement de cet appareil côté serveur et tente de le supprimer dans le navigateur, sans toucher aux autres appareils. Le bouton permet ensuite de réactiver les notifications. L’autorisation générale du navigateur reste inchangée.
 
 Les clés VAPID sont créées automatiquement au premier abonnement dans `storage/messaging-push.json`. Ne pas les publier ni les régénérer à chaque mise à jour. Aucun service de messagerie tiers à souscrire : le transport utilise les services push du navigateur via Minishlink WebPush. Les notifications affichent seulement « Nouveau message » ou « Nouvelle annonce », sans identité ni contenu du message. L’abonnement est lié à l’installation et à la personne ; la déconnexion le retire côté serveur et neutralise les anciennes notifications côté PWA. Un abonnement expire côté serveur après 90 jours et peut être réactivé avec le bouton.
 
@@ -42,6 +42,8 @@ Le volume conservé croît avec les messages : aucune purge automatique des disc
 
 `apr.py` embarque le module, ses bibliothèques, migrations et le worker, même sans `--include-vendor` (cette dernière option concerne les dépendances générales, notamment PDF). Les données et clés de `storage/` ne font jamais partie d’une publication. Installer les bibliothèques du module avec `composer install --no-dev --working-dir=app/Messaging` avant de préparer une publication ; le script refuse un module sans chargeur Composer.
 
+Les bibliothèques embarquées de la messagerie restent dans chaque archive publiée. Lorsque leur empreinte locale est identique à celle de la publication, Maintenance les laisse en place et ne les duplique pas dans la sauvegarde de code. Seuls les fichiers différents ou retirés sont sauvegardés, avec un journal `file-changes.json` permettant de retrouver les opérations. Le téléchargement et sa vérification restent complets. Voir [la maintenance et les sauvegardes sélectives](exploitation.md#mettre-à-jour-depuis-la-superadministration).
+
 Le manifeste porte `messaging_database_version`. **Maintenance de l’application** vérifie les deux chaînes de migrations. Les anciennes versions de Maintenance peuvent installer cette première version grâce à la migration du socle 24. Les mises à jour suivantes peuvent migrer la messagerie indépendamment du schéma du socle. Une migration de messagerie dispose d’une sauvegarde technique préalable et d’une transaction ; un échec ultérieur du socle restaure cette sauvegarde. Ne jamais modifier une migration déjà publiée : ajouter la suivante et augmenter la version déclarée dans `app/Messaging/Database.php` et `scripts/apr.py`.
 
 Les sauvegardes/restaurations métier habituelles du LMS continuent à porter sur le socle. Des identifiants aléatoires durables évitent qu’un nouvel utilisateur reprenant un identifiant numérique hérite de vieux fils. Une restauration antérieure à leur introduction ne permet pas de rattacher automatiquement ces conversations. Les exports téléchargés et les copies externes ne peuvent pas être effacés par l’application. Les sauvegardes techniques de Maintenance peuvent contenir des discussions antérieures à un effacement ; leur retrait se fait avec le nettoyage des sauvegardes de Maintenance.
@@ -51,8 +53,10 @@ Les sauvegardes/restaurations métier habituelles du LMS continuent à porter su
 ```sh
 php tests/messaging.php
 php tests/messaging_updates.php
+php tests/incremental_updates.php
 node tests/messaging_browser.mjs
 node tests/messaging_push_browser.mjs
+node tests/messaging_layout_browser.mjs
 php tests/pwa_sessions.php
 php tests/smoke.php
 python3 tests/database_profiles.py
