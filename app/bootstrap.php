@@ -103,6 +103,11 @@ function actor(): ?array
     if($id<1)return null;
     $user=one("SELECT * FROM users WHERE id=? AND account_status='active'",[$id]);
     if(!$user)return null;
+    if(isset($_SESSION['pwa_session_hash'])){
+        if(pwa_session_is_valid(db(),$id,(string)$_SESSION['pwa_session_hash']))return $user;
+        unset($_SESSION['user_id'],$_SESSION['pwa_session_hash'],$_SESSION['student_session_token']);
+        return null;
+    }
     if($user['role']==='student'&&!student_session_is_valid(db(),$id,(string)($_SESSION['student_session_token']??''))){
         unset($_SESSION['user_id'],$_SESSION['student_session_token']);
         $_SESSION['flash']=['message'=>t('Toutes les sessions de ce compte ont été déconnectées, car une connexion simultanée a été détectée.'),'kind'=>'error'];
@@ -148,7 +153,7 @@ function csrf_token(): string
 
 function verify_csrf(): void
 {
-    if (!hash_equals((string)($_SESSION['csrf'] ?? ''), (string)($_POST['token'] ?? ''))) {
+    if (empty($_SESSION['csrf']) || !is_string($_POST['token']??null) || !hash_equals((string)$_SESSION['csrf'], $_POST['token'])) {
         http_response_code(403);
         exit(t('Formulaire expiré. Rechargez la page.'));
     }

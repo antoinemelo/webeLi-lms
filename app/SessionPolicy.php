@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__.'/PwaSession.php';
+
 const STUDENT_SESSION_ACTIVE_SECONDS = 1800;
 
 function start_student_session(PDO $pdo, int $studentId): ?string
@@ -14,6 +16,7 @@ function start_student_session(PDO $pdo, int $studentId): ?string
         if(!$student){$pdo->exec('ROLLBACK');return null;}
         $active=trim((string)($student['student_session_token_hash']??''))!==''&&(int)($student['student_session_seen_at']??0)>=$now-STUDENT_SESSION_ACTIVE_SECONDS;
         if($active){
+            revoke_pwa_login($pdo,$studentId);
             $pdo->prepare('UPDATE users SET student_session_token_hash=NULL,student_session_seen_at=NULL WHERE id=?')->execute([$studentId]);
             $pdo->exec('COMMIT');return null;
         }

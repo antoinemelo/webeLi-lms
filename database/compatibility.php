@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return static function(PDO $pdo): void {
     $required=[
+        'pwa_logins'=>['user_id','token_hash','expires_at'],
         'schema_migrations'=>['version','name','checksum','applied_at'],
         'users'=>['id','first_name','last_name','email','secondary_email','role','login_code','account_status','is_superadmin','language','managed_by','student_first_login_at'],
         'courses'=>['id','reference','title','code','teacher_id','archived'],

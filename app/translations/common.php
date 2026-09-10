@@ -5,6 +5,7 @@ declare(strict_types=1);
 // French is the source language. These rows contain only interface copy; user-created
 // course and page content never passes through this catalogue.
 return [
+    'Rester connecté dans cette application (90 jours)'=>['en'=>'Stay signed in to this app (90 days)','de'=>'In dieser App angemeldet bleiben (90 Tage)','it'=>'Resta connesso in questa app (90 giorni)','es'=>'Mantener la sesión en esta aplicación (90 días)'],
     'Suivi administratif / pédagogique'=>['en'=>'Administrative / educational follow-up','de'=>'Administrative / pädagogische Begleitung','it'=>'Monitoraggio amministrativo / didattico','es'=>'Seguimiento administrativo / pedagógico'],
     'Contenu'=>['en'=>'Content','de'=>'Inhalt','it'=>'Contenuto','es'=>'Contenido'],
     'Actions de la fiche'=>['en'=>'Profile actions','de'=>'Profilaktionen','it'=>'Azioni del profilo','es'=>'Acciones de la ficha'],

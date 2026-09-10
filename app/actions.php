@@ -183,7 +183,7 @@ function open_authenticated_session(array $user): never
         }
     }
     session_regenerate_id(true);
-    unset($_SESSION['login_teacher_id']);
+    unset($_SESSION['login_teacher_id'],$_SESSION['pwa_session_hash'],$_SESSION['student_session_token']);
     $_SESSION['user_id']=(int)$user['id'];
     if($studentSessionToken!==null){
         $_SESSION['student_session_token']=$studentSessionToken;
@@ -191,6 +191,10 @@ function open_authenticated_session(array $user): never
     }
     $profileLanguage=normalize_language((string)($user['language']??''));
     if($profileLanguage!==null)use_language($profileLanguage);
+    if(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1'){
+        $remembered=issue_pwa_login(db(),(int)$user['id']);
+        set_pwa_cookie($remembered['token'],$remembered['expires_at']);
+    }elseif(($_POST['pwa_mode']??'')==='1'){forget_pwa_cookie(db());}
     flash(t('Bienvenue :name !',['name'=>$user['first_name']]));
     if($user['role']==='student'&&!empty($_SESSION['pending_join_course_code']))redirect('join');
     unset($_SESSION['pending_join_course_code']);
@@ -199,6 +203,32 @@ function open_authenticated_session(array $user): never
 
 function handle_action(string $action): never
 {
+    if($action==='pwa_resume'){
+        header('Content-Type: application/json; charset=UTF-8');
+        header('Cache-Control: no-store, private');
+        $expected=(int)($_POST['expected_user_id']??0);
+        $current=actor();
+        if(($_POST['pwa_mode']??'')!=='1'){
+            http_response_code(400);echo json_encode(['authenticated'=>false]);exit;
+        }
+        if($current){
+            if($expected>0&&$expected!==(int)$current['id']){http_response_code(409);echo json_encode(['authenticated'=>false]);exit;}
+            $user=$current;
+        }else{
+            $token=pwa_cookie_token();$user=pwa_login_user(db(),$token);
+            if(!$user){set_pwa_cookie('',time()-3600);http_response_code(401);echo json_encode(['authenticated'=>false]);exit;}
+            if($expected>0&&$expected!==(int)$user['id']){http_response_code(409);echo json_encode(['authenticated'=>false]);exit;}
+            session_regenerate_id(true);
+            unset($_SESSION['student_session_token'],$_SESSION['login_teacher_id'],$_SESSION['csrf']);
+            $_SESSION['user_id']=(int)$user['id'];
+            $_SESSION['pwa_session_hash']=hash('sha256',$token);
+            if($user['role']==='student')$_SESSION['student_pathway_change_window']=begin_student_pathway_change_session(db(),(int)$user['id']);
+            $language=normalize_language((string)($user['language']??''));if($language!==null)use_language($language);
+        }
+        $destination=$user['role']==='student'&&!empty($_SESSION['pending_join_course_code'])?'join':($user['role']==='teacher'?'teacher':'student');
+        echo json_encode(['authenticated'=>true,'csrf'=>csrf_token(),'user_id'=>(int)$user['id'],'location'=>route($destination)],JSON_THROW_ON_ERROR);exit;
+    }
+
     if ($action === 'login_continue') {
         set_login_language((string)($_POST['language'] ?? ''));
         use_language((string)($_SESSION['login_language'] ?? 'fr'));
@@ -211,6 +241,7 @@ function handle_action(string $action): never
         }
         if($user['role']==='teacher'){
             $_SESSION['login_teacher_id']=(int)$user['id'];
+            $_SESSION['login_remember_pwa']=(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1');
             redirect('login');
         }
         open_authenticated_session($user);
@@ -260,9 +291,12 @@ function handle_action(string $action): never
     }
 
     if ($action === 'logout') {
+        $account=actor();
+        if(isset($_SESSION['pwa_session_hash']))revoke_pwa_login(db(),(int)($_SESSION['user_id']??0),(string)$_SESSION['pwa_session_hash']);
+        forget_pwa_cookie(db());
         $studentId=(int)($_SESSION['user_id']??0);$studentToken=(string)($_SESSION['student_session_token']??'');
         if($studentId>0&&$studentToken!=='')close_student_session(db(),$studentId,$studentToken);
-        $account=actor();if($account&&$account['role']==='teacher')release_edit_locks(db(),(int)$account['id']);
+        if($account&&$account['role']==='teacher')release_edit_locks(db(),(int)$account['id']);
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();

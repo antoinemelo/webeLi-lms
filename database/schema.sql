@@ -516,4 +516,15 @@ CREATE TABLE student_followups (
         CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
         BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
 
-PRAGMA user_version = 22;
+PRAGMA user_version = 23;
+
+CREATE TABLE pwa_logins (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at INTEGER NOT NULL
+);
+CREATE TRIGGER revoke_pwa_login_on_account_change
+AFTER UPDATE OF password_hash,login_code,account_status,role ON users
+WHEN OLD.password_hash IS NOT NEW.password_hash OR OLD.login_code IS NOT NEW.login_code
+  OR OLD.account_status IS NOT NEW.account_status OR OLD.role IS NOT NEW.role
+BEGIN DELETE FROM pwa_logins WHERE user_id=NEW.id; END;

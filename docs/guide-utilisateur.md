@@ -30,6 +30,14 @@ Le code contient les deux premières lettres du prénom et les trois premiers ca
 
 Si deux élèves produisent le même code, le second reçoit automatiquement un suffixe numérique.
 
+### Rester connecté dans la PWA
+
+Dans l’application installée sur l’écran d’accueil, cocher **Rester connecté dans cette application (90 jours)** lors de la connexion. Les enseignants confirment ensuite leur mot de passe. Cette option n’est pas proposée dans une fenêtre de navigateur classique.
+
+Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifiants. Cette reconnexion automatique conserve la session laissée sur l’ordinateur, tant qu’elle est encore valide. Une connexion manuelle d’élève reste soumise à la règle habituelle sur les connexions simultanées.
+
+**Se déconnecter** supprime le jeton présent dans cette PWA. Après une reconnexion automatique, cette déconnexion ne ferme pas la session de l’ordinateur. Il existe un seul jeton par personne : mémoriser une nouvelle PWA remplace le précédent. Une modification du mot de passe ou du code de connexion, un changement de statut du compte ou une collision entre connexions classiques révoque le jeton. La reconnexion nécessite un accès réseau.
+
 ### Rejoindre un cours avec une invitation
 
 Chaque parcours actif possède un code unique et un lien d’invitation. L’enseignant les trouve dans **Élèves**, depuis le menu à trois points de **Élèves & inscriptions**, puis **Invitation au parcours**, et peut les copier en un clic.

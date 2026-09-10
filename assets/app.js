@@ -26,6 +26,54 @@ const installedPwa = window.matchMedia('(display-mode: standalone)').matches
   || window.matchMedia('(display-mode: fullscreen)').matches
   || window.navigator.standalone === true;
 
+// Only installed applications request remembered login. The cookie itself is HttpOnly.
+let pwaResumePromise = null;
+const resumePwaSession = (expectedUserId = 0, suppliedStatus = null) => {
+  if (!installedPwa) return Promise.resolve(null);
+  if (pwaResumePromise) return pwaResumePromise;
+  pwaResumePromise = (async () => {
+    try {
+      const status = suppliedStatus || await (await fetch('?view=session-status', {
+        credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+      })).json();
+      if (status.authenticated) return !expectedUserId || status.user_id === expectedUserId ? status : null;
+      if (!status.resume_csrf) return null;
+      const response = await fetch('.', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: { Accept: 'application/json' },
+        body: new URLSearchParams({ action: 'pwa_resume', pwa_mode: '1', token: status.resume_csrf, expected_user_id: String(expectedUserId) }),
+      });
+      if (!response.ok) return null;
+      const result = await response.json();
+      return result.authenticated === true ? result : null;
+    } catch (_) { return null; }
+    finally { pwaResumePromise = null; }
+  })();
+  return pwaResumePromise;
+};
+
+if (installedPwa) {
+  document.querySelectorAll('[data-pwa-login-option]').forEach((option) => {
+    option.hidden = false;
+    option.querySelectorAll('input').forEach((input) => { input.disabled = false; });
+  });
+  const loginForm = document.querySelector('[data-pwa-login="identifier"]');
+  if (loginForm && !new URLSearchParams(location.search).has('restart_login')) {
+    // A pending teacher-password step or a person already entering credentials takes precedence.
+    let interacting = false;
+    loginForm.addEventListener('input', () => { interacting = true; });
+    loginForm.addEventListener('submit', () => { interacting = true; });
+    resumePwaSession().then((result) => {
+      if (!result) return;
+      if (result.csrf) loginForm.querySelectorAll('input[name=token]').forEach((input) => { input.value = result.csrf; });
+      if (interacting) return;
+      const view = new URLSearchParams(location.search).get('view');
+      if (view && !['login', 'session-status'].includes(view)) location.reload();
+      else location.replace(result.location || '?view=login');
+    });
+  }
+}
+
 if (installedPwa) {
   const pdfLinks = Array.from(document.querySelectorAll('.reader-pdf-download'));
   if (pdfLinks.length > 0) {
@@ -428,8 +476,10 @@ if (sessionGuardEnabled) {
           credentials: 'same-origin',
           cache: 'no-store',
         });
-        const result = await response.json();
-        if (!response.ok || result.authenticated !== true) {
+        let result = await response.json();
+        const expectedUserId = Number(document.body.dataset.userId || 0);
+        if (response.status === 401 && installedPwa) result = await resumePwaSession(expectedUserId, result) || result;
+        if (result.authenticated !== true || (expectedUserId && result.user_id !== expectedUserId)) {
           showSessionGuard(false);
           return false;
         }

@@ -81,7 +81,7 @@ Le signalement élève des étapes ajoutées ou modifiées ne crée aucune ligne
 
 ## Authentification et autorisation
 
-La session conserve uniquement `user_id`. À la connexion :
+La session conserve `user_id` et, pour les élèves, le jeton de session classique ou l’empreinte de reconnexion PWA. À la connexion :
 
 - l’enseignant est recherché par `login_code`, puis son hash est vérifié par `password_verify()` ;
 - l’élève est recherché par son code personnel majuscule, sans mot de passe ;
@@ -135,6 +135,13 @@ Le paramètre `view` sélectionne une vue. Les vues autorisées dépendent du r�
 Une vue non autorisée ramène vers l’accueil du rôle. `teacher-preview` et `teacher-preview-page` reprennent la présentation élève sans créer de progression ni de tentative QCM ; elles restent strictement réservées aux enseignants autorisés sur le parcours. Les commandes POST possèdent leurs propres contrôles et ne reposent pas uniquement sur la navigation.
 
 ## PWA et mobile
+
+La migration 23 ajoute `pwa_logins`, avec une seule ligne par personne : empreinte SHA-256 d’un secret aléatoire de 32 octets et échéance fixe de 90 jours. Le secret est conservé dans un cookie HttpOnly, SameSite=Lax, Secure en production, dont le nom et le chemin sont propres à l’instance. Il n’est placé ni dans une URL ni dans le stockage JavaScript. Seul le développement sur loopback autorise un cookie sans Secure.
+
+Après une connexion manuelle réussie, l’option explicite de mémorisation crée ou remplace le jeton. Le client détecte le mode installé (standalone/fullscreen ou iOS `navigator.standalone`) et demande une restauration par POST `pwa_resume`, avec CSRF. Cette détection est une condition d’interface, pas une preuve d’identité : l’authentification repose sur le secret valide présenté. La nouvelle session PHP est régénérée et validée par le jeton PWA, sans modifier `student_session_token_hash` ni `student_session_seen_at`. La garde de session peut restaurer le même utilisateur avant une action sans effacer la saisie ; elle refuse une reprise vers un autre compte.
+
+Une collision classique révoque également le jeton PWA pour éviter une reconnexion après invalidation globale. La déconnexion PWA révoque le jeton correspondant ; celle d’un navigateur classique dépourvu de ce cookie conserve le jeton PWA. Un déclencheur SQL révoque le jeton lors d’un changement de mot de passe, de code, de rôle ou de statut. Les sessions restaurées cessent d’être valides à expiration ou révocation du jeton. La table n’accumule aucun historique d’appareils.
+
 
 Le manifest demande le mode `standalone` et fournit le sigle « ii » en 192 et 512 px, avec une variante adaptée aux masques Android. Une icône Apple Touch de 180 px permet le même raccourci sur iPhone et iPad. Le service worker ne met en cache que les assets publics explicitement listés, y compris Bootstrap et ses fontes. Les pages dynamiques authentifiées et les réponses métier ne sont jamais placées dans son cache. L’interface possède :
 

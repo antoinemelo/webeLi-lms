@@ -30,7 +30,7 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
     http_response_code($sessionUser?200:401);
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: no-store, private');
-    echo json_encode(['authenticated'=>(bool)$sessionUser,'checked_at'=>time(),'csrf'=>$sessionUser?csrf_token():null],JSON_THROW_ON_ERROR);
+    echo json_encode(['authenticated'=>(bool)$sessionUser,'checked_at'=>time(),'csrf'=>$sessionUser?csrf_token():null,'resume_csrf'=>csrf_token(),'user_id'=>$sessionUser?(int)$sessionUser['id']:null],JSON_THROW_ON_ERROR);
     exit;
 }
 
