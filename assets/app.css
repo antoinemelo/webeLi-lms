@@ -708,9 +708,12 @@ h1{font-size:2.25rem}
 #teacher-message-modal form,#message-template-modal form{display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .announcement-admin article.announcement-targeted{background:#f0f1f4;border-color:#d8dbe2}
 .announcement-recipients{font-size:.85rem;margin-top:.6rem;overflow-wrap:anywhere}
-.announcement-recipients details{margin:.6rem 0;padding-top:.5rem;border-top:1px solid var(--line)}
-.announcement-recipients details>b{display:block;margin-top:.5rem}
-.announcement-recipients .announcement-body{margin-top:.5rem;font-size:.9rem}
+.announcement-recipients>summary{display:flex;align-items:center;gap:.5rem;list-style:none;cursor:pointer}
+.announcement-recipients>summary::-webkit-details-marker{display:none}
+.announcement-recipients>summary>.bi{display:inline-block;flex-shrink:0;transition:transform .2s}
+.announcement-recipients[open]>summary>.bi{transform:rotate(90deg)}
+.announcement-recipient-list{list-style:none;margin:.6rem 0 0;padding:0}
+.announcement-recipient-list>li{margin:.4rem 0}
 @media(max-width:700px){.message-composer-grid{grid-template-columns:1fr}.message-recipient-list{max-height:16rem}#teacher-message-modal .modal-footer{gap:.4rem}.message-recipient-cc{margin-left:0}}
 
 .student-management-trigger{display:flex;align-items:center;gap:.7rem;justify-content:flex-end}

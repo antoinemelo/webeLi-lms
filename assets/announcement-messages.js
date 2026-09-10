@@ -74,7 +74,7 @@
     if (!recipient) return;
     form.querySelector('[data-message-preview-title]').textContent = recipient.title;
     form.querySelector('[data-message-preview-body]').innerHTML = recipient.html;
-    form.querySelector('[data-message-preview-addresses]').textContent = `${recipient.email}${recipient.cc ? ' · CC : ' + recipient.cc : ''} · CCI : ${prepared.bcc}`;
+    form.querySelector('[data-message-preview-addresses]').textContent = `${recipient.email}${recipient.cc ? ' · CC : ' + recipient.cc : ''}`;
   };
   previewStudent.addEventListener('change', renderPreview);
   form.querySelector('[data-message-preview-button]').addEventListener('click', async () => {

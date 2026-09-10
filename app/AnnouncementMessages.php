@@ -75,7 +75,7 @@ final class AnnouncementMessages
         $query=$pdo->prepare("SELECT u.id,u.first_name,u.last_name,u.name,u.email,u.secondary_email FROM enrollments e JOIN users u ON u.id=e.student_id WHERE e.course_id=? AND e.status='active' AND u.account_status='active' ORDER BY u.name,u.id");
         $query->execute([$courseId]);$students=$query->fetchAll(PDO::FETCH_ASSOC);
         if(array_diff($selected,array_map('intval',array_column($students,'id'))))throw new InvalidArgumentException('Un destinataire n’est plus inscrit à ce parcours. Rechargez la page.');
-        $query=$pdo->prepare("SELECT email FROM users WHERE id=? AND role='teacher' AND account_status='active'");$query->execute([$teacherId]);$bcc=self::email((string)($query->fetchColumn()?:''));
+        $query=$pdo->prepare("SELECT email FROM users WHERE id=? AND role='teacher' AND account_status='active'");$query->execute([$teacherId]);$teacherEmail=self::email((string)($query->fetchColumn()?:''));
         $recipients=[];
         foreach($students as $student){
             if(!in_array((int)$student['id'],$selected,true))continue;
@@ -86,7 +86,7 @@ final class AnnouncementMessages
             if(mb_strlen($personalTitle)>160||mb_strlen($personalBody)>5000||preg_match('/[\r\n]/',$personalTitle))throw new InvalidArgumentException('Le message personnalisé dépasse la limite autorisée. Raccourcissez le modèle.');
             $recipients[]=['student_id'=>(int)$student['id'],'student_name'=>$student['name'],'email'=>$email,'cc'=>$cc,'title'=>$personalTitle,'body'=>$personalBody];
         }
-        return ['course_id'=>$courseId,'course_title'=>$course,'title'=>$title,'body'=>$body,'bcc'=>$bcc,'audience'=>count($selected)===count($students)?'class':'selected','recipients'=>$recipients];
+        return ['course_id'=>$courseId,'course_title'=>$course,'title'=>$title,'body'=>$body,'teacher_email'=>$teacherEmail,'audience'=>count($selected)===count($students)?'class':'selected','recipients'=>$recipients];
     }
 
     public static function send(PDO $pdo,int $teacherId,array $input,?bool $mailCronActive=null): int
@@ -110,8 +110,15 @@ final class AnnouncementMessages
             $mailCronActive??=mail_cron_is_active(dirname(__DIR__));$delay=$mailCronActive?'+'.ANNOUNCEMENT_MAIL_DELAY_SECONDS.' seconds':'+0 seconds';
             foreach($message['recipients'] as $recipient){
                 $insert->execute([$id,$recipient['student_id'],$recipient['student_name'],$recipient['title'],$recipient['body'],$recipient['email'],$recipient['cc']]);
-                $queue->execute([$recipient['email'],$recipient['title'],$recipient['body'],$id,$recipient['cc'],$message['bcc'],$delay]);
+                $queue->execute([$recipient['email'],$recipient['title'],$recipient['body'],$id,$recipient['cc'],'',$delay]);
             }
+            $recipientLines=[];
+            foreach($message['recipients'] as $recipient){
+                $recipientLines[]=$recipient['student_name'].' <'.$recipient['email'].'>'.($recipient['cc']!==''?' · CC : '.$recipient['cc']:'');
+            }
+            $summary=t('Titre').' : '.$message['title']."\n\n".t('Contenu')."\n".$message['body']."\n\n".t('Destinataires')."\n".implode("\n",$recipientLines);
+            // One recap shares the announcement's transaction, delay and cancellation lifecycle.
+            $queue->execute([$message['teacher_email'],t('Récapitulatif : :title',['title'=>$message['title']]),$summary,$id,'','',$delay]);
             $pdo->commit();return $id;
         }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
     }
