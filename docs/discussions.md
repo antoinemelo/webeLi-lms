@@ -59,3 +59,7 @@ python3 tests/database_profiles.py
 ```
 
 Ces tests utilisent des bases temporaires et des données fictives. Le test navigateur utilise Chromium installé, sans dépendance npm. La livraison push externe est simulée : elle ne remplace pas un essai réel sur les téléphones et l’hébergement de destination.
+
+Sur téléphone, le fil ouvert utilise toute la zone visible et suit les changements de hauteur du clavier via `visualViewport`. La flèche de retour retrouve la liste ; le fil courant peut être rouvert sans rechargement. La saisie démarre sur une ligne et grandit jusqu’à une hauteur bornée. Les bulles affichent uniquement l’heure, avec un séparateur centré par jour (heure suisse) ; les noms restent disponibles pour l’accessibilité et les exports. Les limites de 256 caractères et de 3 minutes restent appliquées.
+
+Le scénario `node tests/messaging_layout_browser.mjs` vérifie cette présentation dans Chromium, avec une réduction simulée de la zone visible pour le clavier. Il couvre aussi la pagination, la stabilité du défilement, l’envoi et la modification. Le comportement du clavier natif iOS/Android reste à vérifier sur appareil réel.

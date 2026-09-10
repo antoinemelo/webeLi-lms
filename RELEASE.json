@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "a009b56fb9986224a365eb17b5dac2beb11a22c047b3230dfb9243ac926776c7",
-    "VERSION": "e56e4fae29d1e73cee4a2574a99fd414684d34c8be603cfa4e48615bb5d596f9",
+    "VERSION": "024b3ce86cfa852f63889b1785df2d4c1a2ec942fb58563807a753072a42c935",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/AdminService.php": "663082fbc4bf6a97f8ef277f45ff98a19b7ec0c2b5fc0e1489a5a0b8e71349bd",
     "app/AnnouncementMessageViews.php": "a85f91b9b61e3438c7d95a947d1b8b1248e96097934e815febe94ff13255f345",
@@ -32,7 +32,7 @@
     "app/Messaging/Lms.php": "63a07e1a90db239a3e444dcc62f6a2deb2222b694bf4bbae8588980e79d29777",
     "app/Messaging/Push.php": "c13352b798c6f682501cb421acc6fb379619dc08fcec8e2698df0c0aa5cc1a3f",
     "app/Messaging/Store.php": "1584acb96de369c60815ee0fba8e59427f32a3f12e1b6986bdacc7f5fbb9df4b",
-    "app/Messaging/Views.php": "0bcdeb910981da03cb158fc3c5b8e788a1a260ba83a938483386829703ae8a7c",
+    "app/Messaging/Views.php": "3605c3f4b90a64f8e73dbcc118da9571a81d828c88e5ee28e9ce86aba7362e03",
     "app/Messaging/composer.json": "f5cb037340f26f7a4cda086021a8e29fab6ee3ba6c6b0742bd98ca301fa35191",
     "app/Messaging/composer.lock": "de498f4bd2843664f28480b2137d1bc13375221afef25fd4b14882beadd928d1",
     "app/Messaging/vendor/autoload.php": "e4a05cb26ad9d00f008338c6f88623f8d137660c9eb31e1f8be66baded453dfd",
@@ -819,7 +819,7 @@
     "app/translations/es.php": "91424d0d432dd981538ecb1151c3950f279feca4a6c4b825cee75a3bd6ace6d0",
     "app/translations/it.php": "9ec7e14c7ef76a707692e37a04df01b47f4d018f94b5e7f66eb4b220b9cdef85",
     "app/translations/messaging.php": "7ed31056041b955828e54f59977734b77128fc03f3e2999baf9c97b3c3c363d4",
-    "app/views.php": "dca2a9da7e8c2d7d178f8a5d0ed32f926b89e4a4466b48e603e33d0ffd883a53",
+    "app/views.php": "a7c45292b728b8b358a0f4dfb6fd72af351c9ea7bacbb83927949eb12c512806",
     "assets/announcement-messages.js": "cdce6aab879f74d09ff728ae6b9bec2301182fe8a8e9e469ac3477a005849f6f",
     "assets/app.css": "e8a56c186d462ef8e40b94cb8e842e30595c936bcff1d38bcc27b669a1a23e9d",
     "assets/app.js": "948dca24d859bc1079610af40f703c3eb35d7d780b7ee107ec72ad2e0a21ce9e",
@@ -830,8 +830,8 @@
     "assets/icon-512.png": "7e1276a316ea0bba597c09ab7470c595f2d34e9a6171f83cdd7f91a0df3ad6c7",
     "assets/icon-maskable-512.png": "de897f9cbc9caccf815e9cafa49fa02645c269bdd0e6839027b5e80b512abd9c",
     "assets/icon.svg": "7c1c33ae51eb59fb7eef3a1bf1e410416d9cf9ccb44cd6d29a7529f14053bed3",
-    "assets/messaging.css": "3b1c0639ba1918f1d43386d61cb0c847cc34bd4a5673a7d73840b2058b752897",
-    "assets/messaging.js": "108535ba4e3f734dadd1c35da6219115e0f56e1ca5fea1f9104355a8f2bf6f82",
+    "assets/messaging.css": "2591333d63f8b217450a4c7958ac6c974edd50e3dd98e91d124f739556b2fe9b",
+    "assets/messaging.js": "04f320479b5869b8c36684b7cc72a3a7ead579f6a7597d241d5b667e01111c94",
     "assets/student-admin.js": "5964d02e2e5dbb7317c471eae0b3dea7efbe85b4e067e0d8481eae22fa653436",
     "assets/vendor/README.md": "4da1e38757883d2efba69106eb24d30cf05a87367383356535ddc5f3fd175665",
     "assets/vendor/bootstrap-icons/bootstrap-icons.min.css": "f37753b822057fffe0c391f2448a50c81102fda70d973bbbbccfe0ac668065c6",
@@ -872,7 +872,7 @@
     "docs/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "docs/README.md": "46b0133c11dccfb2a3c35e6af7c33904fca34123c4042bc432b5e8174b4f7cb3",
     "docs/architecture.md": "51cb2dab26eed8baeb8984303aea8976107272f745f912e3171232e5fb26299d",
-    "docs/discussions.md": "f1ce091eb81e0cc629591a01c2872226103129ef71309ccd957cd441e00445ed",
+    "docs/discussions.md": "ac80555409e73bbd4cf5d2704e0f040b839f206baa1b1d71219f644fd1f9b1f5",
     "docs/exploitation.md": "95c2c12ed88f5daef27ecdfbe26cfecbef5a42a866d14dd610c6f947846d1a55",
     "docs/guide-utilisateur.md": "68e905e9263e2c3cf1504fb31c5648bab6383da9c8c835152c80c2f2b8d61d3d",
     "docs/limitations-roadmap.md": "65ffffccb8bf833e2b1f038bd44b7f30563392d0d0730e93a532fd69223142b3",
@@ -885,12 +885,12 @@
     "scripts/purge_registrations.php": "278cf25a993c7c57cba7e4df761a54adb728814bcbeb637cc095097bcb45d646",
     "scripts/push_notifications.php": "ce507d1e9bc4e88654278c4af0d6172cede068656bbf3f6403b1f1ba672bb159",
     "storage/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
-    "sw.js": "cc6df30007345576d10159ec4fb043bca684853e9023083f6dc9fe5f3274471d",
+    "sw.js": "c097dcec33412552575b3e7fb53eb0e60ac3b1aac1b935df1d35742617de3e47",
     "uploads/.htaccess": "eea47c349b4aa72d1f2328a1640d8f6455d2c8e96ff86a8908d140b98343e74f",
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-09-10T16:45:34+00:00",
+  "generated_at": "2026-09-10T17:37:30+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -903,5 +903,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q3.72"
+  "version": "2026Q3.73"
 }
