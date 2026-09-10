@@ -46,12 +46,14 @@
   const refresh = (result) => {
     templates = result.templates; document.dispatchEvent(new CustomEvent('message-templates-updated', { detail: templates })); options(choose, labels.select, choose.value); options(manage, labels.new, result.id); fillManager();
   };
-  tools.querySelector('[data-message-action]').addEventListener('change', event => {
-    if (event.target.value === 'send') composeModal.show();
-    if (event.target.value === 'templates') managerModal.show();
-    if (event.target.value.startsWith('followup-')) document.dispatchEvent(new CustomEvent('open-student-followup', { detail: event.target.value.slice(9) }));
-    event.target.value = '';
-  });
+  document.querySelectorAll('[data-message-action]').forEach(button => button.addEventListener('click', () => {
+    const action = button.dataset.messageAction;
+    const toggle = button.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+    if (toggle) bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+    if (action === 'send') composeModal.show();
+    if (action === 'templates') managerModal.show();
+    if (action.startsWith('followup-')) document.dispatchEvent(new CustomEvent('open-student-followup', { detail: action.slice(9) }));
+  }));
   all.addEventListener('change', () => { students.forEach(input => { input.checked = all.checked; }); count(); invalidate(); });
   allCc.addEventListener('change', () => { copies.filter(input => !input.disabled).forEach(input => { input.checked = allCc.checked; }); count(); invalidate(); });
   form.addEventListener('input', event => { if (![previewStudent, all, allCc].includes(event.target)) { invalidate(); count(); } });

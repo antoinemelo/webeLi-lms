@@ -23,7 +23,8 @@ function messaging_http_action(string $action): never
         }
         if($action==='messaging_push_prepare'){messaging_json(['publicKey'=>messaging_push_config(true)['publicKey']]);}
         if($action==='messaging_push_subscribe'){$data=json_decode((string)($_POST['subscription']??''),true,16,JSON_THROW_ON_ERROR);$id=messaging_push_register($user,(array)$data);messaging_json(['ok'=>true,'subscription'=>$id]);}
-        if($action==='messaging_push_disable'){messaging_push_forget();messaging_json(['ok'=>true]);}
+        if($action==='messaging_push_status'){$id=messaging_push_subscription($user,is_string($_POST['endpoint']??null)?$_POST['endpoint']:'');messaging_json(['ok'=>true,'active'=>$id!==null,'subscription'=>$id]);}
+        if($action==='messaging_push_disable'){messaging_push_forget($user);messaging_json(['ok'=>true]);}
         throw new InvalidArgumentException('Requête invalide.');
     }catch(Throwable $e){if($json)messaging_json(['ok'=>false,'error'=>t($e instanceof InvalidArgumentException?$e->getMessage():'Impossible de terminer cette opération. Réessayez.')],422);flash($e instanceof InvalidArgumentException?$e->getMessage():'Impossible de terminer cette opération. Réessayez.','error');redirect('discussions');}
 }

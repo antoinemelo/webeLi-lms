@@ -7,14 +7,22 @@ function render_message_variables(): void
     ?><div class="message-variables"><span><?=e(t('Insérer'))?></span><?php foreach(AnnouncementMessages::VARIABLES as $variable): ?><button type="button" class="btn btn-sm btn-outline-secondary" data-message-variable="<?=e($variable)?>"><?=e('{'.$variable.'}')?></button><?php endforeach; ?></div><?php
 }
 
+function render_teacher_actions_menu(): void
+{
+    $actions=['send'=>t('Courriel / Annonce'),'templates'=>t('Créer / modifier les modèles'),'notifications'=>t('Notifications')];
+    foreach(StudentAdminHistory::KINDS as $kind=>$label)$actions['followup-'.$kind]=t($label);
+    $icons=['send'=>'bi-bell','templates'=>'bi-file-earmark-text','notifications'=>'bi-app-indicator','followup-meeting'=>'bi-people','followup-correspondence'=>'bi-envelope','followup-payment'=>'bi-credit-card'];
+    $collator=class_exists('Collator')?new Collator(locale_code()):null;
+    if($collator)$collator->setStrength(Collator::PRIMARY);
+    uasort($actions,static fn(string $a,string $b):int=>$collator?$collator->compare($a,$b):pathway_natural_compare($a,$b));
+    ?><div class="dropdown pathway-actions-menu teacher-actions-menu"><button class="btn btn-light pathway-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="<?=e(t('Actions'))?>" title="<?=e(t('Actions'))?>"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end"><?php foreach($actions as $value=>$label): ?><li><?php if($value==='notifications'): ?><a class="dropdown-item" href="<?=e(route('outbox'))?>"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></a><?php else: ?><button class="dropdown-item" type="button" data-message-action="<?=e($value)?>"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></button><?php endif; ?></li><?php endforeach; ?></ul></div><?php
+}
+
 function render_teacher_message_actions(array $course,array $students): void
 {
     $templates=AnnouncementMessages::templates(db(),(int)actor()['id']);
-    $actions=['send'=>t('Courriel / Annonce'),'templates'=>t('Créer / modifier les modèles')];
-    foreach(StudentAdminHistory::KINDS as $kind=>$label)$actions['followup-'.$kind]=t($label);
-    uasort($actions,'pathway_natural_compare');
     $messages=['sender'=>(string)actor()['email'],'open'=>t('Voir l’annonce'),'select'=>t('Choisir un modèle'),'new'=>t('Nouveau modèle'),'preview'=>t('Aperçu'),'send'=>t('Envoyer à :count élèves'),'count'=>t(':count élèves · :copies copies CC · Récapitulatif à :email'),'saved'=>t('Modèle enregistré.'),'deleted'=>t('Modèle supprimé.'),'deleteConfirm'=>t('Supprimer ce modèle ? Les messages déjà envoyés seront conservés.'),'error'=>t('L’opération a échoué. Votre saisie est conservée.'),'sent'=>t('Annonce publiée et courriels préparés.'),'waiting'=>t('En cours…')];
-    ?><div class="teacher-message-actions" data-message-tools data-message-templates="<?=e(json_encode($templates,JSON_UNESCAPED_UNICODE))?>" data-message-labels="<?=e(json_encode($messages,JSON_UNESCAPED_UNICODE))?>"><label class="field"><span><?=e(t('Actions'))?></span><select data-message-action><option value=""><?=e(t('Choisir une action'))?></option><?php foreach($actions as $value=>$label): ?><option value="<?=e($value)?>"><?=e($label)?></option><?php endforeach; ?></select></label><p data-message-result role="status" hidden></p></div>
+    ?><div class="teacher-message-actions" data-message-tools data-message-templates="<?=e(json_encode($templates,JSON_UNESCAPED_UNICODE))?>" data-message-labels="<?=e(json_encode($messages,JSON_UNESCAPED_UNICODE))?>"><p data-message-result role="status" hidden></p></div>
     <div class="modal fade" id="teacher-message-modal" tabindex="-1" aria-labelledby="teacher-message-title" aria-hidden="true"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><form method="post" data-message-compose><?=csrf_field()?><input type="hidden" name="course_id" value="<?=(int)$course['id']?>"><input type="hidden" name="request_key" value="<?=e(bin2hex(random_bytes(24)))?>">
       <div class="modal-header"><h2 class="modal-title fs-5" id="teacher-message-title"><?=e(t('Envoyer un message'))?></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?=e(t('Fermer'))?>"></button></div>
       <div class="modal-body"><div class="message-composer-grid"><section><h3><?=e(t('Destinataires'))?></h3><div class="message-select-all"><label><input type="checkbox" data-message-all> <?=e(t('Toute la classe'))?></label><label><input type="checkbox" data-message-all-cc> <?=e(t('Inclure les 2es adresses disponibles (CC)'))?></label></div><div class="message-recipient-list"><?php foreach($students as $student): $secondary=trim((string)($student['secondary_email']??'')); ?><div class="message-recipient-row"><label><input type="checkbox" name="students[]" value="<?=(int)$student['id']?>"><span><b><?=e($student['name'])?></b><small><?=e($student['email'])?></small></span></label><?php if($secondary!==''): ?><label class="message-recipient-cc"><input type="checkbox" name="secondary[]" value="<?=(int)$student['id']?>" disabled><span><b>CC</b> <?=e($secondary)?></span></label><?php endif; ?></div><?php endforeach; ?></div></section>

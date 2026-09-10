@@ -690,7 +690,7 @@ h1{font-size:2.25rem}
 .work-card input,.work-card textarea{user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
 @media(max-width:600px){.submission-settings{grid-template-columns:1fr}.work-actions>.button{width:100%}}
 
-.teacher-message-actions{margin:1rem 0 2rem;max-width:32rem}
+.teacher-message-actions>[data-message-result]:not([hidden]){margin:1rem 0 2rem;max-width:32rem}
 .message-composer-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;min-width:0}
 .message-composer-grid>section{min-width:0}
 .message-composer-grid h3,[data-message-preview] h3{font-size:1.1rem;margin-bottom:1rem}
@@ -755,3 +755,5 @@ h1{font-size:2.25rem}
 
 .student-directory-badges,.student-directory-actions{display:flex;align-items:center;gap:.7rem}.student-directory-badges>.avatar,.student-directory-badges>.status,.student-directory-actions>.student-code,.student-directory-actions>.student-management-trigger{flex-shrink:0}
 @media(max-width:850px){.student-directory-badges,.student-directory-actions,.student-directory-badges+.directory-identity{grid-column:1/-1}}
+
+.teacher-actions-menu{flex-shrink:0}.teacher-actions-menu .dropdown-menu{min-width:min(19rem,calc(100vw - 2rem));max-width:calc(100vw - 2rem)}.teacher-actions-menu .dropdown-item{white-space:normal}

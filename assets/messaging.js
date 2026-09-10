@@ -27,25 +27,62 @@
   window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
   window.addEventListener('pagehide',()=>clearInterval(badgeTimer),{once:true});
   const feedback = document.querySelector('[data-push-feedback]');
-  document.querySelectorAll('[data-enable-push]').forEach(button => button.addEventListener('click', async () => {
-    button.disabled = true;
-    try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) throw new Error(text('permission', 'Les notifications ne sont pas autorisées sur cet appareil.'));
-      // Permission is requested directly from the user's gesture (required by iOS).
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') throw new Error(text('permission', 'Les notifications ne sont pas autorisées sur cet appareil.'));
-      const { publicKey } = await post('messaging_push_prepare');
-      const registration = await navigator.serviceWorker.ready;
-      const bytes = Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')), c=>c.charCodeAt(0));
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes });
-      const result = await post('messaging_push_subscribe', { subscription: JSON.stringify(subscription.toJSON()) });
-      registration.active?.postMessage({ type: 'notification-owner', subscription: result.subscription });
-      if(feedback)feedback.textContent=text('notifications','Notifications activées.');
-      await updateBadges();
-    } catch (e) { if(feedback)feedback.textContent=e.message; }
-    finally { button.disabled=false; }
-  }));
+  document.querySelectorAll('[data-enable-push]').forEach(button => {
+    let active = false, busy = false;
+    const supported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const render = () => {
+      button.textContent = active ? text('disableNotifications', 'Désactiver les notifications') : text('enableNotifications', 'Activer les notifications');
+      button.dataset.pushActive = active ? '1' : '0';
+      button.disabled = busy;
+    };
+    const refresh = async () => {
+      if (busy || document.hidden) return;
+      busy = true; render();
+      try {
+        const registration = supported() ? await navigator.serviceWorker.getRegistration() : null;
+        const subscription = await registration?.pushManager.getSubscription();
+        const state = subscription ? await post('messaging_push_status', { endpoint: subscription.endpoint }) : null;
+        active = supported() && Notification.permission === 'granted' && !!state?.active;
+        registration?.active?.postMessage({ type: 'notification-owner', subscription: active ? state.subscription : null });
+      } catch (_) { /* Keep the last known state if the network is unavailable. */ }
+      finally { busy = false; render(); }
+    };
+    button.addEventListener('click', async () => {
+      if (busy) return;
+      busy = true; render();
+      if (feedback) feedback.textContent = '';
+      try {
+        if (active) {
+          await post('messaging_push_disable');
+          active = false;
+          const registration = await navigator.serviceWorker.getRegistration();
+          registration?.active?.postMessage({ type: 'notification-owner', subscription: null });
+          // Server removal stops delivery even if the browser cannot clean up its subscription.
+          try { const subscription = await registration?.pushManager.getSubscription(); await subscription?.unsubscribe(); } catch (_) {}
+          if (feedback) feedback.textContent = text('notificationsOff', 'Notifications désactivées sur cet appareil.');
+        } else {
+          if (!supported()) throw new Error(text('permission', 'Les notifications ne sont pas autorisées sur cet appareil.'));
+          // Request permission directly from the click, as required by iOS.
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') throw new Error(text('permission', 'Les notifications ne sont pas autorisées sur cet appareil.'));
+          const { publicKey } = await post('messaging_push_prepare');
+          const registration = await navigator.serviceWorker.ready;
+          const bytes = Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')), c=>c.charCodeAt(0));
+          let subscription = await registration.pushManager.getSubscription();
+          if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes });
+          const result = await post('messaging_push_subscribe', { subscription: JSON.stringify(subscription.toJSON()) });
+          registration.active?.postMessage({ type: 'notification-owner', subscription: result.subscription });
+          active = true;
+          if (feedback) feedback.textContent = text('notifications', 'Notifications activées.');
+          await updateBadges();
+        }
+      } catch (e) { if (feedback) feedback.textContent = e.message; }
+      finally { busy = false; render(); }
+    });
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  });
   document.addEventListener('submit', event => {
     if (event.target.querySelector('[name=action]')?.value === 'logout') {
       navigator.clearAppBadge?.().catch(()=>{});

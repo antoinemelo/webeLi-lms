@@ -3,4 +3,4 @@
 
 @media(max-width:700px){.chat-heading{display:block}.chat-heading h1{font-size:2rem}.chat-heading>div+div{margin-top:12px}.chat-heading>div+div button{flex:1}.chat-layout{height:calc(100dvh - 355px);min-height:400px}.chat-compose textarea{min-height:60px;max-height:100px}.chat-compose>small{font-size:.72rem}.chat-management .d-flex{flex-wrap:wrap}.chat-management select{min-width:0;flex:1}.chat-thread header>div{min-width:0;overflow-wrap:anywhere}}
 
-.chat-deletion-request>summary{display:flex;align-items:center;gap:.6rem;list-style:none;cursor:pointer}.chat-deletion-request>summary::-webkit-details-marker{display:none}.chat-deletion-request>summary>i{flex-shrink:0;transition:transform .18s ease}.chat-deletion-request[open]>summary>i{transform:rotate(90deg)}
+details.chat-management>summary{display:flex;align-items:center;gap:.6rem;list-style:none;cursor:pointer}details.chat-management>summary::-webkit-details-marker{display:none}details.chat-management>summary>i{flex-shrink:0;transition:transform .18s ease}details.chat-management[open]>summary>i{transform:rotate(90deg)}

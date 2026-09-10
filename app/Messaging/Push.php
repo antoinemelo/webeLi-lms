@@ -55,10 +55,17 @@ function messaging_push_register(array $user,array $data): string
     setcookie('liike_push_'.substr(hash('sha256',pwa_cookie_path()),0,12),$id,['expires'=>time()+90*86400,'path'=>pwa_cookie_path(),'secure'=>!in_array($_SERVER['SERVER_NAME']??'',['localhost','127.0.0.1','::1'],true),'httponly'=>true,'samesite'=>'Lax']);
     return $id;
 }
-function messaging_push_forget(): void
+function messaging_push_subscription(array $user,string $endpoint): ?string
+{
+    $id=$_COOKIE['liike_push_'.substr(hash('sha256',pwa_cookie_path()),0,12)]??'';
+    if(!is_string($id)||!preg_match('/^[a-f0-9]{48}$/D',$id)||!messaging_push_endpoint($endpoint))return null;
+    $rows=messaging_store()->query('SELECT id FROM push_subscriptions WHERE id=? AND user_key=? AND endpoint=? AND created_at>=?',[$id,messaging_key($user),$endpoint,time()-90*86400]);
+    return $rows?(string)$rows[0]['id']:null;
+}
+function messaging_push_forget(?array $user=null): void
 {
     $name='liike_push_'.substr(hash('sha256',pwa_cookie_path()),0,12);$id=$_COOKIE[$name]??'';
-    if(is_string($id)&&preg_match('/^[a-f0-9]{48}$/D',$id))messaging_store()->run('DELETE FROM push_subscriptions WHERE id=?',[$id]);
+    if(is_string($id)&&preg_match('/^[a-f0-9]{48}$/D',$id))messaging_store()->run('DELETE FROM push_subscriptions WHERE id=?'.($user?' AND user_key=?':''),$user?[$id,messaging_key($user)]:[$id]);
     setcookie($name,'',['expires'=>time()-3600,'path'=>pwa_cookie_path(),'httponly'=>true,'samesite'=>'Lax','secure'=>!in_array($_SERVER['SERVER_NAME']??'',['localhost','127.0.0.1','::1'],true)]);
 }
 function messaging_push_batch(int $limit=10,?callable $transport=null): array
