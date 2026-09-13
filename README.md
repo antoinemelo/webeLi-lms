@@ -126,6 +126,8 @@ Une page reste neutre et réutilisable. Les objectifs et compétences sont liés
 
 ## Emails
 
+Les envois et formulaires publics sont protégés sans CAPTCHA : jetons à usage unique, champ piège, quotas persistants et contrôles anti-injection. Voir la [configuration de sécurité des emails](docs/exploitation.md#protection-contre-les-abus-sans-captcha), notamment `APP_MAIL_BASE_URL` pour le domaine public et `APP_MAIL_ENABLED=0` pour couper les envois.
+
 Les actions préparent des messages dans `notification_outbox`. En développement, on les consulte dans **Notifications**. L’aperçu CLI ne transmet rien :
 
 ```bash
@@ -167,6 +169,8 @@ Les élèves ne reçoivent jamais les vues `students`, `pathway`, `library` ou `
 ```bash
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
+php tests/mail_security.php
+python3 tests/mail_security_http.py
 php tests/incremental_updates.php
 php tests/messaging_updates.php
 php tests/messaging.php

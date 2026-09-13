@@ -29,6 +29,10 @@ function record_mail_cron_heartbeat(string $applicationRoot, ?int $now=null): bo
 
 function outbox_send_pending_batch(PDO $pdo, int $limit=MAIL_OUTBOX_BATCH_SIZE, bool $announcementsOnly=false, ?callable $delivery=null): array
 {
+    // Never send expired account links or reminders accumulated during an outage.
+    $pdo->exec("DELETE FROM notification_outbox WHERE status='pending'
+        AND event IN ('account.verification','password.reset','credentials.reminder')
+        AND created_at<=datetime('now','-15 minutes')");
     $limit=max(1,min(500,$limit));
     $scope=$announcementsOnly?" AND o.event='course.announcement'":'';
     $messages=$pdo->query("SELECT o.* FROM notification_outbox o
@@ -51,14 +55,39 @@ function outbox_send_pending_batch(PDO $pdo, int $limit=MAIL_OUTBOX_BATCH_SIZE, 
                 continue;
             }
         }
-        $ok=(bool)$delivery((string)$message['recipient'],(string)$message['subject'],(string)$message['body'],(string)($message['cc']??''),(string)($message['bcc']??''));
-        $statement=$pdo->prepare($ok
-            ? "UPDATE notification_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'"
-            : "UPDATE notification_outbox SET attempts=attempts+1,last_error='mail() a retourné false',available_at=datetime('now','+5 minutes') WHERE id=? AND status='pending'");
-        $statement->execute([(int)$message['id']]);
+        $ok=outbox_send_message($pdo,(int)$message['id'],$delivery);
+        if($ok===null)continue;
         $results[]=['id'=>(int)$message['id'],'recipient'=>(string)$message['recipient'],'sent'=>$ok];
     }
     return $results;
+}
+
+/** The conditional lease is shared by immediate sends, HTTP fallback and cron. */
+function outbox_send_message(PDO $pdo, int $messageId, ?callable $delivery=null): ?bool
+{
+    $claim=$pdo->prepare("UPDATE notification_outbox SET available_at=datetime('now','+5 minutes')
+        WHERE id=? AND status='pending' AND COALESCE(available_at,created_at)<=CURRENT_TIMESTAMP
+        AND (event NOT IN ('account.verification','password.reset','credentials.reminder') OR created_at>datetime('now','-15 minutes'))
+        AND (event<>'course.announcement' OR announcement_id IS NULL OR EXISTS(
+            SELECT 1 FROM course_announcements a WHERE a.id=announcement_id AND a.archived=0))");
+    $claim->execute([$messageId]);
+    if($claim->rowCount()!==1)return null;
+    $query=$pdo->prepare("SELECT * FROM notification_outbox WHERE id=? AND status='pending'");
+    $query->execute([$messageId]);
+    $message=$query->fetch(PDO::FETCH_ASSOC);
+    if(!$message)return null;
+    $delivery??=static fn(string $recipient,string $subject,string $body,string $cc='',string $bcc=''):bool=>deliver_app_mail($recipient,$subject,$body,$cc,$bcc);
+    try{
+        $ok=(bool)$delivery((string)$message['recipient'],(string)$message['subject'],(string)$message['body'],(string)($message['cc']??''),(string)($message['bcc']??''));
+    }catch(Throwable $exception){
+        error_log('liike mail: transport indisponible ('.get_class($exception).')');
+        $ok=false;
+    }
+    $statement=$pdo->prepare($ok
+        ? "UPDATE notification_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'"
+        : "UPDATE notification_outbox SET attempts=attempts+1,last_error='Envoi refusé, limité ou transport indisponible',available_at=datetime('now','+5 minutes') WHERE id=? AND status='pending'");
+    $statement->execute([$messageId]);
+    return $ok;
 }
 
 function teacher_can_clear_notification_history(PDO $pdo, int $teacherId): bool

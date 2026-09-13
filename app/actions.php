@@ -71,20 +71,23 @@ function student_directory_return_params(?int $studentId=null): array
 
 function registration_guard(string $role): void
 {
+    if (!app_mail_form_valid('register', $_POST)) {
+        flash('Formulaire expiré. Rechargez la page.', 'error');
+        redirect('register', ['role'=>$role]);
+    }
+    $email = is_string($_POST['email'] ?? null) ? strtolower(trim($_POST['email'])) : '';
+    if (!app_public_mail_allowed($email)) {
+        flash('Trop de demandes d’inscription ont été reçues. Patientez 15 minutes avant de réessayer.', 'error');
+        redirect('register', ['role'=>$role]);
+    }
     $ipHash = hash('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-    $startedAt = (float)($_SESSION['registration_started_at'] ?? 0);
-    $elapsed = microtime(true) - $startedAt;
-    $honeypot = trim((string)($_POST['website'] ?? ''));
     $ipAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE ip_hash=? AND attempted_at>=datetime('now','-15 minutes')", [$ipHash])['n'] ?? 0);
     $globalAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 hour')")['n'] ?? 0);
     $dailyAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 day')")['n'] ?? 0);
     $pendingAccounts = (int)(one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending'")['n'] ?? 0);
-    $allowed = registration_is_allowed($honeypot,$elapsed,$ipAttempts,$globalAttempts,$dailyAttempts,$pendingAccounts);
+    // Timing and honeypot were checked with the single-use token above.
+    $allowed = registration_is_allowed('',2,$ipAttempts,$globalAttempts,$dailyAttempts,$pendingAccounts);
     run('INSERT INTO registration_attempts(ip_hash,accepted) VALUES(?,?)', [$ipHash,$allowed?1:0]);
-    if ($honeypot !== '') {
-        flash('Si les informations sont valides, un courriel de confirmation sera envoyé.');
-        redirect('login');
-    }
     if (!$allowed) {
         flash('Trop de demandes d’inscription ont été reçues. Patientez 15 minutes avant de réessayer.', 'error');
         redirect('register', ['role'=>$role]);
@@ -262,10 +265,14 @@ function handle_action(string $action): never
     }
 
     if ($action === 'request_password_reset') {
-        $email=mb_strtolower(trim((string)($_POST['email']??'')),'UTF-8');
+        if (!app_mail_form_valid('request_password_reset', $_POST)) {
+            flash('Formulaire expiré. Rechargez la page.', 'error');
+            redirect('recover');
+        }
+        $email=is_string($_POST['email']??null)?mb_strtolower(trim($_POST['email']),'UTF-8'):'';
         $ipHash=hash('sha256',(string)($_SERVER['REMOTE_ADDR']??'unknown'));
         $emailHash=hash('sha256',$email);
-        if(password_reset_request_allowed(db(),$ipHash,$emailHash)){
+        if(app_public_mail_allowed($email) && password_reset_request_allowed(db(),$ipHash,$emailHash)){
             record_password_reset_request(db(),$ipHash,$emailHash);
             $account=filter_var($email,FILTER_VALIDATE_EMAIL)?one("SELECT * FROM users WHERE lower(email)=? AND account_status='active'",[$email]):null;
             if($account){
@@ -322,7 +329,10 @@ function handle_action(string $action): never
         $phone = trim((string)($_POST['phone'] ?? '')) ?: null;
         $compactFirstName = preg_replace('/\s+/u', '', $firstName) ?? '';
         $compactLastName = preg_replace('/\s+/u', '', $lastName) ?? '';
-        if (mb_strlen($compactFirstName) < 2 || mb_strlen($compactLastName) < 3 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (mb_strlen($compactFirstName) < 2 || mb_strlen($compactLastName) < 3
+            || mb_strlen($firstName) > 80 || mb_strlen($lastName) > 80
+            || preg_match('/[^\p{L}\p{M} \x{2019}\x{02BC}\x{0027}-]/u', $firstName.$lastName) !== 0
+            || !app_mail_address_valid($email)) {
             flash('Prénom, nom et courriel valides sont requis.', 'error');
             redirect('register', ['role'=>$role]);
         }

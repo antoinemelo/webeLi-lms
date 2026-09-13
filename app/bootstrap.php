@@ -210,35 +210,17 @@ function enqueue(string $event, string $recipient, string $subject, string $body
 
 function try_send_outbox(int $messageId): bool
 {
-    $message = one("SELECT * FROM notification_outbox WHERE id=? AND status='pending'", [$messageId]);
-    if (!$message) return false;
-    $sent = deliver_app_mail($message['recipient'], $message['subject'], $message['body'], $message['cc']??'', $message['bcc']??'');
-    if ($sent) {
-        run("UPDATE notification_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE id=?", [$messageId]);
-    } else {
-        run("UPDATE notification_outbox SET attempts=attempts+1,last_error='mail() a retourné false',available_at=datetime('now','+5 minutes') WHERE id=?", [$messageId]);
-    }
-    return $sent;
+    return outbox_send_message(db(), $messageId) === true;
 }
 
 function verification_url(string $token): string
 {
-    $host = (string)($_SERVER['HTTP_HOST'] ?? '127.0.0.1:8080');
-    if (!preg_match('/^[A-Za-z0-9.:-]+$/', $host)) $host = '127.0.0.1:8080';
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $script = (string)($_SERVER['SCRIPT_NAME'] ?? '/lms/index.php');
-    $base = rtrim(str_replace('\\', '/', dirname($script)), '/');
-    return $scheme . '://' . $host . $base . '/?v=' . rawurlencode($token);
+    return app_mail_link('v', $token);
 }
 
 function password_reset_url(string $token): string
 {
-    $host = (string)($_SERVER['HTTP_HOST'] ?? '127.0.0.1:8080');
-    if (!preg_match('/^[A-Za-z0-9.:-]+$/', $host)) $host = '127.0.0.1:8080';
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $script = (string)($_SERVER['SCRIPT_NAME'] ?? '/lms/index.php');
-    $base = rtrim(str_replace('\\', '/', dirname($script)), '/');
-    return $scheme . '://' . $host . $base . '/?r=' . rawurlencode($token);
+    return app_mail_link('r', $token);
 }
 
 function course_invitation_url(string $code): string

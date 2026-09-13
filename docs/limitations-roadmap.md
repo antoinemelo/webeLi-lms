@@ -9,7 +9,7 @@
 - l’enseignant dispose d’un mot de passe hashé, de sessions, d’une protection CSRF et d’une récupération par lien temporaire, mais il n’existe pas encore d’authentification multifacteur ;
 - les codes élèves sans mot de passe sont volontairement simples et prévisibles : ils ne conviennent pas à des données sensibles ;
 - l’application ne propose pas encore de journal complet des connexions ni de protection anti-bruteforce dédiée à toutes les formes de connexion ;
-- les inscriptions publiques sont plafonnées et expirent après validation courriel, mais un déploiement exposé devrait encore ajouter un CAPTCHA géré et une limitation au niveau du serveur ou du proxy ;
+- les inscriptions et récupérations publiques sont protégées sans CAPTCHA par des jetons à usage unique, un champ piège et des quotas persistants ; les seuils et le domaine canonique des liens sont à configurer selon l’instance (voir [exploitation](exploitation.md#protection-contre-les-abus-sans-captcha)) ;
 - les imports de blocs contrôlent la taille, les extensions des documents et le format réel des images ; aucune analyse antivirus n’est intégrée. Les iframes sont reconstruites à partir d’une URL HTTP(S), mais il n’existe pas de liste de domaines autorisés configurable ni de sandbox iframe ;
 - les noms et adresses ne sont pas chiffrés dans SQLite ; les droits applicatifs et la protection des fichiers restent nécessaires.
 
