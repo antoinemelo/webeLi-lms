@@ -93,4 +93,93 @@
   };
   initialize();
   document.addEventListener('click', (event) => { if (event.target.closest('[data-add-block],[data-remove-block]')) initialize(); });
+
+  const blocks = document.querySelector('#blocks');
+  const form = blocks?.closest('form');
+  if (!form) return;
+  const rows = () => [...blocks.children].filter((row) => row.matches('.block-editor'));
+  const changed = () => {
+    initialize(); // Keep multipart file indexes aligned without recreating file inputs.
+    form.elements.block_order_changed.value = '1';
+    blocks.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  const clearMarkers = () => rows().forEach((row) => row.classList.remove('block-drop-before', 'block-drop-after'));
+  let gesture = null;
+  let frame = 0;
+  const markTarget = () => {
+    clearMarkers();
+    const candidates = rows().filter((row) => row !== gesture.row);
+    gesture.before = candidates.find((row) => {
+      const box = row.getBoundingClientRect();
+      return gesture.y < box.top + box.height / 2;
+    }) || null;
+    if (gesture.before) gesture.before.classList.add('block-drop-before');
+    else candidates.at(-1)?.classList.add('block-drop-after');
+  };
+  const scroll = () => {
+    if (!gesture?.active) return;
+    const y = gesture.y;
+    const speed = y < 80 ? -Math.ceil((80 - Math.max(0, y)) / 4)
+      : y > innerHeight - 80 ? Math.ceil((Math.min(innerHeight, y) - innerHeight + 80) / 4) : 0;
+    if (speed) { window.scrollBy({ top: speed, behavior: 'instant' }); markTarget(); }
+    frame = requestAnimationFrame(scroll);
+  };
+  const finish = (cancelled = false) => {
+    if (!gesture) return;
+    const { row, handle, pointerId, active, before } = gesture;
+    gesture = null;
+    cancelAnimationFrame(frame);
+    clearMarkers();
+    row.classList.remove('block-dragging');
+    blocks.classList.remove('blocks-sorting');
+    try { handle.releasePointerCapture(pointerId); } catch (_) { /* Capture already released. */ }
+    if (!cancelled && active && row.isConnected && !handle.disabled) {
+      const oldOrder = rows();
+      blocks.insertBefore(row, before);
+      if (rows().some((item, index) => item !== oldOrder[index])) changed();
+      handle.focus({ preventScroll: true });
+    }
+  };
+  // Delegation also handles blocks inserted from the template after page load.
+  blocks.addEventListener('pointerdown', (event) => {
+    const handle = event.target.closest('[data-block-drag-handle]');
+    if (!handle || handle.disabled || event.button !== 0 || gesture) return;
+    const row = handle.closest('.block-editor');
+    if (row.parentElement !== blocks || rows().length < 2) return;
+    event.preventDefault();
+    handle.focus({ preventScroll: true });
+    gesture = { row, handle, pointerId: event.pointerId, startY: event.clientY, y: event.clientY, active: false, before: null };
+    handle.setPointerCapture(event.pointerId);
+  });
+  blocks.addEventListener('pointermove', (event) => {
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    gesture.y = event.clientY;
+    if (!gesture.active) {
+      if (Math.abs(gesture.y - gesture.startY) < 8) return;
+      gesture.active = true;
+      gesture.row.classList.add('block-dragging');
+      blocks.classList.add('blocks-sorting');
+      frame = requestAnimationFrame(scroll);
+    }
+    event.preventDefault();
+    markTarget();
+  });
+  blocks.addEventListener('pointerup', (event) => { if (gesture?.pointerId === event.pointerId) finish(); });
+  blocks.addEventListener('pointercancel', (event) => { if (gesture?.pointerId === event.pointerId) finish(true); });
+  blocks.addEventListener('lostpointercapture', (event) => { if (gesture?.pointerId === event.pointerId) finish(true); });
+  window.addEventListener('blur', () => finish(true));
+  form.addEventListener('submit', () => finish(true));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && gesture) { event.preventDefault(); finish(true); return; }
+    const handle = event.target.closest('[data-block-drag-handle]');
+    if (!handle || handle.disabled || !blocks.contains(handle) || gesture || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    const row = handle.closest('.block-editor');
+    const neighbor = event.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling;
+    if (!neighbor) return;
+    blocks.insertBefore(row, event.key === 'ArrowUp' ? neighbor : neighbor.nextElementSibling);
+    changed();
+    handle.focus({ preventScroll: true });
+    handle.scrollIntoView({ block: 'nearest' });
+  });
 })();

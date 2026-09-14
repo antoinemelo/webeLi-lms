@@ -824,6 +824,10 @@ function handle_action(string $action): never
                 foreach($pageObjectives as $position=>$objective)run('INSERT INTO page_objectives(page_id,title,description,position) VALUES(?,?,?,?)',[$pageId,$objective['title'],$objective['description'],$position+1]);
                 $changed=true;
             }
+            // Compare the loaded order before adding/removing blocks in this transaction.
+            $loadedOrder=implode(',',array_column(all('SELECT id FROM page_blocks WHERE page_id=? ORDER BY position,id',[$pageId]),'id'));
+            $orderIsCurrent=is_string($_POST['block_order_original']??null)&&$_POST['block_order_original']===$loadedOrder;
+            $orderedBlockIds=[];
             $types = $_POST['block_type'] ?? [];
             $bodies = $_POST['block_body'] ?? [];
             $captions = $_POST['block_caption'] ?? [];
@@ -836,6 +840,7 @@ function handle_action(string $action): never
                 if($blockId>0){
                     $stored=one('SELECT * FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);
                     if(!$stored){$conflicts[]=t('Bloc introuvable');continue;}
+                    $orderedBlockIds[]=$blockId;
                     if(!$prepared['upload']&&$type===$stored['type']&&$body===$stored['body']&&$caption===$stored['caption']&&$prepared['image_alt']===$stored['image_alt']&&$prepared['embed_kind']===$stored['embed_kind']&&$prepared['embed_height']===$stored['embed_height']&&($type!=='submission'||($submissionMode===$stored['submission_mode']&&$submissionRequired===(int)$stored['submission_required'])))continue;
                     if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}
                     if($prepared['upload']){$body=ContentBlock::storeUpload($prepared['upload'],APR_PUBLIC_ROOT);$createdUploads[]=$body;}
@@ -846,10 +851,24 @@ function handle_action(string $action): never
                     if($prepared['upload']){$body=ContentBlock::storeUpload($prepared['upload'],APR_PUBLIC_ROOT);$createdUploads[]=$body;}
                     $position=(int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM page_blocks WHERE page_id=?',[$pageId])['n']??1);
                     run('INSERT INTO page_blocks(page_id,type,body,caption,position,updated_by,submission_mode,submission_required,image_alt,embed_kind,embed_height) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[$pageId,$type,$body,$caption,$position,$user['id'],$submissionMode,$submissionRequired,$prepared['image_alt'],$prepared['embed_kind'],$prepared['embed_height']]);$changed=true;
+                    $orderedBlockIds[]=(int)db()->lastInsertId();
                 }
             }
             $deletedIds=(array)($_POST['deleted_block_id']??[]);$deletedRevisions=(array)($_POST['deleted_block_revision']??[]);
             foreach($deletedIds as $i=>$deletedId){$blockId=(int)$deletedId;$revision=(int)($deletedRevisions[$i]??-1);$stored=one('SELECT position,revision FROM page_blocks WHERE id=? AND page_id=?',[$blockId,$pageId]);if(!$stored)continue;if(!edit_lock_claim_for_save(db(),'page_block',$blockId,(int)$user['id'])||$revision!==(int)$stored['revision']){$conflicts[]=t('Bloc :number',['number'=>(int)$stored['position']]);continue;}$delete=db()->prepare('DELETE FROM page_blocks WHERE id=? AND page_id=? AND revision=?');$delete->execute([$blockId,$pageId,$revision]);if($delete->rowCount()===1)$changed=true;}
+            if(($_POST['block_order_changed']??'0')==='1'){
+                $currentOrder=array_map('intval',array_column(all('SELECT id FROM page_blocks WHERE page_id=? ORDER BY position,id',[$pageId]),'id'));
+                $currentSet=$currentOrder;$requestedSet=$orderedBlockIds;sort($currentSet);sort($requestedSet);
+                if(!$orderIsCurrent||$currentSet!==$requestedSet){
+                    $conflicts[]=t('Ordre des blocs');
+                }elseif($currentOrder!==$orderedBlockIds){
+                    // Move positions out of the way before applying the permutation (UNIQUE page_id,position).
+                    $offset=(int)(one('SELECT COALESCE(MAX(position),0) AS n FROM page_blocks WHERE page_id=?',[$pageId])['n']??0)+count($orderedBlockIds)+1;
+                    run('UPDATE page_blocks SET position=position+? WHERE page_id=?',[$offset,$pageId]);
+                    foreach($orderedBlockIds as $position=>$blockId)run('UPDATE page_blocks SET position=? WHERE id=? AND page_id=?',[$position+1,$blockId,$pageId]);
+                    $changed=true;
+                }
+            }
             Qcm::syncPageTag(db(),$pageId);
             WorkSubmission::reconcilePage(db(),$pageId);
             if($changed)run("UPDATE pages SET updated_at=strftime('%Y-%m-%d %H:%M:%f','now'),updated_by=? WHERE id=?",[$user['id'],$pageId]);

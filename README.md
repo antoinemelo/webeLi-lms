@@ -198,6 +198,8 @@ Le scénario iframe / vidéo utilise le même environnement temporaire. Il véri
 
 Le scénario de remise vérifie la création du bloc, les trois formats, la limite de 512 caractères, les brouillons et la reprise hors ligne, la remise explicite, la notation et la réouverture avec historique. Le test PHP couvre aussi la migration v18, la conservation des QCM existants et les contrôles d’accès et de concurrence.
 
+Dans `?view=page-edit`, les poignées des blocs permettent le glisser-déposer à la souris ou au doigt, avec repère d’insertion et défilement automatique. Les flèches haut/bas fonctionnent lorsque la poignée a le focus ; Échap annule le geste. Le nouvel ordre est conservé avec **Enregistrer**, y compris pour les blocs ajoutés et leurs fichiers sélectionnés. Un ordre modifié entre-temps par un autre onglet est signalé sans être écrasé.
+
 Le scénario des blocs vérifie dans Chromium les champs contextuels, l’aperçu Markdown, la récupération de la saisie lors d’un changement de type, les imports image/document, les erreurs sans perte de saisie et les affichages mobiles. La migration v19 ajoute les options aux blocs existants sans reconstruire leur table ; les copies JSON conservent ces options.
 
 Depuis le suivi enseignant, le menu Actions à trois points verticaux, en haut à droite, regroupe Courriel / Annonce, la gestion des modèles personnels, Correspondance, Réunion, Paiement et Notifications. Les entrées sont accompagnées d’icônes et triées selon la langue affichée. Les modèles sont utilisables dans tous les parcours de leur auteur et acceptent `{prenom}`, `{nom}` et `{cours}` dans le titre et le corps Markdown. Le texte peut être adapté pour un envoi sans modifier le modèle ; aucun prénom ni signature n’est ajouté automatiquement.

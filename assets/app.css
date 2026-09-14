@@ -376,6 +376,14 @@ button,a,summary{touch-action:manipulation}
 .block-editor header{display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem}
 .block-editor header select{min-height:2rem;padding:.25rem;border:0;border-radius:.45rem;background:#f0eff4}
 .block-editor header button{margin-left:auto;border:0;background:transparent;font-size:1.3rem}
+.block-editor header [data-block-drag-handle]{margin:0;flex:0 0 2rem;width:2rem;height:2rem;padding:0;cursor:grab;touch-action:none;user-select:none;color:var(--muted);border-radius:.4rem}
+.block-editor header [data-block-drag-handle]:hover,.block-editor header [data-block-drag-handle]:focus-visible{background:var(--purple-soft);color:var(--purple)}
+.block-editor header [data-block-drag-handle]:disabled{cursor:not-allowed;opacity:.4}
+.blocks-sorting{user-select:none;cursor:grabbing}
+.block-dragging{opacity:.45}
+.block-dragging [data-block-drag-handle]{cursor:grabbing}
+.block-drop-before{box-shadow:0 -4px 0 var(--purple)}
+.block-drop-after{box-shadow:0 4px 0 var(--purple)}
 .drag{color:#aaa}
 .block-fields{display:grid;gap:.5rem}
 .block-editor [hidden]{display:none!important}
