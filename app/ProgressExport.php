@@ -60,7 +60,7 @@ function progress_export_date(?string $value): string
 function progress_export_headers(bool $detailed): array
 {
     $headers=['Code du parcours','Parcours','Identifiant élève','Nom','Prénom','Courriel','Groupe classe','Étapes réalisées','Étapes accessibles','Progression (%)','Étapes confirmées','À confirmer','Moyenne pondérée des évaluations /10','Moyenne des autoévaluations /3','Encouragements','Dernière activité','Date de l’export'];
-    if($detailed)$headers=array_merge($headers,['Identifiant de l’étape','Étape','Titre de la page','Accessible à l’élève','Inclus dans les moyennes','Échéance','Réalisée le','Évaluation','Note sur 10','Pondération','Autoévaluation','Niveau élève /3','Autoévaluation validée le','Commentaire élève','Niveau enseignant /3','Confirmation enseignante le','Commentaire enseignant','QCM','Libellé du QCM','Questions correctes','Nombre de questions','Résultat QCM (%)','Nombre de tentatives','Dernière réponse au QCM']);
+    if($detailed)$headers=array_merge($headers,['Identifiant de l’étape','Étape','Titre de la page','Accessible à l’élève','Inclus dans les moyennes','Échéance','Réalisée le','Évaluation','Note sur 10','Pondération','Autoévaluation','Niveau élève /3','Autoévaluation validée le','Commentaire élève','Niveau enseignant /3','Confirmation enseignante le','Commentaire enseignant','QCM','Libellé du QCM','Questions correctes','Nombre de questions','Résultat QCM (%)','Note QCM /10','Nombre de tentatives','Dernière réponse au QCM']);
     return array_map(static function(string $label):string{
         $dateLabels=['Dernière activité','Date de l’export','Réalisée le','Autoévaluation validée le','Confirmation enseignante le','Dernière réponse au QCM'];
         return t($label).(in_array($label,$dateLabels,true)?' (Europe/Zurich)':'');
@@ -74,7 +74,7 @@ function course_progress_export_rows(array $data): Generator
         $studentId=(int)$student['id'];
         $base=[$data['course']['code'],$data['course']['title'],$studentId,$student['last_name'],$student['first_name'],$student['email'],$student['class_group'],(int)$student['done'],(int)$student['total'],$student['total']?(int)round($student['done']/$student['total']*100):0,(int)$student['confirmed'],(int)$student['waiting'],progress_export_number($student['evaluation_average']),progress_export_number($student['self_average']),(int)$student['points'],progress_export_date($student['last_activity_at']),progress_export_date($data['exported_at'])];
         if($data['mode']==='summary'){yield $base;continue;}
-        if(!$data['items']){yield array_merge($base,array_fill(0,24,''));continue;}
+        if(!$data['items']){yield array_merge($base,array_fill(0,25,''));continue;}
         $displayPosition=0;
         foreach($data['items'] as $item){
             $itemId=(int)$item['id'];$progress=$data['progress'][$studentId][$itemId]??[];
@@ -84,10 +84,10 @@ function course_progress_export_rows(array $data): Generator
             $selfSubmitted=$self&&!empty($progress['student_validated_at']);$teacherValidated=!empty($progress['teacher_validated_at']);
             $step=[$itemId,$accessible?$displayPosition:'',$item['title'],t($accessible?'Oui':'Non'),t($item['framework_tracking_enabled']?'Oui':'Non'),$item['deadline']??'',progress_export_date($progress['completed_at']??null),t($evaluation?'Oui':'Non'),$evaluation?progress_export_number($progress['evaluation_score']??null):'',$evaluation?progress_export_number($item['evaluation_weight']):'',t($self?'Oui':'Non'),$selfSubmitted?($progress['student_level']??''):'',$selfSubmitted?progress_export_date($progress['student_validated_at']):'',$selfSubmitted?($progress['student_note']??''):'',$self&&$teacherValidated?($progress['teacher_level']??''):'',progress_export_date($progress['teacher_validated_at']??null),$progress['teacher_note']??''];
             $quizzes=$data['quizzes'][$itemId]??[];
-            if(!$quizzes){yield array_merge($base,$step,array_fill(0,7,''));continue;}
+            if(!$quizzes){yield array_merge($base,$step,array_fill(0,8,''));continue;}
             foreach($quizzes as $index=>$quiz){
                 $attempt=$data['attempts'][$studentId][$itemId][$quiz['block_id']][$quiz['key']]??null;
-                yield array_merge($base,$step,[$index+1,$quiz['caption'],$attempt['correct_questions']??'',$attempt['total_questions']??$quiz['questions'],$attempt?progress_export_number($attempt['score_percent']):'',$attempt['attempt_count']??0,progress_export_date($attempt['answered_at']??null)]);
+                yield array_merge($base,$step,[$index+1,$quiz['caption'],$attempt['correct_questions']??'',$attempt['total_questions']??$quiz['questions'],$attempt?progress_export_number($attempt['score_percent']):'',$attempt?progress_export_number(10*(int)$attempt['correct_questions']/(int)$attempt['total_questions']):'',$attempt['attempt_count']??0,progress_export_date($attempt['answered_at']??null)]);
             }
         }
     }
@@ -126,7 +126,7 @@ function render_progress_export_modal(array $course,array $students): void
             <p class="fw-semibold"><?=e($course['title'])?></p>
             <label class="field"><span><?=e(t('Type d’export'))?></span><select name="mode"><option value="summary"><?=e(t('Récapitulatif'))?></option><option value="detailed"><?=e(t('Détaillé'))?></option></select></label>
             <p class="muted-copy" data-progress-summary><?=e(t('Une ligne par élève avec les indicateurs du tableau de bord.'))?></p>
-            <p class="muted-copy" data-progress-detailed hidden><?=e(t('Détail par étape et par QCM : notes, pondérations, autoévaluations et confirmations. Le dernier résultat de chaque QCM est exporté.'))?></p>
+            <p class="muted-copy" data-progress-detailed hidden><?=e(t('Détail par étape et par QCM : notes sur 10 des évaluations et QCM, pondérations, autoévaluations et confirmations. Le dernier résultat de chaque QCM est exporté.'))?></p>
             <label class="check plain"><input type="checkbox" data-progress-all <?=$students?'checked':'disabled'?>> <?=e(t('Tous les élèves du parcours'))?></label>
             <label class="field"><span class="visually-hidden"><?=e(t('Rechercher un élève'))?></span><input type="search" data-progress-search placeholder="<?=e(t('Rechercher un élève'))?>"></label>
             <div class="progress-export-students">
