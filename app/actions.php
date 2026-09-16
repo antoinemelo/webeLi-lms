@@ -406,6 +406,21 @@ function handle_action(string $action): never
     }
 
     $user = require_actor();
+    if($action==='export_progress'){
+        header('Cache-Control: private, no-store');
+        try{
+            if($user['role']!=='teacher')throw new InvalidArgumentException('Accès interdit.');
+            $courseId=(int)($_POST['course_id']??0);
+            $data=course_progress_export_data(db(),$courseId,(int)$user['id'],(array)($_POST['students']??[]),(string)($_POST['mode']??''));
+            send_csv_download(course_progress_export_csv($data),'progression-'.$data['course']['code'].'-'.$data['mode'].'-'.date('Y-m-d').'.csv');
+        }catch(InvalidArgumentException $exception){
+            http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo t($exception->getMessage());
+        }catch(Throwable $exception){
+            error_log('Progress export: '.$exception->getMessage());
+            http_response_code(503);header('Content-Type: text/plain; charset=UTF-8');echo t('Export indisponible');
+        }
+        exit;
+    }
     if($action==='join_course'&&$user['role']==='student'){
         $courseCode=trim((string)($_POST['course_code']??$_SESSION['pending_join_course_code']??''));
         $result=enroll_student_with_course_code(db(),(int)$user['id'],$courseCode);
@@ -875,7 +890,9 @@ function handle_action(string $action): never
             db()->commit();
         } catch (Throwable $e) { db()->rollBack();foreach($createdUploads as $uploaded)if(is_file(APR_PUBLIC_ROOT.'/'.$uploaded))unlink(APR_PUBLIC_ROOT.'/'.$uploaded); throw $e; }
         release_edit_locks(db(),(int)$user['id']);
-        $recipients=$changed?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
+        // Explicit notification also covers changes saved silently in earlier requests.
+        $notifyStudents=($_POST['notify_students']??'')==='1'&&!$conflicts;
+        $recipients=$notifyStudents?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
         foreach($recipients as $recipient){$recipientLanguage=normalize_language((string)($recipient['language']??''))??'fr';enqueue('page.updated',$recipient['email'],t('Une ressource de votre parcours a changé',[],$recipientLanguage),t('La page « :page » vient d’être mise à jour.',['page'=>$title],$recipientLanguage));}
         flash($conflicts?t('Enregistrement partiel : :parts modifié(s) ailleurs ou verrouillé(s).',['parts'=>implode(', ',array_unique($conflicts))]):t($recipients?'Page enregistrée et notifications préparées.':'Page enregistrée.'),$conflicts?'error':'success');
         $returnCourseId=page_pathway_return_course(db(),$pageId,(int)$user['id'],(int)($_POST['return_course']??0));

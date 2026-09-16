@@ -9,13 +9,13 @@ function render_message_variables(): void
 
 function render_teacher_actions_menu(): void
 {
-    $actions=['send'=>t('Courriel / Annonce'),'templates'=>t('Créer / modifier les modèles'),'notifications'=>t('Notifications')];
+    $actions=['send'=>t('Courriel / Annonce'),'templates'=>t('Créer / modifier les modèles'),'notifications'=>t('Notifications'),'progress-export'=>t('Exporter la progression')];
     foreach(StudentAdminHistory::KINDS as $kind=>$label)$actions['followup-'.$kind]=t($label);
-    $icons=['send'=>'bi-bell','templates'=>'bi-file-earmark-text','notifications'=>'bi-app-indicator','followup-meeting'=>'bi-people','followup-correspondence'=>'bi-envelope','followup-payment'=>'bi-credit-card'];
+    $icons=['progress-export'=>'bi-filetype-csv','send'=>'bi-bell','templates'=>'bi-file-earmark-text','notifications'=>'bi-app-indicator','followup-meeting'=>'bi-people','followup-correspondence'=>'bi-envelope','followup-payment'=>'bi-credit-card'];
     $collator=class_exists('Collator')?new Collator(locale_code()):null;
     if($collator)$collator->setStrength(Collator::PRIMARY);
     uasort($actions,static fn(string $a,string $b):int=>$collator?$collator->compare($a,$b):pathway_natural_compare($a,$b));
-    ?><div class="dropdown pathway-actions-menu teacher-actions-menu"><button class="btn btn-light pathway-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="<?=e(t('Actions'))?>" title="<?=e(t('Actions'))?>"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end"><?php foreach($actions as $value=>$label): ?><li><?php if($value==='notifications'): ?><a class="dropdown-item" href="<?=e(route('outbox'))?>"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></a><?php else: ?><button class="dropdown-item" type="button" data-message-action="<?=e($value)?>"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></button><?php endif; ?></li><?php endforeach; ?></ul></div><?php
+    ?><div class="dropdown pathway-actions-menu teacher-actions-menu"><button class="btn btn-light pathway-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="<?=e(t('Actions'))?>" title="<?=e(t('Actions'))?>"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end"><?php foreach($actions as $value=>$label): ?><li><?php if($value==='notifications'): ?><a class="dropdown-item" href="<?=e(route('outbox'))?>"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></a><?php elseif($value==='progress-export'): ?><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#progress-export-modal"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></button><?php else: ?><button class="dropdown-item" type="button" data-message-action="<?=e($value)?>"><i class="bi <?=$icons[$value]?>" aria-hidden="true"></i> <?=e($label)?></button><?php endif; ?></li><?php endforeach; ?></ul></div><?php
 }
 
 function render_teacher_message_actions(array $course,array $students): void

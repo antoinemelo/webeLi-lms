@@ -532,6 +532,21 @@ function save_student_private_note(PDO $pdo, int $studentId, int $itemId, string
     return true;
 }
 
+/** Dashboard and exports share the same active students, visibility and averages. */
+function course_progress_students(PDO $pdo,int $courseId): array
+{
+    $query=$pdo->prepare("SELECT e.id AS enrollment_id,u.*,COUNT(pi.id) AS total,SUM(CASE WHEN pr.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS done,SUM(CASE WHEN pr.teacher_validated_at IS NOT NULL OR (pi.self_evaluation_enabled=0 AND pi.is_evaluation=0 AND pr.completed_at IS NOT NULL AND NOT EXISTS(SELECT 1 FROM work_submissions w WHERE w.student_id=e.student_id AND w.pathway_item_id=pi.id AND w.status='submitted')) THEN 1 ELSE 0 END) AS confirmed,SUM(CASE WHEN pi.self_evaluation_enabled=1 AND pr.student_validated_at IS NOT NULL AND pr.teacher_validated_at IS NULL THEN 1 ELSE 0 END) AS waiting,COALESCE((SELECT SUM(points) FROM reward_awards ra WHERE ra.enrollment_id=e.id),0) AS points,(SELECT MAX(lv.last_seen_at) FROM learning_visits lv JOIN pathway_items visited_item ON visited_item.id=lv.pathway_item_id WHERE lv.student_id=e.student_id AND visited_item.course_id=e.course_id AND lv.last_seen_at>=datetime('now','-1 month')) AS last_activity_at FROM enrollments e JOIN users u ON u.id=e.student_id LEFT JOIN pathway_items pi ON pi.course_id=e.course_id AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id))) LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE e.course_id=? AND e.status='active' AND u.account_status='active' GROUP BY e.id");
+    $query->execute([$courseId]);$students=$query->fetchAll(PDO::FETCH_ASSOC);
+    $pendingReviews=course_pending_review_counts($pdo,$courseId);
+    $studentAverages=course_student_averages($pdo,$courseId);
+    foreach($students as &$student){
+        $student['waiting']=$pendingReviews['by_student'][(int)$student['id']]??0;
+        $student+=$studentAverages[(int)$student['enrollment_id']]??['evaluation_average'=>null,'self_average'=>null];
+    }
+    unset($student);
+    return $students;
+}
+
 /** @return array<int,array{evaluation_average:?float,self_average:?float}> Indexed by enrollment. */
 function course_student_averages(PDO $pdo, int $courseId): array
 {

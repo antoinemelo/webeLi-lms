@@ -260,6 +260,13 @@ button,a,summary{touch-action:manipulation}
 .student-profile-actions{display:flex;margin-left:0;padding-left:1.25rem;border-left:1px solid var(--line);align-items:stretch;gap:.75rem}
 .student-profile-actions > .btn{display:flex;align-items:center;gap:.45rem;white-space:nowrap}
 .student-profile-actions .student-score{margin-left:0}
+.student-profile-summary{display:flex;align-items:stretch;gap:.75rem;margin-left:auto}
+.student-profile-summary > .btn{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.progress-export-students{max-height:18rem;overflow-y:auto}
+#progress-export-modal form{display:flex;flex-direction:column;min-height:0;max-height:100%}
+.progress-export-students [hidden]{display:none!important}
+.progress-export-students .check{padding:.45rem .2rem}
+.progress-export-students small{margin-left:.5rem}
 .detail-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(16rem,1fr);gap:1.5rem;margin-top:1.5rem;align-items:start}
 .detail-grid aside{height:max-content;margin-top:0;padding:1.2rem;border:1px solid var(--line);border-radius:1.2rem;background:#fff}
 .student-evaluation-average{display:flex;flex-direction:column;margin:-.2rem -.2rem 1.25rem;padding:1rem;border-radius:1rem;background:linear-gradient(135deg,#29273b,#514d72);color:#fff}.student-evaluation-average span{font-size:.78rem;font-weight:700}.student-evaluation-average strong{margin:.2rem 0;font-size:2rem;line-height:1.1}.student-evaluation-average small{color:#dcd9ef}
@@ -369,8 +376,10 @@ button,a,summary{touch-action:manipulation}
 .title-input:focus,.summary-input:focus{outline:0;border-bottom:1px solid var(--purple)}
 .editor-actions{display:flex;align-items:flex-start;gap:.5rem}
 .editor-save-dock{position:sticky;z-index:20;top:5.25rem;align-items:stretch;padding:.65rem;border:1px solid var(--line);border-radius:1rem;background:#fff;box-shadow:0 10px 28px rgb(41 39 59 / 10%);backdrop-filter:none}
-.editor-actions.editor-save-dock{background:#fff;backdrop-filter:none}
+.editor-actions.editor-save-dock{flex-wrap:wrap;background:#fff;backdrop-filter:none}
 .editor-save-dock select{min-width:0;flex:1}.editor-save-dock .button{flex:none;white-space:nowrap}
+.editor-save-notify{flex:0 0 100%;padding:.15rem 0;border:0;background:transparent;color:var(--purple);font-size:.75rem;line-height:1.4;text-align:center;text-decoration:underline;text-underline-offset:.15em;cursor:pointer}
+.editor-save-notify:hover,.editor-save-notify:focus-visible{color:var(--ink)}
 .editor-layout{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(15.5rem,.8fr);gap:1.25rem}
 .block-editor,.settings-card{margin-bottom:.65rem;padding:.85rem;border:1px solid var(--line);border-radius:1rem;background:#fff}
 .block-editor header{display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem}
@@ -581,6 +590,7 @@ h1{font-size:2.25rem}
 .student-profile-actions{grid-column:1 / -1;margin:0;flex-direction:column;align-items:stretch;justify-content:flex-start}
 .student-profile-actions > .btn{justify-content:center;white-space:normal}
 .student-profile-actions .student-score{width:100%;margin:0;flex-direction:row;align-items:center;justify-content:center;gap:.5rem}
+.student-profile-summary{width:100%;margin:0}.student-profile-summary .student-score{width:auto;flex:1}
 .review-status{max-width:10rem}
 .page-grid,.mastery-list{grid-template-columns:1fr}
 .library-tools{grid-template-columns:1fr}.library-tools label{min-width:0;flex:1}.library-search{grid-column:auto}

@@ -114,9 +114,10 @@ python3 scripts/apr.py \
 - objectifs et compétences définis au niveau du cours, puis liés aux étapes ;
 - auto-positionnement élève 0–3 et confirmation enseignante 0–3 ;
 - vues de progression par étape, compétence et objectif ;
+- export CSV récapitulatif ou détaillé de la progression, pour tous les élèves actifs du parcours ou une sélection ;
 - historique enseignant des pages consultées, du temps actif et de la dernière visite, avec rétention d’un mois ;
 - rewards configurables par cours, attribués à la confirmation et score cumulatif ;
-- boîte de notifications alimentée lors d’une mise à jour ou validation ;
+- boîte de notifications alimentée lors d’une mise à jour annoncée volontairement ou d’une validation ;
 - courriels/annonces ciblés avec modèles personnels et récapitulatif enseignant ;
 - suivi administratif collectif et exports complets PDF/Markdown par élève ;
 - discussions privées par parcours, gestion et exports, notifications push et reconnexion PWA de 90 jours ;
@@ -124,7 +125,21 @@ python3 scripts/apr.py \
 
 Une page reste neutre et réutilisable. Les objectifs et compétences sont liés à son **étape dans un cours**, car la même ressource peut servir des intentions différentes selon le cours.
 
+## Export de la progression
+
+Dans **Suivi**, le menu à trois points propose **Exporter la progression**. La fenêtre permet de choisir un récapitulatif ou un export détaillé et de cocher les élèves du parcours courant ; tous sont sélectionnés par défaut. Le CSV utilise UTF-8 avec BOM et le point-virgule comme séparateur.
+
+Le récapitulatif contient une ligne par élève et reprend les calculs du tableau de bord : étapes réalisées/accessibles/confirmées, pourcentage, éléments à confirmer, moyennes, encouragements et dernière activité connue (sur le dernier mois). Les moyennes ne prennent en compte que les étapes suivies dans les acquis, conformément au tableau de bord.
+
+Le détail contient une ligne par élève et étape, ou par QCM lorsqu’une étape en contient plusieurs. Les indicateurs récapitulatifs et les notes d’étape sont alors répétés : ne pas les additionner entre les lignes QCM. Il comprend notes, pondérations, autoévaluations soumises, confirmations et commentaires. Les étapes actuellement inaccessibles sont explicitement indiquées pour conserver les résultats qui contribuent encore aux moyennes. Un parcours vide conserve une ligne d’identité par élève. Les QCM exportent leur dernier résultat, le nombre de questions correctes, le nombre de tentatives et la date ; les réponses individuelles et les anciennes tentatives ne sont pas conservées par l’application. Les cellules de résultat vides correspondent à une absence de résultat, et non à une note de zéro. Les horodatages sont en heure Europe/Zurich.
+
+Depuis la fiche de suivi d’un élève, le bouton à droite des points ouvre la même fenêtre de gestion que dans **Élèves & inscriptions**.
+
+
 ## Emails
+
+Dans l’éditeur de contenu, **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton d’enregistrement, sauvegarde puis prépare un courriel par élève actif ayant accès à la page, y compris lorsque les modifications ont déjà été enregistrées silencieusement. Aucun courriel n’est préparé si la sauvegarde échoue ou rencontre un conflit. Les changements restent signalés dans **Depuis la dernière visite** côté élève.
+
 
 Les envois et formulaires publics sont protégés sans CAPTCHA : jetons à usage unique, champ piège, quotas persistants et contrôles anti-injection. Voir la [configuration de sécurité des emails](docs/exploitation.md#protection-contre-les-abus-sans-captcha), notamment `APP_MAIL_BASE_URL` pour le domaine public et `APP_MAIL_ENABLED=0` pour couper les envois.
 

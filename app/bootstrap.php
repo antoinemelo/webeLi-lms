@@ -20,6 +20,7 @@ require_once __DIR__.'/Messaging/Http.php';
 require_once __DIR__ . '/LearningActivity.php';
 require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/PathwayService.php';
+require_once __DIR__ . '/ProgressExport.php';
 require_once __DIR__ . '/AnnouncementMessages.php';
 require_once __DIR__ . '/AnnouncementMessageViews.php';
 require_once __DIR__ . '/CourseEnrollment.php';

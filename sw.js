@@ -1,4 +1,4 @@
-const CACHE = 'lms-shell-v134';
+const CACHE = 'lms-shell-v136';
 const SHELL = [
   'assets/vendor/bootstrap/bootstrap.min.css',
   'assets/vendor/bootstrap/bootstrap.bundle.min.js',
@@ -13,6 +13,7 @@ const SHELL = [
   'assets/messaging.css',
   'assets/content-blocks.js',
   'assets/announcement-messages.js',
+  'assets/progress-export.js',
   'assets/student-admin.js',
   'assets/icon.svg',
   'assets/icon-192.png',
