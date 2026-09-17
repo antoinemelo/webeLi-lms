@@ -31,4 +31,4 @@ Il fournit une connexion enseignante par mot de passe, des codes élèves, une r
 - [Types d’étapes et événements](guide-utilisateur.md#types-détapes-et-événements) : choix exclusif, dates et horaires, fichier `.ics` et ajout à Google Calendar.
 - [Aperçu enseignant](guide-utilisateur.md#aperçu-élève-pour-lenseignant) : étapes invisibles masquées et navigation filtrée.
 
-Les règles de conservation et d’accès figurent dans le [modèle fonctionnel](modele-fonctionnel.md) ; la migration 26 et les commandes de vérification sont décrites dans [l’exploitation](exploitation.md).
+Les règles de conservation et d’accès figurent dans le [modèle fonctionnel](modele-fonctionnel.md) ; la migration 27 et les commandes de vérification sont décrites dans [l’exploitation](exploitation.md).

@@ -101,7 +101,7 @@ function export_course_document(PDO $pdo, int $courseId, int $teacherId, bool $i
     }
     return ['format'=>'liike.pathway','version'=>1,'exported_at'=>gmdate(DATE_ATOM),'includes_options'=>$includeOptions,'course'=>[
         'reference'=>$course['reference'],'title'=>$course['title'],'code'=>$course['code'],'description'=>$course['description'],'accent'=>$course['accent'],
-    ],'groups'=>array_map(static fn(array $group):array=>['key'=>(string)$group['id'],'title'=>$group['title']],pathway_groups($pdo,$courseId)),'items'=>$items,'options'=>$options];
+    ],'groups'=>array_map(static fn(array $group):array=>['key'=>(string)$group['id'],'title'=>$group['title'],'position'=>(int)$group['position']],pathway_groups($pdo,$courseId)),'items'=>$items,'options'=>$options];
 }
 
 function import_course_document(PDO $pdo, array $document, int $teacherId, string $mode, bool $resetDeadlines): int
@@ -115,7 +115,9 @@ function import_course_document(PDO $pdo, array $document, int $teacherId, strin
         if(!is_array($group)||!is_string($group['title']??null)||!is_scalar($group['key']??null))throw new TransferException('Les regroupements du parcours sont invalides.');
         $key=(string)$group['key'];$groupTitle=trim($group['title']);
         if($key===''||isset($groupDefinitions[$key])||$groupTitle===''||mb_strlen($groupTitle)>120)throw new TransferException('Les regroupements du parcours sont invalides.');
-        $groupDefinitions[$key]=$groupTitle;
+        $position=$group['position']??count($items)+count($groupDefinitions)+1;
+        if(!is_int($position)||$position<1||$position>1000)throw new TransferException('Les regroupements du parcours sont invalides.');
+        $groupDefinitions[$key]=['title'=>$groupTitle,'position'=>$position];
     }
     $closed=[];$previous=null;
     foreach($items as $item){
@@ -153,8 +155,8 @@ function import_course_document(PDO $pdo, array $document, int $teacherId, strin
             $pdo->prepare('INSERT INTO courses(reference,title,code,description,teacher_id,accent,archived) VALUES(?,?,?,?,?,?,0)')->execute([$newReference,$importTitle,$newCode,(string)($course['description']??''),$teacherId,trim((string)($course['accent']??''))?:'#6d5dfc']);
             $courseId=(int)$pdo->lastInsertId();
         }
-        $groupMap=[];$insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title) VALUES(?,?)');
-        foreach($groupDefinitions as $key=>$groupTitle){$insertGroup->execute([$courseId,$groupTitle]);$groupMap[$key]=(int)$pdo->lastInsertId();}
+        $groupMap=[];$insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title,position) VALUES(?,?,?)');
+        foreach($groupDefinitions as $key=>$definition){$insertGroup->execute([$courseId,$definition['title'],$definition['position']]);$groupMap[$key]=(int)$pdo->lastInsertId();}
         $skillMap=[];$insertSkill=$pdo->prepare('INSERT INTO course_skills(course_id,code,title,description,position) VALUES(?,?,?,?,?)');
         foreach($options['skills']??[] as $index=>$skill){if(!is_array($skill)||trim((string)($skill['code']??''))===''||trim((string)($skill['title']??''))==='')continue;$code=strtoupper(trim((string)$skill['code']));$insertSkill->execute([$courseId,$code,trim((string)$skill['title']),(string)($skill['description']??''),(int)($skill['position']??$index+1)]);$skillMap[$code]=(int)$pdo->lastInsertId();}
         $insertReward=$pdo->prepare('INSERT INTO reward_types(course_id,name,icon,color,default_points,active) VALUES(?,?,?,?,?,?)');

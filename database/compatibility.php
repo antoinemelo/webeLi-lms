@@ -15,7 +15,7 @@ return static function(PDO $pdo): void {
         'pages'=>['id','reference','title','status','owner_id','revision'],
         'page_blocks'=>['image_alt','embed_kind','embed_height','submission_mode','submission_required','id','page_id','type','body','position','revision','updated_by','updated_at'],
         'page_objectives'=>['id','page_id','title','position'],
-        'pathway_groups'=>['id','course_id','title'],
+        'pathway_groups'=>['id','course_id','title','position'],
         'pathway_items'=>['group_id','id','course_id','page_id','position','access_mode','framework_tracking_enabled','event_data','revision','is_evaluation','self_evaluation_enabled','evaluation_weight','created_at','updated_at'],
         'pathway_item_students'=>['pathway_item_id','student_id'],
         'progress'=>['id','enrollment_id','pathway_item_id','student_level','student_validated_at','completed_at','teacher_level','evaluation_score'],

@@ -825,18 +825,76 @@ if (pageEditor) {
 
 document.querySelectorAll('[data-group-state-key]').forEach((group) => {
   const key = `liike:pathway-group:${group.dataset.groupStateKey}`;
+  const content = group.querySelector('.pathway-group-content');
+  const toggle = group.querySelector('.pathway-group-toggle');
   const editing = !!group.querySelector('.item-settings');
   const anchor = window.location.hash && document.getElementById(window.location.hash.slice(1));
-  try { group.open = editing || (anchor && group.contains(anchor)) || sessionStorage.getItem(key) !== 'closed'; } catch (_) { /* storage optional */ }
-  group.addEventListener('toggle', () => {
-    try { sessionStorage.setItem(key, group.open ? 'open' : 'closed'); } catch (_) { /* storage optional */ }
-  });
+  let open = true;
+  try { open = editing || (anchor && anchor !== group && group.contains(anchor)) || sessionStorage.getItem(key) !== 'closed'; } catch (_) { /* storage optional */ }
+  content.classList.toggle('show', !!open);
+  toggle.classList.toggle('collapsed', !open);
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  toggle.addEventListener('click', () => bootstrap.Collapse.getOrCreateInstance(content, { toggle: false }).toggle());
+  content.addEventListener('show.bs.collapse', () => { toggle.classList.remove('collapsed');toggle.setAttribute('aria-expanded', 'true'); });
+  content.addEventListener('hide.bs.collapse', () => { toggle.classList.add('collapsed');toggle.setAttribute('aria-expanded', 'false'); });
+  const remember = () => {
+    try { sessionStorage.setItem(key, content.classList.contains('show') ? 'open' : 'closed'); } catch (_) { /* storage optional */ }
+  };
+  content.addEventListener('shown.bs.collapse', remember);
+  content.addEventListener('hidden.bs.collapse', remember);
+  remember(); // Keep an opening forced by a step anchor when navigating again.
 });
 
 const pathwaySortable = document.querySelector('[data-pathway-sortable]');
 if (pathwaySortable) {
   const rows = () => Array.from(pathwaySortable.querySelectorAll('[data-pathway-row]'));
   const clearDropMarkers = () => pathwaySortable.querySelectorAll('.pathway-drop-before,.pathway-drop-after,.pathway-group-drop').forEach((element) => element.classList.remove('pathway-drop-before', 'pathway-drop-after', 'pathway-group-drop'));
+
+  // Move a whole group as a top-level block, including when it is empty or collapsed.
+  pathwaySortable.querySelectorAll('[data-group-drag-handle]').forEach((handle) => {
+    const group = handle.closest('[data-pathway-group]');
+    const form = group.querySelector('[data-group-order-form]');
+    let gesture = null;
+    let suppressClick = false;
+    const roots = () => Array.from(pathwaySortable.children).filter((element) => element.matches('[data-pathway-group],[data-pathway-row]') && element !== group);
+    const clear = () => pathwaySortable.querySelectorAll('.pathway-root-before,.pathway-root-after').forEach((element) => element.classList.remove('pathway-root-before', 'pathway-root-after'));
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.target.closest('[data-group-actions]')) return;
+      suppressClick = false;
+      gesture = { id: event.pointerId, y: event.clientY, active: false, target: null, after: false };
+    });
+    handle.addEventListener('pointermove', (event) => {
+      if (!gesture || gesture.id !== event.pointerId) return;
+      if (!gesture.active && Math.abs(event.clientY - gesture.y) < 8) return;
+      if (!gesture.active) { gesture.active = true; handle.setPointerCapture?.(event.pointerId); group.classList.add('pathway-group-dragging'); }
+      suppressClick = true;
+      event.preventDefault();clear();
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      const target = hit?.closest('[data-pathway-group]') || hit?.closest('[data-pathway-row]');
+      gesture.target = null;
+      if (target && roots().includes(target)) {
+        gesture.target = target.dataset.pathwayGroup ? `g${target.dataset.pathwayGroup}` : `i${target.dataset.itemId}`;
+        const bounds = target.getBoundingClientRect();
+        gesture.after = event.clientY >= bounds.top + bounds.height / 2;
+        target.classList.add(gesture.after ? 'pathway-root-after' : 'pathway-root-before');
+      }
+      if (event.clientY < 85) window.scrollBy({ top: -18, behavior: 'instant' });
+      else if (event.clientY > innerHeight - 85) window.scrollBy({ top: 18, behavior: 'instant' });
+    });
+    const finish = (event, cancelled = false) => {
+      if (!gesture || gesture.id !== event.pointerId) return;
+      const move = gesture;gesture = null;clear();group.classList.remove('pathway-group-dragging');
+      try { handle.releasePointerCapture?.(event.pointerId); } catch (_) { /* already released */ }
+      if (!cancelled && move.active && move.target) { form.elements.target.value = move.target;form.elements.after.value = move.after ? '1' : '0';form.requestSubmit(); }
+    };
+    handle.addEventListener('pointerup', (event) => finish(event));
+    handle.addEventListener('pointercancel', (event) => finish(event, true));
+    handle.addEventListener('click', (event) => { if (suppressClick) { event.preventDefault();event.stopPropagation();suppressClick = false; } }, true);
+    handle.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && gesture) finish({ pointerId: gesture.id }, true);
+      if (event.target === handle && ['ArrowUp', 'ArrowDown'].includes(event.key)) { event.preventDefault();form.elements.target.value = event.key === 'ArrowUp' ? 'previous' : 'next';form.requestSubmit(); }
+    });
+  });
 
   pathwaySortable.querySelectorAll('[data-pathway-position-form]').forEach((form) => {
     const handle = form.querySelector('[data-pathway-drag-handle]');

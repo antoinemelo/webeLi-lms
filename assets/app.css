@@ -777,23 +777,33 @@ h1{font-size:2.25rem}
 .teacher-actions-menu{flex-shrink:0}.teacher-actions-menu .dropdown-menu{min-width:min(19rem,calc(100vw - 2rem));max-width:calc(100vw - 2rem)}.teacher-actions-menu .dropdown-item{white-space:normal}
 
 /* Optional pathway groups share one continuous step sequence. */
-.pathway-group{margin:.65rem 0;border:1px solid var(--line);border-radius:.8rem;background:#fff;min-width:0}
-.pathway-group>summary{display:flex;align-items:center;gap:.65rem;padding:.9rem;list-style:none;cursor:pointer;background:var(--purple-soft);border-radius:.75rem;color:var(--ink);font-weight:750}
-.pathway-group>summary::-webkit-details-marker{display:none}
-.pathway-group>summary>span{flex:1;min-width:0;overflow-wrap:anywhere}
-.pathway-group>summary>small{color:var(--muted);font-weight:500}
-.pathway-group-chevron{transition:transform .15s;flex-shrink:0}
-.pathway-group[open]>summary .pathway-group-chevron{transform:rotate(90deg)}
-.pathway-group-tools{display:flex;gap:.5rem;align-items:center;padding:.7rem;border-bottom:1px solid var(--line)}
-.pathway-group-tools form{margin:0}
-.pathway-group-rename{display:flex;gap:.4rem;flex:1;min-width:0}
-.pathway-group-rename input{min-width:0;width:100%}
-.pathway-group-items{min-width:0}
+.pathway-group{margin:.6rem;border:1px solid var(--line);border-radius:.7rem;background:#fff;min-width:0;scroll-margin-top:6rem}
+.pathway-group-header{min-height:3.4rem;padding:.35rem .6rem;background:#f7f7fa;border-radius:.7rem;position:relative}
+.pathway-group-header[data-group-drag-handle]{cursor:grab;touch-action:none;user-select:none}
+.pathway-group-header:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+.pathway-group-grip{color:#9995a8;flex-shrink:0}
+.pathway-group-toggle.btn{padding:.45rem .2rem;border:0;box-shadow:none;min-width:0;font-size:.88rem;font-weight:700;color:var(--ink)}
+.pathway-group-title{min-width:0;overflow-wrap:anywhere}
+.pathway-group-count{margin-left:.2rem;color:var(--muted)!important;font-size:.7rem;font-weight:600;flex-shrink:0}
+.pathway-group-chevron{font-size:.75rem;flex-shrink:0;transition:transform .15s}
+.pathway-group-toggle.collapsed .pathway-group-chevron{transform:rotate(-90deg)}
+.pathway-group-actions{flex-shrink:0}
+.pathway-group-actions .btn{width:2rem;height:2rem;padding:0;border:1px solid transparent;background:transparent;color:var(--muted)}
+.pathway-group-actions .btn:hover{border-color:var(--line);background:#fff;color:var(--purple)}
+.pathway-group-items{border-top:1px solid var(--line);min-width:0}
 .pathway-group-items>.pathway-row:last-child,.pathway-group-items>.timeline-item:last-child{border-bottom:0}
-.pathway-group-empty,.pathway-ungroup-drop{padding:1rem;margin:.5rem;color:var(--muted);text-align:center;border:1px dashed var(--line);border-radius:.5rem}
+.pathway-group-items>.pathway-row{border-left:3px solid #dfdcee}
+.pathway-group-empty,.pathway-ungroup-drop{padding:1rem;margin:.65rem;color:var(--muted);text-align:center;border:1px dashed var(--line);border-radius:.5rem;font-size:.82rem}
 .pathway-ungroup-drop{display:none}
 .pathway-sorting .pathway-ungroup-drop{display:block}
-.pathway-group-drop{outline:3px solid #ed8b19;outline-offset:-3px}
+.pathway-group-drop{outline:2px solid var(--purple);outline-offset:-2px;background:var(--purple-soft)}
 .pathway-group-choice{min-width:15rem;max-width:calc(100vw - 3rem)}
 .pathway-group-choice select{max-width:100%}
 .pathway-group-add{margin-top:.75rem}
+.pathway-group-dragging{opacity:.4}
+.pathway-root-before,.pathway-root-after{position:relative}
+.pathway-root-before::before,.pathway-root-after::after{content:'';position:absolute;left:0;right:0;height:3px;background:var(--purple);z-index:5;border-radius:2px}
+.pathway-root-before::before{top:-4px}.pathway-root-after::after{bottom:-4px}
+@media(max-width:600px){.pathway-group{margin:.4rem}.pathway-group-header{padding:.3rem .4rem;gap:.3rem!important}.pathway-group-toggle.btn{font-size:.82rem}.pathway-group-items>.pathway-row{padding:.75rem .55rem}}
+
+.pathway-list:has(.dropdown-menu.show){overflow:visible}

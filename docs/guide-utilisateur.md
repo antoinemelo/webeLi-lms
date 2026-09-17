@@ -319,7 +319,9 @@ Sous **＋ Ajouter une page au parcours**, **＋ Ajouter un regroupement** crée
 
 Glisser une étape par son numéro vers le titre ou la zone vide d’un regroupement l’ajoute à la fin de ce groupe, même s’il est replié. Un dépôt sur une étape place l’étape déplacée avant ou après celle-ci, dans le même regroupement. La zone **Sans regroupement**, visible pendant le déplacement, permet de sortir une étape de son groupe. Le menu à trois points propose également **Regroupement**, puis **Déplacer**, utilisable au clavier.
 
-Le chevron ouvre ou replie le groupe. Ce choix est mémorisé séparément pour chaque compte et chaque vue dans l’onglet du navigateur. Ouvrir les réglages d’une étape ouvre aussi son regroupement. Le titre peut être renommé ; supprimer un regroupement conserve ses étapes, leur ordre et toute la progression.
+Le titre ou la poignée à gauche permet de déplacer le regroupement entier, avec toutes ses étapes. Un groupe vide peut être placé avant les premières étapes, puis rempli par glisser-déposer. Le menu à trois points propose aussi **Monter**, **Descendre** et **Supprimer le regroupement** ; les flèches haut/bas du clavier déplacent le groupe lorsque son en-tête a le focus. Les groupes restent au premier niveau, sans imbrication.
+
+Le chevron ouvre ou replie le groupe. Ce choix est mémorisé séparément pour chaque compte et chaque vue dans l’onglet du navigateur. Ouvrir les réglages d’une étape ouvre aussi son regroupement. Le petit crayon ouvre une fenêtre Bootstrap pour renommer le titre ; supprimer un regroupement conserve ses étapes, leur ordre et toute la progression.
 
 Les numéros restent continus dans tout le parcours : chaque groupe ne recommence pas à 1. Replier un groupe ne change aucun numéro ; déplacer une étape change sa place dans la séquence, comme le réordonnancement habituel. Les groupes sont sans imbrication. Ils figurent aussi dans l’aperçu enseignant et la vue d’ensemble de l’élève. L’élève ne voit que les étapes autorisées ; un groupe sans étape accessible est masqué.
 

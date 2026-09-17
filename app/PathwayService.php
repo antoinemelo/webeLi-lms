@@ -406,8 +406,8 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
         }
 
         $groupMap=[];
-        $insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title) VALUES(?,?)');
-        foreach(pathway_groups($pdo,$sourceId) as $group){$insertGroup->execute([$newCourseId,$group['title']]);$groupMap[(int)$group['id']]=(int)$pdo->lastInsertId();}
+        $insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title,position) VALUES(?,?,?)');
+        foreach(pathway_groups($pdo,$sourceId) as $group){$insertGroup->execute([$newCourseId,$group['title'],$group['position']]);$groupMap[(int)$group['id']]=(int)$pdo->lastInsertId();}
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
@@ -447,14 +447,12 @@ function remove_pathway_item(PDO $pdo, int $itemId, int $teacherId): ?int
 
     $pdo->beginTransaction();
     try {
+        $sections=pathway_structure_sections($pdo,(int)$courseId);
         $pdo->prepare("DELETE FROM edit_locks WHERE entity_type='pathway_item' AND entity_id=?")->execute([$itemId]);
         $pdo->prepare('DELETE FROM pathway_items WHERE id=?')->execute([$itemId]);
-        $positions = $pdo->prepare('SELECT id FROM pathway_items WHERE course_id=? ORDER BY position,id');
-        $positions->execute([$courseId]);
-        $update = $pdo->prepare("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?");
-        foreach ($positions->fetchAll(PDO::FETCH_COLUMN) as $index => $remainingId) {
-            $update->execute([$index + 1,$remainingId]);
-        }
+        foreach($sections as &$section)$section['items']=array_values(array_filter($section['items'],static fn(array $candidate):bool=>(int)$candidate['id']!==$itemId));
+        unset($section);$sections=array_values(array_filter($sections,static fn(array $section):bool=>$section['group']!==null||$section['items']!==[]));
+        store_pathway_sections($pdo,(int)$courseId,$sections);
         $pdo->commit();
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) $pdo->rollBack();

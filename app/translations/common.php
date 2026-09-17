@@ -5,6 +5,8 @@ declare(strict_types=1);
 // French is the source language. These rows contain only interface copy; user-created
 // course and page content never passes through this catalogue.
 return [
+    'Déplacer le regroupement'=>['en'=>'Move group','de'=>'Gruppe verschieben','it'=>'Sposta il gruppo','es'=>'Mover el grupo'],
+    'Actions du regroupement'=>['en'=>'Group actions','de'=>'Gruppenaktionen','it'=>'Azioni del gruppo','es'=>'Acciones del grupo'],
     'Ajouter un regroupement'=>['en'=>'Add a group','de'=>'Gruppe hinzufügen','it'=>'Aggiungi un gruppo','es'=>'Añadir un grupo'],
     'Titre du regroupement'=>['en'=>'Group title','de'=>'Gruppentitel','it'=>'Titolo del gruppo','es'=>'Título del grupo'],
     'Renommer le regroupement'=>['en'=>'Rename group','de'=>'Gruppe umbenennen','it'=>'Rinomina il gruppo','es'=>'Renombrar el grupo'],

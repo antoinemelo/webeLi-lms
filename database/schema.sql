@@ -196,7 +196,8 @@ CREATE TABLE course_skills (
 CREATE TABLE pathway_groups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 120)
+    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 120),
+    position INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_pathway_groups_course ON pathway_groups(course_id);
 
@@ -525,7 +526,7 @@ CREATE TABLE student_followups (
         CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
         BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
 
-PRAGMA user_version = 26;
+PRAGMA user_version = 27;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

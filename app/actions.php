@@ -1009,6 +1009,14 @@ function handle_action(string $action): never
         }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
         redirect('pathway',['course'=>$courseId]);
     }
+    if($action==='reorder_pathway_group'&&$user['role']==='teacher'){
+        $courseId=(int)($_POST['course_id']??0);$groupId=(int)($_POST['group_id']??0);
+        try{
+            reorder_pathway_group(db(),$courseId,$groupId,(int)$user['id'],(string)($_POST['direction']??$_POST['target']??''),!empty($_POST['after']),(string)($_POST['structure_token']??''));
+            flash('Ordre du parcours mis à jour.');
+        }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
+        header('Location: '.route('pathway',['course'=>$courseId]).'#pathway-group-'.$groupId);exit;
+    }
     if($action==='reorder_pathway_item'&&$user['role']==='teacher'){
         $result=reorder_pathway_item(db(),(int)($_POST['item_id']??0),(int)($_POST['position']??0),(int)$user['id'],isset($_POST['group_id'])&&$_POST['group_id']!==''?(int)$_POST['group_id']:null,isset($_POST['structure_token'])?(string)$_POST['structure_token']:null);
         if($result['status']==='updated')flash(t('Ordre du parcours mis à jour.'));
