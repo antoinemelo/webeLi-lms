@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__.'/PathwayEvent.php';
+require_once __DIR__.'/PathwayGroups.php';
 
 function page_pathway_return_course(PDO $pdo,int $pageId,int $teacherId,int $courseId): ?int
 {
@@ -9,39 +10,6 @@ function page_pathway_return_course(PDO $pdo,int $pageId,int $teacherId,int $cou
     $query=$pdo->prepare('SELECT 1 FROM pathway_items pi JOIN courses c ON c.id=pi.course_id WHERE pi.page_id=? AND pi.course_id=? AND c.archived=0 LIMIT 1');
     $query->execute([$pageId,$courseId]);
     return $query->fetchColumn()?$courseId:null;
-}
-
-/** @return array{status:'updated'|'unchanged'|'invalid'|'missing'|'locked',course_id:?int} */
-function reorder_pathway_item(PDO $pdo,int $itemId,int $targetPosition,int $teacherId): array
-{
-    $itemQuery=$pdo->prepare('SELECT id,course_id,position FROM pathway_items WHERE id=?');
-    $itemQuery->execute([$itemId]);$item=$itemQuery->fetch(PDO::FETCH_ASSOC);
-    if(!$item||!teacher_can_access_course($pdo,(int)$item['course_id'],$teacherId))return ['status'=>'missing','course_id'=>null];
-    $courseId=(int)$item['course_id'];
-    if($targetPosition<1)return ['status'=>'invalid','course_id'=>$courseId];
-    $lock=acquire_edit_lock($pdo,'course_structure',$courseId,$teacherId);
-    if(!$lock['ok'])return ['status'=>'locked','course_id'=>$courseId];
-    try{
-        $ordered=$pdo->prepare('SELECT id FROM pathway_items WHERE course_id=? ORDER BY position,id');
-        $ordered->execute([$courseId]);$ids=array_map('intval',$ordered->fetchAll(PDO::FETCH_COLUMN));
-        $currentIndex=array_search($itemId,$ids,true);
-        if($currentIndex===false)return ['status'=>'missing','course_id'=>$courseId];
-        $targetPosition=min($targetPosition,count($ids));
-        if($currentIndex===$targetPosition-1)return ['status'=>'unchanged','course_id'=>$courseId];
-        array_splice($ids,$currentIndex,1);
-        array_splice($ids,$targetPosition-1,0,[$itemId]);
-        $pdo->beginTransaction();
-        $pdo->prepare('UPDATE pathway_items SET position=-position WHERE course_id=?')->execute([$courseId]);
-        $update=$pdo->prepare("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND course_id=?");
-        foreach($ids as $index=>$id)$update->execute([$index+1,$id,$courseId]);
-        $pdo->commit();
-        return ['status'=>'updated','course_id'=>$courseId];
-    }catch(Throwable $exception){
-        if($pdo->inTransaction())$pdo->rollBack();
-        throw $exception;
-    }finally{
-        release_edit_locks($pdo,$teacherId,'course_structure',$courseId);
-    }
 }
 
 /**
@@ -437,13 +405,17 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
             $insertReward->execute([$newCourseId,$reward['name'],$reward['icon'],$reward['color'],$reward['default_points'],$reward['active']]);
         }
 
+        $groupMap=[];
+        $insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title) VALUES(?,?)');
+        foreach(pathway_groups($pdo,$sourceId) as $group){$insertGroup->execute([$newCourseId,$group['title']]);$groupMap[(int)$group['id']]=(int)$pdo->lastInsertId();}
+
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data,group_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],!empty($item['event_data'])?0:$item['is_evaluation'],(!empty($item['event_data'])||$item['is_evaluation'])?0:($item['self_evaluation_enabled']??1),$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1,$item['event_data']??null]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],!empty($item['event_data'])?0:$item['is_evaluation'],(!empty($item['event_data'])||$item['is_evaluation'])?0:($item['self_evaluation_enabled']??1),$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1,$item['event_data']??null,$groupMap[(int)($item['group_id']??0)]??null]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();

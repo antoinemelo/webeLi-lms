@@ -823,15 +823,26 @@ if (pageEditor) {
   });
 }
 
+document.querySelectorAll('[data-group-state-key]').forEach((group) => {
+  const key = `liike:pathway-group:${group.dataset.groupStateKey}`;
+  const editing = !!group.querySelector('.item-settings');
+  const anchor = window.location.hash && document.getElementById(window.location.hash.slice(1));
+  try { group.open = editing || (anchor && group.contains(anchor)) || sessionStorage.getItem(key) !== 'closed'; } catch (_) { /* storage optional */ }
+  group.addEventListener('toggle', () => {
+    try { sessionStorage.setItem(key, group.open ? 'open' : 'closed'); } catch (_) { /* storage optional */ }
+  });
+});
+
 const pathwaySortable = document.querySelector('[data-pathway-sortable]');
 if (pathwaySortable) {
-  const rows = () => Array.from(pathwaySortable.children).filter((child) => child.matches?.('[data-pathway-row]'));
-  const clearDropMarkers = () => rows().forEach((row) => row.classList.remove('pathway-drop-before', 'pathway-drop-after'));
+  const rows = () => Array.from(pathwaySortable.querySelectorAll('[data-pathway-row]'));
+  const clearDropMarkers = () => pathwaySortable.querySelectorAll('.pathway-drop-before,.pathway-drop-after,.pathway-group-drop').forEach((element) => element.classList.remove('pathway-drop-before', 'pathway-drop-after', 'pathway-group-drop'));
 
   pathwaySortable.querySelectorAll('[data-pathway-position-form]').forEach((form) => {
     const handle = form.querySelector('[data-pathway-drag-handle]');
     const displayInput = form.querySelector('[data-pathway-display-input]');
     const orderTarget = form.querySelector('[data-pathway-order-target]');
+    const groupInput = form.querySelector('[data-pathway-group-input]');
     const row = form.closest('[data-pathway-row]');
     if (!handle || !orderTarget || !row) return;
     const initialPosition = Number(row.dataset.position || orderTarget.value);
@@ -846,13 +857,14 @@ if (pathwaySortable) {
       const visibleCandidates = candidates.filter((candidate) => candidate.dataset.displayPosition !== '');
       const anchor = target <= visibleCandidates.length ? visibleCandidates[target - 1] : visibleCandidates[visibleCandidates.length - 1];
       orderTarget.value = String(anchor ? candidates.indexOf(anchor) + (target <= visibleCandidates.length ? 1 : 2) : 1);
+      if (groupInput) groupInput.value = '';
       form.requestSubmit();
     });
 
     let gesture = null;
     handle.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
-      gesture = { pointerId: event.pointerId, startY: event.clientY, target: initialPosition, active: false };
+      gesture = { pointerId: event.pointerId, startY: event.clientY, target: initialPosition, groupId: Number(row.dataset.groupId || 0), valid: false, active: false };
       handle.setPointerCapture?.(event.pointerId);
     });
     handle.addEventListener('pointermove', (event) => {
@@ -866,14 +878,23 @@ if (pathwaySortable) {
       event.preventDefault();
       clearDropMarkers();
       const candidates = rows().filter((candidate) => candidate !== row);
-      let target = candidates.length + 1;
-      for (let index = 0; index < candidates.length; index++) {
-        const bounds = candidates[index].getBoundingClientRect();
-        if (event.clientY < bounds.top + bounds.height / 2) { target = index + 1; break; }
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      const groupTarget = hit?.closest('[data-pathway-group-target]');
+      const targetRow = hit?.closest('[data-pathway-row]');
+      gesture.valid = false;
+      if (groupTarget && pathwaySortable.contains(groupTarget)) {
+        gesture.target = 0;
+        gesture.groupId = Number(groupTarget.dataset.pathwayGroupTarget);
+        gesture.valid = true;
+        groupTarget.classList.add('pathway-group-drop');
+      } else if (targetRow && targetRow !== row && pathwaySortable.contains(targetRow)) {
+        const bounds = targetRow.getBoundingClientRect();
+        const after = event.clientY >= bounds.top + bounds.height / 2;
+        gesture.target = candidates.indexOf(targetRow) + (after ? 2 : 1);
+        gesture.groupId = Number(targetRow.dataset.groupId || 0);
+        gesture.valid = true;
+        targetRow.classList.add(after ? 'pathway-drop-after' : 'pathway-drop-before');
       }
-      gesture.target = target;
-      if (target <= candidates.length) candidates[target - 1].classList.add('pathway-drop-before');
-      else candidates[candidates.length - 1]?.classList.add('pathway-drop-after');
       if (event.clientY < 72) window.scrollBy(0, -14);
       else if (event.clientY > window.innerHeight - 72) window.scrollBy(0, 14);
     });
@@ -881,18 +902,24 @@ if (pathwaySortable) {
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       const target = gesture.target;
       const active = gesture.active;
+      const groupId = gesture.groupId;
+      const valid = gesture.valid;
       gesture = null;
       row.classList.remove('pathway-dragging');
       pathwaySortable.classList.remove('pathway-sorting');
       clearDropMarkers();
       try { handle.releasePointerCapture?.(event.pointerId); } catch (_) { /* already released */ }
-      if (!cancelled && active && target !== initialPosition) {
+      if (!cancelled && active && valid && (target !== initialPosition || groupId !== Number(row.dataset.groupId || 0))) {
         orderTarget.value = String(target);
+        if (groupInput) groupInput.value = String(groupId);
         form.requestSubmit();
       }
     };
     handle.addEventListener('pointerup', (event) => finishGesture(event));
     handle.addEventListener('pointercancel', (event) => finishGesture(event, true));
+    handle.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && gesture) finishGesture({ pointerId: gesture.pointerId }, true);
+    });
   });
 }
 

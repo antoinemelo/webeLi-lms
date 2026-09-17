@@ -193,6 +193,13 @@ CREATE TABLE course_skills (
     FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
+CREATE TABLE pathway_groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 120)
+);
+CREATE INDEX idx_pathway_groups_course ON pathway_groups(course_id);
+
 CREATE TABLE pathway_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     course_id INTEGER NOT NULL,
@@ -200,6 +207,7 @@ CREATE TABLE pathway_items (
     position INTEGER NOT NULL,
     deadline TEXT,
     event_data TEXT,
+    group_id INTEGER REFERENCES pathway_groups(id) ON DELETE SET NULL,
     is_evaluation INTEGER NOT NULL DEFAULT 0 CHECK(is_evaluation IN (0,1)),
     self_evaluation_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_evaluation_enabled IN (0,1)),
     evaluation_weight REAL NOT NULL DEFAULT 1 CHECK(evaluation_weight IN (0.5,1,2,3,4)),
@@ -517,7 +525,7 @@ CREATE TABLE student_followups (
         CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
         BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
 
-PRAGMA user_version = 25;
+PRAGMA user_version = 26;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -541,3 +549,7 @@ CREATE TABLE messaging_instance (id INTEGER PRIMARY KEY CHECK(id=1),uuid TEXT NO
 INSERT INTO messaging_instance VALUES(1,lower(hex(randomblob(16))));
 
 CREATE TRIGGER touch_pathway_event_after_update AFTER UPDATE OF event_data ON pathway_items WHEN NEW.updated_at IS OLD.updated_at BEGIN UPDATE pathway_items SET updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=NEW.id; END;
+
+CREATE INDEX idx_pathway_items_group ON pathway_items(group_id);
+CREATE TRIGGER pathway_group_course_insert BEFORE INSERT ON pathway_items WHEN NEW.group_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM pathway_groups WHERE id=NEW.group_id AND course_id=NEW.course_id) BEGIN SELECT RAISE(ABORT,'pathway group belongs to another course'); END;
+CREATE TRIGGER pathway_group_course_update BEFORE UPDATE OF group_id,course_id ON pathway_items WHEN NEW.group_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM pathway_groups WHERE id=NEW.group_id AND course_id=NEW.course_id) BEGIN SELECT RAISE(ABORT,'pathway group belongs to another course'); END;

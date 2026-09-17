@@ -28,6 +28,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 | `app/RegistrationPolicy.php` | plafonds anti-abus et purge des comptes non validés |
 | `app/LearningActivity.php` | temps actif par page, rapports enseignants et rétention d’un mois |
 | `app/PathwayService.php` | copie de parcours, retrait d’étape et suppression sûre de page |
+| `app/PathwayGroups.php`, `app/PathwayGroupViews.php` | regroupements, déplacements, contrôles de concurrence et affichage enseignant/élève |
 | `app/PathwayEvent.php` | type exclusif, validation des dates, rendu des événements, .ics et lien Google Calendar |
 | `app/ProgressExport.php`, `app/ProgressPdf.php` | sélection et droits, données communes, CSV et PDF de progression |
 | `public/assets/progress-export.js` | recherche et sélection des élèves dans la fenêtre unique d’export |
@@ -187,3 +188,9 @@ La migration **25** ajoute `pathway_items.event_data`, un JSON nullable contenan
 L’action POST `export_progress` contrôle le parcours, le rôle, les élèves actifs, le mode et le format. `course_progress_students()` fournit les indicateurs communs au tableau de bord et à l’export ; `ProgressExport.php` ajoute les résultats détaillés, tandis que `ProgressPdf.php` prépare le rendu mPDF et les ruptures par élève. CSV et PDF utilisent la même sélection autorisée. Les tests couvrent notamment les notes nulles/zéro, les QCM multiples, les frontières entre parcours, les formats et la pagination.
 
 La sauvegarde de page ne prépare `page.updated` que si le lien d’enregistrement transmet `notify_students=1` et qu’aucun conflit n’est constaté. Les modifications ordinaires restent visibles par le suivi des changements de parcours.
+
+## Regroupements des étapes
+
+La migration 26 crée `pathway_groups(id, course_id, title)` et ajoute `pathway_items.group_id`, facultatif. Sa clé étrangère remet le rattachement à NULL quand un groupe est supprimé ; deux triggers interdisent les rattachements entre parcours. Le déplacement d’une étape conserve des groupes contigus dans l’ordre global `position` ; les groupes vides figurent à la fin de l’éditeur. Les titres sont limités à 120 caractères. Aucun sous-groupe n’est géré.
+
+Les actions de gestion sont réservées aux enseignants autorisés et protégées par CSRF, le verrou `course_structure` et une empreinte des groupes, positions et rattachements. Un ancien onglet ne peut pas écraser une structure plus récente. Les vues élève construisent les groupes après le filtrage d’accès et la numérotation habituels, sans révéler les groupes vides ou inaccessibles. L’état replié reste dans `sessionStorage`, par compte, parcours, groupe et vue. Les groupes sont transportés par clés locales remappées lors des copies/imports ; un import avec référence inconnue ou groupe disjoint est refusé atomiquement.

@@ -86,7 +86,7 @@ function export_course_document(PDO $pdo, int $courseId, int $teacherId, bool $i
     $itemsQuery=$pdo->prepare('SELECT pi.*,p.reference AS page_reference,p.title AS page_title FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.course_id=? ORDER BY pi.position');$itemsQuery->execute([$courseId]);
     $items=[];
     foreach($itemsQuery->fetchAll(PDO::FETCH_ASSOC) as $item){
-        $exported=['page_reference'=>$item['page_reference'],'page_title'=>$item['page_title'],'position'=>(int)$item['position'],'deadline'=>$item['deadline'],'event'=>isset($item['event_data'])?json_decode($item['event_data'],true):null,'is_evaluation'=>(bool)$item['is_evaluation'],'self_evaluation_enabled'=>(bool)($item['self_evaluation_enabled']??1),'evaluation_weight'=>(float)($item['evaluation_weight']??1),'instructions'=>$item['instructions'],'access_mode'=>$item['access_mode'],'framework_tracking_enabled'=>(bool)($item['framework_tracking_enabled']??1)];
+        $exported=['group'=>$item['group_id']===null?null:(string)$item['group_id'],'page_reference'=>$item['page_reference'],'page_title'=>$item['page_title'],'position'=>(int)$item['position'],'deadline'=>$item['deadline'],'event'=>isset($item['event_data'])?json_decode($item['event_data'],true):null,'is_evaluation'=>(bool)$item['is_evaluation'],'self_evaluation_enabled'=>(bool)($item['self_evaluation_enabled']??1),'evaluation_weight'=>(float)($item['evaluation_weight']??1),'instructions'=>$item['instructions'],'access_mode'=>$item['access_mode'],'framework_tracking_enabled'=>(bool)($item['framework_tracking_enabled']??1)];
         if($includeOptions){
             $skills=$pdo->prepare('SELECT s.code FROM course_skills s JOIN item_skills i ON i.skill_id=s.id WHERE i.pathway_item_id=? ORDER BY s.position');$skills->execute([$item['id']]);
             $exported['skills']=$skills->fetchAll(PDO::FETCH_COLUMN);
@@ -101,7 +101,7 @@ function export_course_document(PDO $pdo, int $courseId, int $teacherId, bool $i
     }
     return ['format'=>'liike.pathway','version'=>1,'exported_at'=>gmdate(DATE_ATOM),'includes_options'=>$includeOptions,'course'=>[
         'reference'=>$course['reference'],'title'=>$course['title'],'code'=>$course['code'],'description'=>$course['description'],'accent'=>$course['accent'],
-    ],'items'=>$items,'options'=>$options];
+    ],'groups'=>array_map(static fn(array $group):array=>['key'=>(string)$group['id'],'title'=>$group['title']],pathway_groups($pdo,$courseId)),'items'=>$items,'options'=>$options];
 }
 
 function import_course_document(PDO $pdo, array $document, int $teacherId, string $mode, bool $resetDeadlines): int
@@ -109,6 +109,21 @@ function import_course_document(PDO $pdo, array $document, int $teacherId, strin
     transfer_document($document,'liike.pathway');$course=$document['course']??null;$items=$document['items']??null;
     if(!is_array($course)||!is_array($items)||count($items)>500)throw new TransferException('Le parcours ou ses étapes sont invalides.');
     $reference=trim((string)($course['reference']??''));$title=trim((string)($course['title']??''));if($reference===''||$title==='')throw new TransferException('La référence et le titre du parcours sont requis.');
+    $groups=$document['groups']??[];$groupDefinitions=[];
+    if(!is_array($groups)||count($groups)>500)throw new TransferException('Les regroupements du parcours sont invalides.');
+    foreach($groups as $group){
+        if(!is_array($group)||!is_string($group['title']??null)||!is_scalar($group['key']??null))throw new TransferException('Les regroupements du parcours sont invalides.');
+        $key=(string)$group['key'];$groupTitle=trim($group['title']);
+        if($key===''||isset($groupDefinitions[$key])||$groupTitle===''||mb_strlen($groupTitle)>120)throw new TransferException('Les regroupements du parcours sont invalides.');
+        $groupDefinitions[$key]=$groupTitle;
+    }
+    $closed=[];$previous=null;
+    foreach($items as $item){
+        if(!is_array($item)||(!is_null($item['group']??null)&&!is_scalar($item['group'])))throw new TransferException('Les regroupements du parcours sont invalides.');
+        $key=isset($item['group'])?(string)$item['group']:null;
+        if($key!==null&&!isset($groupDefinitions[$key]))throw new TransferException('Les regroupements du parcours sont invalides.');
+        if($key!==$previous){if($key!==null&&isset($closed[$key]))throw new TransferException('Les regroupements du parcours sont invalides.');if($previous!==null)$closed[$previous]=true;$previous=$key;}
+    }
     $pageLookup=$pdo->prepare('SELECT id FROM pages WHERE reference=?');$resolvedPages=[];$missing=[];
     foreach($items as $index=>$item){
         if(!is_array($item)||trim((string)($item['page_reference']??''))==='')throw new TransferException('Une étape ne contient pas de référence de page.');
@@ -128,6 +143,7 @@ function import_course_document(PDO $pdo, array $document, int $teacherId, strin
             $courseId=(int)$existing['id'];
             $pdo->prepare("DELETE FROM edit_locks WHERE entity_type='pathway_item' AND entity_id IN (SELECT id FROM pathway_items WHERE course_id=?)")->execute([$courseId]);
             $pdo->prepare('DELETE FROM pathway_items WHERE course_id=?')->execute([$courseId]);
+            $pdo->prepare('DELETE FROM pathway_groups WHERE course_id=?')->execute([$courseId]);
             $pdo->prepare('DELETE FROM course_skills WHERE course_id=?')->execute([$courseId]);
             $pdo->prepare('DELETE FROM reward_types WHERE course_id=?')->execute([$courseId]);
             $pdo->prepare('UPDATE courses SET title=?,description=?,accent=?,archived=0 WHERE id=?')->execute([$title,(string)($course['description']??''),trim((string)($course['accent']??''))?:'#6d5dfc',$courseId]);
@@ -137,17 +153,19 @@ function import_course_document(PDO $pdo, array $document, int $teacherId, strin
             $pdo->prepare('INSERT INTO courses(reference,title,code,description,teacher_id,accent,archived) VALUES(?,?,?,?,?,?,0)')->execute([$newReference,$importTitle,$newCode,(string)($course['description']??''),$teacherId,trim((string)($course['accent']??''))?:'#6d5dfc']);
             $courseId=(int)$pdo->lastInsertId();
         }
+        $groupMap=[];$insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title) VALUES(?,?)');
+        foreach($groupDefinitions as $key=>$groupTitle){$insertGroup->execute([$courseId,$groupTitle]);$groupMap[$key]=(int)$pdo->lastInsertId();}
         $skillMap=[];$insertSkill=$pdo->prepare('INSERT INTO course_skills(course_id,code,title,description,position) VALUES(?,?,?,?,?)');
         foreach($options['skills']??[] as $index=>$skill){if(!is_array($skill)||trim((string)($skill['code']??''))===''||trim((string)($skill['title']??''))==='')continue;$code=strtoupper(trim((string)$skill['code']));$insertSkill->execute([$courseId,$code,trim((string)$skill['title']),(string)($skill['description']??''),(int)($skill['position']??$index+1)]);$skillMap[$code]=(int)$pdo->lastInsertId();}
         $insertReward=$pdo->prepare('INSERT INTO reward_types(course_id,name,icon,color,default_points,active) VALUES(?,?,?,?,?,?)');
         foreach($options['rewards']??[] as $reward){if(!is_array($reward)||trim((string)($reward['name']??''))==='')continue;$insertReward->execute([$courseId,trim((string)$reward['name']),trim((string)($reward['icon']??''))?:'✨',trim((string)($reward['color']??''))?:'#6d5dfc',normalize_reward_points($reward['default_points']??1),!empty($reward['active'])?1:0]);}
-        $insertItem=$pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data) VALUES(?,?,?,?,?,?,?,?,?,?,?)');$linkSkill=$pdo->prepare('INSERT INTO item_skills(pathway_item_id,skill_id) VALUES(?,?)');
+        $insertItem=$pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data,group_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');$linkSkill=$pdo->prepare('INSERT INTO item_skills(pathway_item_id,skill_id) VALUES(?,?)');
         foreach(array_values($items) as $index=>$item){$accessMode=in_array($item['access_mode']??'all',['all','restricted','none'],true)?(string)$item['access_mode']:'all';$frameworkTracking=$accessMode!=='none'||!array_key_exists('framework_tracking_enabled',$item)||!empty($item['framework_tracking_enabled']);$eventData=null;
             if(isset($item['event'])){
                 if(!is_array($item['event']))throw new TransferException('Les données de l’événement sont invalides.');
                 try{$eventData=json_encode(pathway_event_normalize($item['event']),JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE);}catch(InvalidArgumentException $exception){throw new TransferException($exception->getMessage());}
             }
-            $isEvaluation=$eventData===null&&!empty($item['is_evaluation']);$selfEvaluation=$eventData===null&&!$isEvaluation&&(!array_key_exists('self_evaluation_enabled',$item)||!empty($item['self_evaluation_enabled']));$weight=normalize_evaluation_weight($item['evaluation_weight']??1);if($isEvaluation&&$weight===null)throw new TransferException('La pondération d’une évaluation est invalide.');$insertItem->execute([$courseId,$resolvedPages[$index],$index+1,$resetDeadlines?null:(trim((string)($item['deadline']??''))?:null),$isEvaluation?1:0,$selfEvaluation?1:0,$isEvaluation?$weight:1,(string)($item['instructions']??''),$accessMode,$frameworkTracking?1:0,$eventData]);$itemId=(int)$pdo->lastInsertId();foreach((array)($item['skills']??[]) as $code)if(isset($skillMap[strtoupper((string)$code)]))$linkSkill->execute([$itemId,$skillMap[strtoupper((string)$code)]]);}
+            $isEvaluation=$eventData===null&&!empty($item['is_evaluation']);$selfEvaluation=$eventData===null&&!$isEvaluation&&(!array_key_exists('self_evaluation_enabled',$item)||!empty($item['self_evaluation_enabled']));$weight=normalize_evaluation_weight($item['evaluation_weight']??1);if($isEvaluation&&$weight===null)throw new TransferException('La pondération d’une évaluation est invalide.');$insertItem->execute([$courseId,$resolvedPages[$index],$index+1,$resetDeadlines?null:(trim((string)($item['deadline']??''))?:null),$isEvaluation?1:0,$selfEvaluation?1:0,$isEvaluation?$weight:1,(string)($item['instructions']??''),$accessMode,$frameworkTracking?1:0,$eventData,isset($item['group'])?$groupMap[(string)$item['group']]:null]);$itemId=(int)$pdo->lastInsertId();foreach((array)($item['skills']??[]) as $code)if(isset($skillMap[strtoupper((string)$code)]))$linkSkill->execute([$itemId,$skillMap[strtoupper((string)$code)]]);}
         $pdo->commit();return $courseId;
     }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }

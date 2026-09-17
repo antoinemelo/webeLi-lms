@@ -997,20 +997,22 @@ function handle_action(string $action): never
     }
 
     if ($action === 'move_item' && $user['role'] === 'teacher') {
-        $id=(int)$_POST['item_id']; $direction=$_POST['direction']==='up'?-1:1;
-        $item=one('SELECT * FROM pathway_items WHERE id=?',[$id]);
-        if ($item&&teacher_can_access_course(db(),(int)$item['course_id'],(int)$user['id'])&&acquire_edit_lock(db(),'course_structure',(int)$item['course_id'],(int)$user['id'])['ok']) {
-            $other=one('SELECT * FROM pathway_items WHERE course_id=? AND position '.($direction<0?'<':'>').' ? ORDER BY position '.($direction<0?'DESC':'ASC').' LIMIT 1',[$item['course_id'],$item['position']]);
-            if ($other) { run('UPDATE pathway_items SET position=-1 WHERE id=?',[$id]); run("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?",[$item['position'],$other['id']]); run("UPDATE pathway_items SET position=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=?",[$other['position'],$id]); }
-            release_edit_locks(db(),(int)$user['id'],'course_structure',(int)$item['course_id']);
-            redirect('pathway',['course'=>$item['course_id']]);
-        }
-        flash($item?'La structure du parcours est momentanément verrouillée par un autre enseignant.':'Étape introuvable.','error');
-        redirect('pathway',$item?['course'=>$item['course_id']]:[]);
+        $item=one('SELECT course_id,position FROM pathway_items WHERE id=?',[(int)($_POST['item_id']??0)]);
+        $_POST['position']=max(1,(int)($item['position']??0)+(($_POST['direction']??'')==='up'?-1:1));
+        $action='reorder_pathway_item';
+    }
+    if($action==='save_pathway_group'&&$user['role']==='teacher'){
+        $courseId=(int)($_POST['course_id']??0);
+        try{
+            save_pathway_group(db(),$courseId,(int)$user['id'],(string)($_POST['operation']??''),(int)($_POST['group_id']??0),(string)($_POST['title']??''),(string)($_POST['structure_token']??''));
+            flash('Regroupement mis à jour.');
+        }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
+        redirect('pathway',['course'=>$courseId]);
     }
     if($action==='reorder_pathway_item'&&$user['role']==='teacher'){
-        $result=reorder_pathway_item(db(),(int)($_POST['item_id']??0),(int)($_POST['position']??0),(int)$user['id']);
+        $result=reorder_pathway_item(db(),(int)($_POST['item_id']??0),(int)($_POST['position']??0),(int)$user['id'],isset($_POST['group_id'])&&$_POST['group_id']!==''?(int)$_POST['group_id']:null,isset($_POST['structure_token'])?(string)$_POST['structure_token']:null);
         if($result['status']==='updated')flash(t('Ordre du parcours mis à jour.'));
+        elseif($result['status']==='stale')flash(t('Le parcours a été modifié. Rechargez la page avant de réessayer.'),'error');
         elseif($result['status']==='locked')flash(t('La structure du parcours est momentanément verrouillée par un autre enseignant.'),'error');
         elseif(in_array($result['status'],['invalid','missing'],true))flash(t('Position d’étape invalide.'),'error');
         redirect('pathway',$result['course_id']?['course'=>$result['course_id']]:[]);

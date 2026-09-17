@@ -5,6 +5,20 @@ declare(strict_types=1);
 // French is the source language. These rows contain only interface copy; user-created
 // course and page content never passes through this catalogue.
 return [
+    'Ajouter un regroupement'=>['en'=>'Add a group','de'=>'Gruppe hinzufügen','it'=>'Aggiungi un gruppo','es'=>'Añadir un grupo'],
+    'Titre du regroupement'=>['en'=>'Group title','de'=>'Gruppentitel','it'=>'Titolo del gruppo','es'=>'Título del grupo'],
+    'Renommer le regroupement'=>['en'=>'Rename group','de'=>'Gruppe umbenennen','it'=>'Rinomina il gruppo','es'=>'Renombrar el grupo'],
+    'Supprimer le regroupement'=>['en'=>'Delete group','de'=>'Gruppe löschen','it'=>'Elimina il gruppo','es'=>'Eliminar el grupo'],
+    'Supprimer ce regroupement ? Ses étapes seront conservées.'=>['en'=>'Delete this group? Its steps will be kept.','de'=>'Diese Gruppe löschen? Ihre Schritte bleiben erhalten.','it'=>'Eliminare questo gruppo? Le tappe saranno conservate.','es'=>'¿Eliminar este grupo? Se conservarán sus etapas.'],
+    'Glissez des étapes dans ce regroupement.'=>['en'=>'Drag steps into this group.','de'=>'Schritte in diese Gruppe ziehen.','it'=>'Trascina le tappe in questo gruppo.','es'=>'Arrastra etapas a este grupo.'],
+    'Regroupement'=>['en'=>'Group','de'=>'Gruppe','it'=>'Gruppo','es'=>'Grupo'],
+    'Sans regroupement'=>['en'=>'Ungrouped','de'=>'Ohne Gruppe','it'=>'Senza gruppo','es'=>'Sin grupo'],
+    'Déplacer'=>['en'=>'Move','de'=>'Verschieben','it'=>'Sposta','es'=>'Mover'],
+    'Regroupement mis à jour.'=>['en'=>'Group updated.','de'=>'Gruppe aktualisiert.','it'=>'Gruppo aggiornato.','es'=>'Grupo actualizado.'],
+    'Regroupement introuvable.'=>['en'=>'Group not found.','de'=>'Gruppe nicht gefunden.','it'=>'Gruppo non trovato.','es'=>'Grupo no encontrado.'],
+    'Le titre du regroupement doit contenir entre 1 et 120 caractères.'=>['en'=>'The group title must contain between 1 and 120 characters.','de'=>'Der Gruppentitel muss 1 bis 120 Zeichen enthalten.','it'=>'Il titolo del gruppo deve contenere da 1 a 120 caratteri.','es'=>'El título del grupo debe tener entre 1 y 120 caracteres.'],
+    'Le parcours a été modifié. Rechargez la page avant de réessayer.'=>['en'=>'The pathway has changed. Reload the page before trying again.','de'=>'Der Lernpfad wurde geändert. Laden Sie die Seite vor einem erneuten Versuch neu.','it'=>'Il percorso è stato modificato. Ricarica la pagina prima di riprovare.','es'=>'El recorrido ha cambiado. Recarga la página antes de volver a intentarlo.'],
+    'Les regroupements du parcours sont invalides.'=>['en'=>'Invalid pathway groups.','de'=>'Ungültige Gruppen im Lernpfad.','it'=>'Gruppi del percorso non validi.','es'=>'Grupos del recorrido no válidos.'],
     'Événement'=>['en'=>'Event','de'=>'Ereignis','it'=>'Evento','es'=>'Evento'],
     'Type d’étape'=>['en'=>'Step type','de'=>'Schritttyp','it'=>'Tipo di tappa','es'=>'Tipo de etapa'],
     'Consultation simple'=>['en'=>'Read only','de'=>'Einfaches Lesen','it'=>'Semplice consultazione','es'=>'Consulta simple'],

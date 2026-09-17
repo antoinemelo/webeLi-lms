@@ -313,7 +313,21 @@ Le lien est cliquable dans la vue élève et dans l’aperçu enseignant. Le PDF
 
 L’organisation complète du parcours n’est jamais proposée dans la navigation élève.
 
+#### Regrouper les étapes
+
+Sous **＋ Ajouter une page au parcours**, **＋ Ajouter un regroupement** crée un groupe avec un titre (120 caractères maximum). Les regroupements sont facultatifs : un parcours peut conserver toutes ses étapes sans groupe, ou mélanger groupes et étapes libres.
+
+Glisser une étape par son numéro vers le titre ou la zone vide d’un regroupement l’ajoute à la fin de ce groupe, même s’il est replié. Un dépôt sur une étape place l’étape déplacée avant ou après celle-ci, dans le même regroupement. La zone **Sans regroupement**, visible pendant le déplacement, permet de sortir une étape de son groupe. Le menu à trois points propose également **Regroupement**, puis **Déplacer**, utilisable au clavier.
+
+Le chevron ouvre ou replie le groupe. Ce choix est mémorisé séparément pour chaque compte et chaque vue dans l’onglet du navigateur. Ouvrir les réglages d’une étape ouvre aussi son regroupement. Le titre peut être renommé ; supprimer un regroupement conserve ses étapes, leur ordre et toute la progression.
+
+Les numéros restent continus dans tout le parcours : chaque groupe ne recommence pas à 1. Replier un groupe ne change aucun numéro ; déplacer une étape change sa place dans la séquence, comme le réordonnancement habituel. Les groupes sont sans imbrication. Ils figurent aussi dans l’aperçu enseignant et la vue d’ensemble de l’élève. L’élève ne voit que les étapes autorisées ; un groupe sans étape accessible est masqué.
+
+La duplication et l’import/export JSON conservent les regroupements, y compris ceux qui sont encore vides. Les anciens fichiers sans regroupement restent importables. Les regroupements n’interviennent pas dans les calculs des acquis ou de progression.
+
 #### Types d’étapes et événements
+
+La roue dentée ouvre ou ferme les réglages en ramenant l’affichage sur l’étape correspondante.
 
 Dans les réglages de l’étape (roue dentée), **Type d’étape** remplace les anciennes cases indépendantes. Une étape possède un seul type ; **Évaluation** remplace le libellé « Cette étape est une évaluation ». L’autoévaluation reste le type proposé lors de l’ajout d’une page. La consultation simple permet de conserver les activités sans note ni autoévaluation.
 
@@ -322,6 +336,8 @@ Pour organiser une date ou une réunion :
 1. Ajouter une page prête au parcours, ou régler une étape existante. Le **titre de la page** sert de nom à l’événement.
 2. Choisir **Événement** et renseigner le début, la fin et, facultativement, le lieu. Les horaires sont en **Europe/Zurich** ; **Toute la journée** masque les heures. Pour plusieurs journées, saisir la dernière journée incluse comme date de fin.
 3. Enregistrer l’étape. Son lecteur et l’aperçu enseignant affichent les dates et les liens **Télécharger le calendrier (.ics)** et **Ajouter à Google Calendar**.
+
+Dans **Parcours**, le menu à trois points de l’étape permet aussi de **Télécharger le calendrier (.ics)** directement.
 
 Le `.ics` s’importe dans un agenda compatible. Le lien Google ouvre un événement prérempli que l’utilisateur confirme dans son propre agenda. Ces ajouts ne synchronisent pas les modifications ultérieures : après un changement, mettre également à jour son agenda. Le téléchargement respecte l’accès à l’étape. Une consultation de l’événement suit les règles des étapes sans autoévaluation ; elle ne prouve pas la présence à la réunion.
 

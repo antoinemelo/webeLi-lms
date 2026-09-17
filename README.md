@@ -201,6 +201,8 @@ php tests/embeds.php
 php tests/content_blocks.php
 php tests/announcement_messages.php
 php tests/student_admin_history.php
+php tests/pathway_groups.php
+node tests/pathway_groups_browser.mjs
 php tests/pathway_events.php
 node tests/pathway_events_browser.mjs
 php tests/progress_export.php
