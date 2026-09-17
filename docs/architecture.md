@@ -28,6 +28,9 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 | `app/RegistrationPolicy.php` | plafonds anti-abus et purge des comptes non validés |
 | `app/LearningActivity.php` | temps actif par page, rapports enseignants et rétention d’un mois |
 | `app/PathwayService.php` | copie de parcours, retrait d’étape et suppression sûre de page |
+| `app/PathwayEvent.php` | type exclusif, validation des dates, rendu des événements, .ics et lien Google Calendar |
+| `app/ProgressExport.php`, `app/ProgressPdf.php` | sélection et droits, données communes, CSV et PDF de progression |
+| `public/assets/progress-export.js` | recherche et sélection des élèves dans la fenêtre unique d’export |
 | `app/TransferService.php` | import/export JSON versionné des pages, parcours et élèves |
 | `app/AdminService.php` | suppressions globales réservées au superadmin |
 | `app/PdfExport.php` | tableaux et fiches détaillées rendus en PDF par mPDF |
@@ -88,7 +91,7 @@ Le navigateur charge d’abord les fichiers Bootstrap locaux, puis `assets/app.c
 
 ### Discussions séparées
 
-Le socle utilise `storage/apr.sqlite` (schéma 24). La migration 24 attribue des identités durables aux personnes, parcours et à l’instance, et ajoute l’activation de la messagerie par parcours. Les fils, messages, lectures, demandes d’effacement et abonnements push sont dans `storage/messaging.sqlite` (schéma 1), avec leur propre chaîne sous `database/messaging/migrations/`. Ils ne rejoignent pas les tables de suivi administratif. Les clés VAPID sont privées dans `storage/messaging-push.json`. Voir [discussions](discussions.md) pour les droits de gestion, exports, effacements et limites de conservation.
+Le socle utilise `storage/apr.sqlite` (schéma 25). La migration 24 attribue des identités durables aux personnes, parcours et à l’instance, et ajoute l’activation de la messagerie par parcours. Les fils, messages, lectures, demandes d’effacement et abonnements push sont dans `storage/messaging.sqlite` (schéma 1), avec leur propre chaîne sous `database/messaging/migrations/`. Ils ne rejoignent pas les tables de suivi administratif. Les clés VAPID sont privées dans `storage/messaging-push.json`. Voir [discussions](discussions.md) pour les droits de gestion, exports, effacements et limites de conservation.
 
 Les clés étrangères sont activées à chaque connexion. Les contraintes `CHECK`, `UNIQUE` et les suppressions en cascade portent les invariants simples au plus près des données.
 
@@ -174,3 +177,13 @@ Les chemins relatifs du manifest, du service worker et des assets permettent d�
 ## Maintenance et sauvegardes du code
 
 `UpdateService.php` télécharge puis vérifie l’ensemble de la publication. `maintenance_file_changes()` compare les empreintes aux fichiers réellement installés, ce qui détecte aussi les modifications locales et fichiers manquants. Le nouvel outil ne copie que les fichiers nouveaux ou différents et ne sauvegarde que les anciennes versions remplacées ou supprimées, avec `file-changes.json`. Les bibliothèques identiques restent en place. Un échec géré restaure les fichiers concernés et retire les nouveaux fichiers ; les migrations conservent leurs protections transactionnelles et sauvegardes SQLite. Le téléchargement reste complet et les sauvegardes partielles ne sont pas des copies autonomes du site. Voir [exploitation](exploitation.md#mettre-à-jour-depuis-la-superadministration) pour le déploiement de cet outil et la restauration.
+
+## Événements et export de progression
+
+La migration **25** ajoute `pathway_items.event_data`, un JSON nullable contenant `all_day`, `start`, `end` et `location`. Les dates sont conservées dans le fuseau `Europe/Zurich`. Le formulaire `item_type` produit les indicateurs existants `is_evaluation` et `self_evaluation_enabled`, tous deux à zéro pour un événement ; une consultation a les mêmes indicateurs et `event_data=NULL`. Les commandes de sauvegarde et l’import normalisent les types exclusifs. La migration donne priorité à l’évaluation pour les étapes mixtes sans toucher aux lignes `progress`. Un déclencheur actualise `updated_at` lors d’une modification des données calendaires.
+
+`?view=event-download&item=…` vérifie le rôle et les droits de l’acteur avant de produire un fichier `text/calendar` non mis en cache. Son UID dépend de l’identité durable du parcours et de l’étape. Les heures sont converties en UTC ; les journées entières utilisent une fin exclusive. Le sérialiseur applique l’échappement, CRLF et le pliage UTF-8 à 75 octets définis par [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545). Le lien Google utilise le [formulaire d’événement prérempli documenté par Google](https://developers.google.com/workspace/calendar/api/concepts/inviting-attendees-to-events#provide_a_link_for_users_to_add_the_event), sans OAuth ni appel d’écriture serveur.
+
+L’action POST `export_progress` contrôle le parcours, le rôle, les élèves actifs, le mode et le format. `course_progress_students()` fournit les indicateurs communs au tableau de bord et à l’export ; `ProgressExport.php` ajoute les résultats détaillés, tandis que `ProgressPdf.php` prépare le rendu mPDF et les ruptures par élève. CSV et PDF utilisent la même sélection autorisée. Les tests couvrent notamment les notes nulles/zéro, les QCM multiples, les frontières entre parcours, les formats et la pagination.
+
+La sauvegarde de page ne prépare `page.updated` que si le lien d’enregistrement transmet `notify_students=1` et qu’aucun conflit n’est constaté. Les modifications ordinaires restent visibles par le suivi des changements de parcours.

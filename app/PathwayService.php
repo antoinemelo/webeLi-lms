@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__.'/PathwayEvent.php';
 
 function page_pathway_return_course(PDO $pdo,int $pageId,int $teacherId,int $courseId): ?int
 {
@@ -438,11 +439,11 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled) VALUES(?,?,?,?,?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],$item['is_evaluation'],$item['self_evaluation_enabled']??1,$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],!empty($item['event_data'])?0:$item['is_evaluation'],(!empty($item['event_data'])||$item['is_evaluation'])?0:($item['self_evaluation_enabled']??1),$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1,$item['event_data']??null]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();

@@ -10,7 +10,7 @@ Utilisateur
 Page ── Blocs + Tags
   │
   └── Étape de parcours dans un Cours
-        ├── position, échéance, évaluation, consigne
+        ├── position, échéance, type exclusif, événement, consigne
         ├── Objectifs du cours
         └── Compétences du cours
               │
@@ -30,6 +30,16 @@ Cette séparation est structurante :
 - une page peut être réutilisée dans plusieurs cours ;
 - son ordre, son échéance et son caractère évaluatif peuvent varier ;
 - les objectifs et compétences restent cohérents avec le référentiel propre au cours.
+
+## Types et événements
+
+Chaque étape propose un type exclusif : **Évaluation** (note enseignante sur 10), **Autoévaluation** (niveau élève sur 3), **Événement**, ou **Consultation simple**. L’évaluation prévaut sur l’autoévaluation pour les anciennes données mixtes ; la migration ne supprime ni les notes ni les commentaires historiques. Un changement manuel de type applique les règles existantes de réinitialisation des validations concernées.
+
+Un événement utilise le titre de sa page, un début et une fin en heure Europe/Zurich, un indicateur de journée entière et un lieu facultatif. Il n’active ni note ni autoévaluation. Sa consultation suit les règles d’une étape sans autoévaluation ; elle ne constitue pas un contrôle de présence. La date de l’événement est distincte de l’échéance pédagogique. Copie et import/export JSON conservent les deux ; la remise à zéro des échéances conserve les horaires de l’événement.
+
+Le téléchargement `.ics` est réservé aux enseignants autorisés et aux élèves actifs ayant accès à l’étape d’un parcours non archivé. Le lien Google Calendar ouvre un formulaire prérempli, sans écriture automatique dans le compte de l’utilisateur. Aucun mécanisme de synchronisation ou de récurrence n’est ajouté.
+
+L’aperçu général enseignant exclut les étapes `access_mode=none`, y compris la première étape, la navigation et l’ouverture directe d’une page d’aperçu. Les étapes restreintes restent présentées avec leur indication d’accès ; aucun élève particulier n’est simulé.
 
 ## Validation
 
@@ -60,7 +70,7 @@ niveau de l’évaluation = note / 10 × 3
 moyenne = somme(niveau × poids) / somme(poids)
 ```
 
-Une évaluation suivie reste incluse lorsqu’elle est masquée aux élèves. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Si une évaluation comporte aussi une autoévaluation, seule sa note officielle contribue à la moyenne enseignante.
+Une évaluation suivie reste incluse lorsqu’elle est masquée aux élèves. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Les types sont désormais exclusifs. Pour les anciennes étapes mixtes, la migration conserve le type Évaluation et les résultats historiques ; seule la note officielle contribue à la moyenne enseignante.
 
 L’affichage convertit une moyenne sur 3 en pourcentage pour la barre visuelle :
 
@@ -93,8 +103,10 @@ Les actions métier insèrent un email dans `notification_outbox` :
 | `student.validated` | enseignant | validation ou nouvelle soumission élève |
 | `teacher.confirmed` | élève | confirmation du niveau |
 | `reward.awarded` | élève | attribution d’un reward |
-| `page.updated` | élèves concernés | mise à jour d’une page présente dans leur cours |
+| `page.updated` | élèves actifs ayant accès à la page | action explicite **Enregistrer et prévenir des modifications**, après une sauvegarde sans conflit |
 | `course.announcement` | élèves destinataires et enseignant pour le récapitulatif d’un envoi groupé | annonce globale ou ciblée dans leur parcours |
+
+**Enregistrer** une page n’ajoute aucun message `page.updated`. Le lien explicite peut être utilisé après plusieurs sauvegardes silencieuses, y compris sans nouvelle différence de contenu. Un conflit ou une erreur bloque la préparation des messages. Cliquer plusieurs fois sur le lien explicite peut préparer plusieurs annonces ; il ne s’agit pas d’un regroupement automatique. L’encadré élève **Depuis la dernière visite** continue de signaler les changements.
 
 L’écriture métier ne dépend donc pas du succès immédiat de `mail()`.
 
@@ -109,3 +121,11 @@ Une Réunion, une Correspondance ou un Paiement est un compte rendu administrati
 ## Discussions privées
 
 L’activation par parcours ouvre les échanges élève–enseignant. Chaque fil relie un élève, un enseignant et un parcours ; ses messages sont limités à 256 caractères et modifiables durant trois minutes par leur auteur. Les responsables peuvent gérer les fils de leurs parcours ; le superadmin peut gérer ceux d’une personne sur tous les parcours. Les exports et effacements portent sur les fils autorisés, avec confirmation pour l’effacement. La base de discussions est séparée et ne fournit aucune entrée à l’historique administratif. Les [règles de discussion et de notification push](discussions.md) précisent les accès et la conservation.
+
+## Export de progression
+
+Le menu du suivi propose une seule fenêtre et une seule action d’export : CSV ou PDF, récapitulatif ou détaillé, pour tous les élèves actifs du parcours ou une sélection non vide. L’enseignant doit avoir accès au parcours ; une sélection contenant un élève extérieur ou archivé est refusée intégralement. Les secrets et notes privées ne sont pas exportés.
+
+Le récapitulatif partage les calculs du tableau de bord. Le détail conserve une ligne par étape et QCM, avec les résultats individuels des évaluations sur 10, autoévaluations sur 3 et dernier résultat de chaque QCM sur 10. Aucun historique de tentatives ni choix de réponses n’est inventé. Une absence de résultat reste distincte de zéro. Les étapes inaccessibles figurent explicitement dans le bilan afin de conserver les notes encore utiles au suivi.
+
+Le PDF récapitulatif est en A4 paysage ; le détail est en A4 portrait avec un saut de page avant chaque nouvel élève. Une fiche peut occuper plusieurs pages. Le CSV est en UTF-8 avec BOM, séparateur point-virgule, dates Europe/Zurich et protection des cellules pouvant être interprétées comme des formules. Les totaux répétés sur plusieurs lignes QCM ne doivent pas être additionnés.

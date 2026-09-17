@@ -138,3 +138,6 @@ INSERT INTO reward_awards (enrollment_id,pathway_item_id,reward_type_id,points,m
  (2,1,1,5,'Tu as repris la consigne jusqu’au bout.',1,datetime('now','-9 day')),
  (3,1,3,10,'Merci d’avoir aidé le groupe.',1,datetime('now','-7 day')),
  (4,6,5,10,'Belle attention portée aux sources.',1,datetime('now'));
+
+-- Assessment types are exclusive; preserve the seeded historical results.
+UPDATE pathway_items SET self_evaluation_enabled=0 WHERE is_evaluation=1;

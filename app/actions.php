@@ -410,9 +410,13 @@ function handle_action(string $action): never
         header('Cache-Control: private, no-store');
         try{
             if($user['role']!=='teacher')throw new InvalidArgumentException('Accès interdit.');
+            $format=(string)($_POST['format']??'csv');
+            if(!in_array($format,['csv','pdf'],true))throw new InvalidArgumentException('Export indisponible');
             $courseId=(int)($_POST['course_id']??0);
             $data=course_progress_export_data(db(),$courseId,(int)$user['id'],(array)($_POST['students']??[]),(string)($_POST['mode']??''));
-            send_csv_download(course_progress_export_csv($data),'progression-'.$data['course']['code'].'-'.$data['mode'].'-'.date('Y-m-d').'.csv');
+            $filename='progression-'.$data['course']['code'].'-'.$data['mode'].'-'.date('Y-m-d');
+            if($format==='pdf')send_pdf_download(course_progress_export_pdf($data),$filename.'.pdf',$data['mode']==='summary');
+            send_csv_download(course_progress_export_csv($data),$filename.'.csv');
         }catch(InvalidArgumentException $exception){
             http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo t($exception->getMessage());
         }catch(Throwable $exception){
@@ -913,7 +917,8 @@ function handle_action(string $action): never
         $courseId = (int)$_POST['course_id']; $pageId = (int)$_POST['page_id'];
         $deadlineInput=trim((string)($_POST['deadline']??''));$deadline=database_date_from_input($deadlineInput);
         if($deadlineInput!==''&&$deadline===null){flash('Saisissez la date au format jj/mm/aaaa.','error');redirect('pathway',['course'=>$courseId]);}
-        $isEvaluation=isset($_POST['is_evaluation'])?1:0;$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
+        try{[$isEvaluation,$selfEvaluation,$eventData]=pathway_type_settings($_POST);}catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');redirect('pathway',['course'=>$courseId]);}
+        $weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
         if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$courseId]);}
         $course = one('SELECT * FROM courses WHERE id=?', [$courseId]);
         $page = one('SELECT id FROM pages WHERE id=? AND status=?', [$pageId,'ready']);
@@ -925,7 +930,7 @@ function handle_action(string $action): never
             else try{
                 db()->beginTransaction();
                 $position = (int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM pathway_items WHERE course_id=?',[$courseId])['n']);
-                run('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight) VALUES(?,?,?,?,?,?)', [$courseId,$pageId,$position,$deadline,$isEvaluation,$isEvaluation?$weight:1]);
+                run('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight,self_evaluation_enabled,event_data) VALUES(?,?,?,?,?,?,?,?)', [$courseId,$pageId,$position,$deadline,$isEvaluation,$isEvaluation?$weight:1,$selfEvaluation,$eventData]);
                 db()->commit();flash('Page ajoutée au parcours.');
             }catch(Throwable $exception){if(db()->inTransaction())db()->rollBack();throw $exception;}
             finally{release_edit_locks(db(),(int)$user['id'],'course_structure',$courseId);}
@@ -1028,10 +1033,11 @@ function handle_action(string $action): never
                 }
                 if(!$allowedStudents){flash('Sélectionnez au moins un élève pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
-            $isEvaluation=isset($_POST['is_evaluation'])?1:0;$selfEvaluation=array_key_exists('self_evaluation_enabled',$_POST)?((int)$_POST['self_evaluation_enabled']===1?1:0):(int)$item['self_evaluation_enabled'];$weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
+            try{[$isEvaluation,$selfEvaluation,$eventData]=pathway_type_settings($_POST,$item);}catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            $weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
             if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            $update=db()->prepare("UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,revision=revision+1,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
-            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$frameworkTracking,$id,$revision]);
+            $update=db()->prepare("UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,event_data=?,revision=revision+1,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
+            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$frameworkTracking,$eventData,$id,$revision]);
             if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             if($isEvaluation!==(int)$item['is_evaluation'])run("UPDATE progress SET teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$id]);
             if($selfEvaluation!==(int)$item['self_evaluation_enabled']){

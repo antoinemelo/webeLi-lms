@@ -199,6 +199,7 @@ CREATE TABLE pathway_items (
     page_id INTEGER NOT NULL,
     position INTEGER NOT NULL,
     deadline TEXT,
+    event_data TEXT,
     is_evaluation INTEGER NOT NULL DEFAULT 0 CHECK(is_evaluation IN (0,1)),
     self_evaluation_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_evaluation_enabled IN (0,1)),
     evaluation_weight REAL NOT NULL DEFAULT 1 CHECK(evaluation_weight IN (0.5,1,2,3,4)),
@@ -516,7 +517,7 @@ CREATE TABLE student_followups (
         CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
         BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
 
-PRAGMA user_version = 24;
+PRAGMA user_version = 25;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -538,3 +539,5 @@ CREATE TRIGGER courses_messaging_identity AFTER INSERT ON courses WHEN NEW.messa
 ALTER TABLE courses ADD COLUMN messaging_enabled INTEGER NOT NULL DEFAULT 0 CHECK(messaging_enabled IN (0,1));
 CREATE TABLE messaging_instance (id INTEGER PRIMARY KEY CHECK(id=1),uuid TEXT NOT NULL);
 INSERT INTO messaging_instance VALUES(1,lower(hex(randomblob(16))));
+
+CREATE TRIGGER touch_pathway_event_after_update AFTER UPDATE OF event_data ON pathway_items WHEN NEW.updated_at IS OLD.updated_at BEGIN UPDATE pathway_items SET updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=NEW.id; END;

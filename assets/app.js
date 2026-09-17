@@ -949,13 +949,22 @@ if (frameworkPanel) {
   });
 }
 
-document.querySelectorAll('[data-evaluation-toggle]').forEach((toggle) => {
+document.querySelectorAll('[data-pathway-type]').forEach((toggle) => {
   const form = toggle.closest('form');
   const weight = form?.querySelector('[data-evaluation-weight]');
-  if (!weight) return;
-  const syncEvaluationWeight = () => { weight.hidden = !toggle.checked; };
-  toggle.addEventListener('change', syncEvaluationWeight);
-  syncEvaluationWeight();
+  const eventFields = form?.querySelector('[data-event-fields]');
+  const allDay = form?.querySelector('[data-event-all-day]');
+  const syncType = () => {
+    if (weight) weight.hidden = toggle.value !== 'evaluation';
+    const isEvent = toggle.value === 'event';
+    if (eventFields) eventFields.hidden = !isEvent;
+    eventFields?.querySelectorAll('[data-event-date]').forEach((input) => { input.required = isEvent; });
+    eventFields?.querySelectorAll('[data-event-time]').forEach((input) => { input.required = isEvent && !allDay.checked; });
+    eventFields?.querySelectorAll('[data-event-time-field]').forEach((field) => { field.hidden = allDay.checked; });
+  };
+  toggle.addEventListener('change', syncType);
+  allDay?.addEventListener('change', syncType);
+  syncType();
 });
 
 document.querySelectorAll('[data-page-picker]').forEach((picker) => {

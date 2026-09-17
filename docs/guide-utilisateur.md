@@ -141,7 +141,7 @@ Depuis **Suivi**, ouvrir un élève. La dernière visite connue apparaît à dro
 
 Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps actif toutes les 60 secondes et à la fermeture ou au masquage de l’onglet. Les données de plus d’un mois sont automatiquement supprimées.
 
-Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Après **Progression**, la colonne **Moyennes** présente la moyenne pondérée des évaluations sur 10 puis la moyenne simple des niveaux autoévalués sur 3, chacune au dixième (par exemple **7,0 | 2,5**). Les calculs portent sur les étapes suivies du cours ; seules les autoévaluations remises et encore activées sont retenues. Une valeur absente est indiquée par **—**. Le tri **Moyennes** compare d’abord les notes d’évaluation, puis les niveaux autoévalués. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient aussi une autoévaluation.
+Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Après **Progression**, la colonne **Moyennes** présente la moyenne pondérée des évaluations sur 10 puis la moyenne simple des niveaux autoévalués sur 3, chacune au dixième (par exemple **7,0 | 2,5**). Les calculs portent sur les étapes suivies du cours ; seules les autoévaluations remises et encore activées sont retenues. Une valeur absente est indiquée par **—**. Le tri **Moyennes** compare d’abord les notes d’évaluation, puis les niveaux autoévalués. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient plusieurs QCM.
 
 Une annonce globale du parcours s’adresse à tous ses élèves actifs. Pour choisir les destinataires, utiliser **Courriel / Annonce** dans le menu Actions à trois points du tableau de bord. Ce menu regroupe aussi les modèles, Correspondance, Réunion, Paiement et Notifications ; ses entrées sont triées selon la langue affichée.
 
@@ -159,6 +159,22 @@ En ouvrant un élève, l’enseignant peut :
 - consulter la moyenne pondérée des évaluations suivies, les compétences confirmées et les derniers rewards.
 
 Les actions de confirmation et de notation utilisent un crayon à droite de l’étape. Le crayon orange rempli indique un niveau à confirmer ou une évaluation à noter : le premier formulaire en attente reste ouvert, les suivants s’ouvrent au clic.
+
+
+### Exporter la progression des élèves
+
+Dans **Suivi** (`?view=teacher`), ouvrir le menu **⋮** en haut à droite du titre, puis **Exporter la progression**. La même fenêtre regroupe les formats **CSV** et **PDF**, les modes **Récapitulatif** et **Détaillé**, ainsi que les noms des élèves actifs du parcours sélectionné. Tous sont cochés initialement ; la recherche, les cases individuelles et la sélection globale permettent de préparer un sous-ensemble. Le bouton unique **Exporter** lance le téléchargement.
+
+| Mode | CSV | PDF |
+|---|---|---|
+| Récapitulatif | Une ligne par élève : identité, progression, moyennes, encouragements et dernière activité connue. | Tableau A4 paysage reprenant les indicateurs du suivi. |
+| Détaillé | Une ligne par élève et étape ; plusieurs lignes si l’étape contient plusieurs QCM. | Fiches A4 portrait ; **chaque élève commence sur une nouvelle page**, avec continuation si nécessaire. |
+
+Le détail comprend la note de chaque évaluation sur 10, sa pondération, les autoévaluations sur 3, les confirmations et commentaires. Chaque QCM possède une colonne **Note QCM /10** : questions correctes ÷ nombre de questions × 10, arrondi à deux décimales. Seul le **dernier résultat** de chaque QCM est disponible, y compris pour l’entraînement ; les anciennes tentatives et les réponses individuelles ne sont pas exportées. Le CSV indique aussi le nombre de tentatives et la date de dernière réponse.
+
+Une cellule vide signifie qu’aucun résultat n’est disponible ; zéro reste une note. Les étapes devenues inaccessibles sont signalées afin de conserver les résultats utiles au bilan. Le CSV utilise UTF-8 avec BOM, le point-virgule et les horaires **Europe/Zurich**. Les indicateurs de l’élève et les notes d’étape sont répétés sur les lignes QCM : ne pas les additionner.
+
+Depuis la fiche de suivi (`?view=student-detail`), le bouton immédiatement à droite de l’encadré des points ouvre **Gestion de l’élève**, avec les mêmes informations, inscriptions et historique que depuis **Élèves & inscriptions**.
 
 ### Suivi administratif
 
@@ -251,13 +267,13 @@ Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]`
 
 Les choix sont sauvegardés automatiquement comme brouillon, sans attribuer de score ni consommer la remise d’une évaluation. Attendez le message **Brouillon enregistré** : vous pouvez alors fermer la fenêtre et retrouver les cases cochées en revenant au même QCM, même après reconnexion. En cas de coupure réseau, une copie locale permet la reprise dans le même navigateur ; un avertissement indique que le serveur n’a pas encore confirmé la sauvegarde. La remise définitive efface le brouillon. Un QCM modifié par l’équipe enseignante ne réutilise pas les anciennes réponses.
 
-Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. Si la case **Cette étape est une évaluation** est cochée, le bouton devient **Terminer le QCM** et une confirmation précède la remise définitive : le score reste visible par l’élève et apparaît dans le profil de l’élève côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue élève ; les champs personnels et les commandes restent utilisables. Le téléchargement PDF de l’étape est également retiré et refusé côté serveur pour l’élève. Ces restrictions ne s’appliquent pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, y compris si l’étape a été masquée après la remise, mais jamais les réponses choisies.
+Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. Si le type **Évaluation** est sélectionné, le bouton devient **Terminer le QCM** et une confirmation précède la remise définitive : le score reste visible par l’élève et apparaît dans le profil de l’élève côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue élève ; les champs personnels et les commandes restent utilisables. Le téléchargement PDF de l’étape est également retiré et refusé côté serveur pour l’élève. Ces restrictions ne s’appliquent pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, y compris si l’étape a été masquée après la remise, mais jamais les réponses choisies.
 
 Dans **Acquis → Évaluations**, une évaluation masquée reste présente pour assurer la continuité du suivi. Tant qu’elle n’est ni accessible ni notée, son vrai titre est remplacé par **Évaluation à venir**.
 
 La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
 
-Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent visibles dans une barre persistante au-dessus des réglages pendant le défilement des blocs. Enregistrer une page déjà utilisée prépare un email pour chaque élève concerné. Une page en brouillon ou hors parcours reste invisible dans le chemin de travail des élèves.
+Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent visibles dans une barre persistante au-dessus des réglages pendant le défilement des blocs. **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton, sauvegarde puis prépare un courriel par élève actif ayant accès à la page. On peut donc enregistrer plusieurs corrections, puis prévenir une seule fois, même si la dernière version est déjà sauvegardée. Une erreur ou un conflit de sauvegarde empêche cet envoi. Les modifications restent signalées dans **Depuis la dernière visite** côté élève. Une page en brouillon ou hors parcours reste invisible dans le chemin de travail des élèves.
 
 Une page qui n’est utilisée dans aucun parcours peut être supprimée définitivement depuis son écran d’édition. Tant qu’elle est utilisée, la suppression reste bloquée et il faut d’abord la retirer de chaque parcours concerné.
 
@@ -279,7 +295,7 @@ Dans **Parcours**, l’enseignant sélectionne un cours. Le menu à trois points
 - modifier le nom du parcours et son code unique d’invitation ;
 - changer l’ordre en saisissant directement le numéro d’une étape ou en faisant glisser ce numéro à la position voulue, à la souris comme au tactile ;
 - fixer une échéance ;
-- marquer une étape comme évaluation ;
+- choisir son type : **Évaluation**, **Autoévaluation**, **Événement**, ou conserver une **Consultation simple** ;
 - ajouter une consigne propre au cours en Markdown, notamment avec des liens ;
 - rattacher les objectifs et compétences du référentiel du cours ;
 - retirer une page du parcours, avec confirmation explicite de la suppression des progressions liées à cette étape ;
@@ -297,18 +313,36 @@ Le lien est cliquable dans la vue élève et dans l’aperçu enseignant. Le PDF
 
 L’organisation complète du parcours n’est jamais proposée dans la navigation élève.
 
+#### Types d’étapes et événements
+
+Dans les réglages de l’étape (roue dentée), **Type d’étape** remplace les anciennes cases indépendantes. Une étape possède un seul type ; **Évaluation** remplace le libellé « Cette étape est une évaluation ». L’autoévaluation reste le type proposé lors de l’ajout d’une page. La consultation simple permet de conserver les activités sans note ni autoévaluation.
+
+Pour organiser une date ou une réunion :
+
+1. Ajouter une page prête au parcours, ou régler une étape existante. Le **titre de la page** sert de nom à l’événement.
+2. Choisir **Événement** et renseigner le début, la fin et, facultativement, le lieu. Les horaires sont en **Europe/Zurich** ; **Toute la journée** masque les heures. Pour plusieurs journées, saisir la dernière journée incluse comme date de fin.
+3. Enregistrer l’étape. Son lecteur et l’aperçu enseignant affichent les dates et les liens **Télécharger le calendrier (.ics)** et **Ajouter à Google Calendar**.
+
+Le `.ics` s’importe dans un agenda compatible. Le lien Google ouvre un événement prérempli que l’utilisateur confirme dans son propre agenda. Ces ajouts ne synchronisent pas les modifications ultérieures : après un changement, mettre également à jour son agenda. Le téléchargement respecte l’accès à l’étape. Une consultation de l’événement suit les règles des étapes sans autoévaluation ; elle ne prouve pas la présence à la réunion.
+
+Les événements et leurs horaires sont conservés dans les copies et les imports/exports JSON du parcours. **Remettre toutes les échéances à zéro** concerne les échéances pédagogiques ; les dates des événements restent à ajuster manuellement. Lors de la mise à jour d’une ancienne installation, une étape qui cumulait évaluation et autoévaluation devient **Évaluation** sans effacement des résultats historiques. Un changement ultérieur de type dans les réglages applique les règles habituelles de remise à zéro des validations concernées.
+
+#### Aperçu élève pour l’enseignant
+
+L’icône de chapeau ouvre **Aperçu élève** (`?view=teacher-preview`). Les étapes invisibles pour les élèves sont cachées dans la liste, la première étape et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. Les étapes restreintes restent visibles en gris clair : l’aperçu général ne représente pas un élève particulier. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
+
 #### Importer et exporter un parcours
 
-Dans l’onglet **Parcours**, le bouton à trois points situé à droite du titre regroupe l’import/export, l’archivage, la modification du nom et du code, la duplication et la gestion de l’équipe enseignante. Chaque action s’ouvre dans une fenêtre dédiée. L’import/export produit un JSON versionné. L’export peut inclure ou omettre les objectifs, compétences et types de rewards. Il contient les étapes et les références stables des pages, mais jamais les pages elles-mêmes.
+Dans l’onglet **Parcours**, le bouton à trois points situé à droite du titre regroupe l’import/export, l’archivage, la modification du nom et du code, la duplication et la gestion de l’équipe enseignante. Chaque action s’ouvre dans une fenêtre dédiée. L’import/export produit un JSON versionné. L’export peut inclure ou omettre les compétences et types de rewards ; les objectifs proviennent des pages. Il contient les étapes et les références stables des pages, mais jamais les pages elles-mêmes.
 
 À l’import :
 
 - **Créer une copie modifiable** crée un nouveau parcours sans élève ni progression ;
 - **Écraser le parcours portant la même référence** remplace ses étapes et options ; ses progressions et rewards liés aux anciennes étapes sont supprimés ;
-- l’option **Remettre toutes les échéances à zéro** ignore les dates du fichier ;
+- l’option **Remettre toutes les échéances à zéro** ignore les échéances pédagogiques du fichier, en conservant les dates des événements ;
 - toutes les pages référencées sont vérifiées avant écriture. Une page absente arrête entièrement l’import.
 
-Le menu à trois points de **Gestion du parcours** donne directement accès à la **Vue synthétique du parcours** et télécharge son PDF : numéro d’étape, nom, échéance, durée et type. À droite de chaque étape, l’icône PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
+Le menu à trois points de **Gestion du parcours** donne directement accès à la **Vue synthétique du parcours** et télécharge son PDF : numéro d’étape, nom, échéance et durée. À droite de chaque étape, le menu à trois points propose PDF, Markdown, DOCX et LaTeX. Le choix PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
 
 ### Importer et exporter les élèves
 

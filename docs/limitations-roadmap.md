@@ -1,6 +1,6 @@
 # Limites connues et feuille de route
 
-État revu le 10 septembre 2026. Les fonctions disponibles et leurs contraintes sont décrites ci-dessous ; la feuille de route ne doit pas être confondue avec les fonctions déjà livrées.
+État revu le 17 septembre 2026. Les fonctions disponibles et leurs contraintes sont décrites ci-dessous ; la feuille de route ne doit pas être confondue avec les fonctions déjà livrées.
 
 ## Limites assumées
 
@@ -26,6 +26,15 @@
 - aucun niveau cible n’est défini par compétence ou par objectif ;
 - les élèves peuvent remettre un lien ou un texte de 512 caractères, avec brouillon et nouvelle remise autorisée ; il n’existe pas de dépôt de fichier élève, de grille critériée ou de commentaire par compétence. Le contenu d’un document externe peut changer après remise ;
 - une confirmation répétée avec reward peut attribuer plusieurs rewards, ce qui est autorisé mais devrait être rendu plus explicite.
+
+### Calendriers et bilans
+
+- les événements sont ponctuels, en heure Europe/Zurich ou sur des journées entières ; aucune récurrence, inscription ou confirmation de présence n’est gérée ;
+- le fichier `.ics` et le lien Google Calendar créent des copies dans les agendas : les modifications ultérieures ne sont pas synchronisées automatiquement ;
+- l’aperçu enseignant cache les étapes invisibles mais conserve toutes les étapes restreintes ; il ne simule pas les droits d’un élève sélectionné ;
+- les bilans de progression sont disponibles en CSV et PDF, sans export XLSX ; les fiches détaillées peuvent occuper plusieurs pages par élève ;
+- seul le dernier résultat de chaque QCM et son nombre de tentatives sont disponibles, sans anciennes réponses ni historique des scores ;
+- la sauvegarde silencieuse évite les courriels à chaque correction ; chaque usage volontaire du lien de notification prépare un nouvel envoi, sans regroupement automatique.
 
 ### Notifications et exploitation
 

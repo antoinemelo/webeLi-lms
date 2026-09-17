@@ -64,6 +64,18 @@ if (!actor()) {
 $user = require_actor();
 if((int)($_GET['announcement']??0)>0)mark_announcement_read_for_user(db(),(int)$_GET['announcement'],(int)$user['id']);
 $view = (string) ($_GET['view'] ?? ($user['role'] === 'teacher' ? 'teacher' : 'student'));
+if($view==='event-download'){
+    header('Cache-Control: private, no-store');
+    try{
+        $item=pathway_event_for_actor(db(),(int)($_GET['item']??0),$user);
+        $calendar=pathway_event_ics($item);
+        header('Content-Type: text/calendar; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="evenement-'.(int)$item['id'].'.ics"');
+        header('X-Content-Type-Options: nosniff');
+        echo $calendar;
+    }catch(InvalidArgumentException $exception){http_response_code(404);header('Content-Type: text/plain; charset=UTF-8');echo t($exception->getMessage());}
+    exit;
+}
 if($view==='student-admin-export'){
     header('Cache-Control: private, no-store');
     try{

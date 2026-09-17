@@ -99,7 +99,7 @@ python3 scripts/apr.py \
 - six blocs : texte Markdown avec aperçu, image avec description alternative et légende, document téléchargeable, vidéo/audio, intégration externe (iframe) et travail à rendre ;
 - champs adaptés au type : import ou adresse pour les images et documents, hauteur réglable pour les intégrations, lecture native des fichiers audio/vidéo ;
 - QCM intégrés au Markdown, avec choix simple ou multiple, réponses mélangées, sauvegarde et reprise des brouillons, score agrégé et remise unique lorsque l’étape est une évaluation ;
-- aperçu élève non destructif d’un parcours et de ses pages pour l’équipe enseignante, incluant les contenus restreints ou masqués avec leur code couleur ;
+- aperçu élève non destructif d’un parcours et de ses pages pour l’équipe enseignante, masquant les étapes invisibles et signalant les accès restreints en gris clair ;
 - catégories par tags ;
 - connexion enseignante protégée et codes personnels élèves ;
 - inscription publique des élèves et enseignants, avec suffixe numérique en cas d’identifiant déjà utilisé ;
@@ -107,14 +107,15 @@ python3 scripts/apr.py \
 - annuaire avec prénom, nom, courriel, groupe classe et téléphone facultatif ;
 - inscription autonome à un cours par code ou lien d’invitation, avec validation du compte pour les nouveaux élèves ;
 - inscription unitaire ou groupée des élèves à un ou plusieurs cours ;
-- ordre, consigne, échéance et statut d’évaluation propres à chaque cours ;
+- ordre, consigne, échéance et type exclusif par étape : évaluation, autoévaluation, événement ou consultation simple ;
+- événements datés avec horaires suisses ou journées entières, lieu, téléchargement .ics et ajout à Google Calendar ;
 - retrait de pages, archivage et duplication de parcours avec échéances conservées ou remises à zéro ;
 - superadministration globale des utilisateurs, pages et parcours ;
 - exports PDF du tableau d’un parcours, ainsi que PDF, Markdown, DOCX et LaTeX du détail de chaque étape ;
 - objectifs et compétences définis au niveau du cours, puis liés aux étapes ;
 - auto-positionnement élève 0–3 et confirmation enseignante 0–3 ;
 - vues de progression par étape, compétence et objectif ;
-- export CSV récapitulatif ou détaillé de la progression, pour tous les élèves actifs du parcours ou une sélection ;
+- export CSV ou PDF récapitulatif ou détaillé de la progression, pour tous les élèves actifs du parcours ou une sélection ;
 - historique enseignant des pages consultées, du temps actif et de la dernière visite, avec rétention d’un mois ;
 - rewards configurables par cours, attribués à la confirmation et score cumulatif ;
 - boîte de notifications alimentée lors d’une mise à jour annoncée volontairement ou d’une validation ;
@@ -125,13 +126,19 @@ python3 scripts/apr.py \
 
 Une page reste neutre et réutilisable. Les objectifs et compétences sont liés à son **étape dans un cours**, car la même ressource peut servir des intentions différentes selon le cours.
 
+## Types d’étapes et aperçu
+
+Dans les réglages du parcours, **Type d’étape** propose **Évaluation**, **Autoévaluation**, **Événement** et **Consultation simple**. Un seul type est actif. Un événement reprend le titre de sa page et possède un début, une fin et un lieu facultatif. Ses liens calendrier sont disponibles dans le lecteur élève et l’aperçu enseignant ; les ajouts à un agenda ne synchronisent pas les modifications ultérieures. Les étapes invisibles sont cachées dans l’aperçu et ses liens de navigation. Voir le [guide des événements](docs/guide-utilisateur.md#types-détapes-et-événements).
+
 ## Export de la progression
 
-Dans **Suivi**, le menu à trois points propose **Exporter la progression**. La fenêtre permet de choisir un récapitulatif ou un export détaillé et de cocher les élèves du parcours courant ; tous sont sélectionnés par défaut. Le CSV utilise UTF-8 avec BOM et le point-virgule comme séparateur.
+Dans **Suivi**, le menu à trois points propose **Exporter la progression**. La fenêtre permet de choisir un récapitulatif ou un export détaillé, le format **CSV** ou **PDF**, et de cocher les élèves du parcours courant ; tous sont sélectionnés par défaut. Un seul bouton **Exporter** déclenche le téléchargement. Le CSV utilise UTF-8 avec BOM et le point-virgule comme séparateur.
 
 Le récapitulatif contient une ligne par élève et reprend les calculs du tableau de bord : étapes réalisées/accessibles/confirmées, pourcentage, éléments à confirmer, moyennes, encouragements et dernière activité connue (sur le dernier mois). Les moyennes ne prennent en compte que les étapes suivies dans les acquis, conformément au tableau de bord.
 
 Le détail contient une ligne par élève et étape, ou par QCM lorsqu’une étape en contient plusieurs. Les indicateurs récapitulatifs et les notes d’étape sont alors répétés : ne pas les additionner entre les lignes QCM. Il comprend notes, pondérations, autoévaluations soumises, confirmations et commentaires. Les étapes actuellement inaccessibles sont explicitement indiquées pour conserver les résultats qui contribuent encore aux moyennes. Un parcours vide conserve une ligne d’identité par élève. Chaque évaluation conserve sa note dans **Note sur 10**. Chaque QCM exporte son dernier résultat en pourcentage et dans **Note QCM /10** (questions correctes ÷ nombre de questions × 10, arrondi à deux décimales), le nombre de questions correctes, le nombre de tentatives et la date ; les réponses individuelles et les anciennes tentatives ne sont pas conservées par l’application. Les cellules de résultat vides correspondent à une absence de résultat, et non à une note de zéro. Les horodatages sont en heure Europe/Zurich.
+
+Le PDF récapitulatif utilise un tableau A4 paysage. Le PDF détaillé utilise une fiche A4 portrait par élève : chaque élève commence sur une nouvelle page, avec ses indicateurs, ses résultats par étape et ses commentaires. Une fiche peut se poursuivre sur plusieurs pages ; les en-têtes des tableaux sont répétés et les pages sont numérotées. Les QCM présentent uniquement leur dernier résultat sur 10.
 
 Depuis la fiche de suivi d’un élève, le bouton à droite des points ouvre la même fenêtre de gestion que dans **Élèves & inscriptions**.
 
@@ -168,8 +175,8 @@ Le battement de vie du worker active automatiquement le mode différé. Sans cro
 ```text
 Page réutilisable ── blocs + tags
         │
-        └── Étape d’un cours ── ordre + échéance + évaluation
-                    │           objectifs + compétences du cours
+        └── Étape d’un cours ── ordre + échéance + type
+                    │           événement daté, objectifs + compétences du cours
                     │
                     └── Progression de l’élève
                          ├── auto-positionnement 0–3
@@ -194,6 +201,11 @@ php tests/embeds.php
 php tests/content_blocks.php
 php tests/announcement_messages.php
 php tests/student_admin_history.php
+php tests/pathway_events.php
+node tests/pathway_events_browser.mjs
+php tests/progress_export.php
+php tests/progress_pdf.php /tmp/liike-progress-pdf-tests
+python3 tests/progress_pdf_layout.py /tmp/liike-progress-pdf-tests
 php tests/work_submissions.php
 python3 tests/database_profiles.py
 node tests/qcm_browser.mjs
@@ -201,6 +213,7 @@ node tests/embeds_browser.mjs
 node tests/content_blocks_browser.mjs
 node tests/announcement_messages_browser.mjs
 node tests/student_admin_history_browser.mjs
+node tests/progress_export_browser.mjs
 node tests/work_submissions_browser.mjs
 node tests/messaging_browser.mjs
 node tests/messaging_push_browser.mjs

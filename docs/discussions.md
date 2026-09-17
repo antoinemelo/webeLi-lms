@@ -34,7 +34,7 @@ Le script traite un lot borné (100 livraisons au plus, environ 10 secondes, req
 
 ## Données, mises à jour et limites
 
-- `storage/apr.sqlite` : identités durables des utilisateurs/parcours et activation par parcours (schéma 24).
+- `storage/apr.sqlite` : identités durables des utilisateurs/parcours et activation par parcours (schéma 25 ; identités ajoutées par la migration 24).
 - `storage/messaging.sqlite` : fils, participants, messages, marqueurs de lecture, demandes d’effacement et abonnements (schéma propre, initialement 1). SQLite utilise WAL, les clés étrangères et un délai d’attente d’écriture. Les messages sont paginés par lots de 50 ; une limite de 20 envois par personne et par minute réduit les envois accidentels en boucle.
 - `app/Messaging/` : module et ses dépendances PHP embarquées. `database/messaging/migrations/` : migrations numérotées et vérifiées par empreinte. L’adaptateur `Lms.php` est la partie liée au LMS ; une application autonome nécessitera encore son authentification et son interface.
 

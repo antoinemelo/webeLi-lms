@@ -125,6 +125,7 @@ function render_progress_export_modal(array $course,array $students): void
           <div class="modal-body">
             <p class="fw-semibold"><?=e($course['title'])?></p>
             <label class="field"><span><?=e(t('Type d’export'))?></span><select name="mode"><option value="summary"><?=e(t('Récapitulatif'))?></option><option value="detailed"><?=e(t('Détaillé'))?></option></select></label>
+            <label class="field"><span><?=e(t('Format'))?></span><select name="format"><option value="csv">CSV</option><option value="pdf">PDF</option></select></label>
             <p class="muted-copy" data-progress-summary><?=e(t('Une ligne par élève avec les indicateurs du tableau de bord.'))?></p>
             <p class="muted-copy" data-progress-detailed hidden><?=e(t('Détail par étape et par QCM : notes sur 10 des évaluations et QCM, pondérations, autoévaluations et confirmations. Le dernier résultat de chaque QCM est exporté.'))?></p>
             <label class="check plain"><input type="checkbox" data-progress-all <?=$students?'checked':'disabled'?>> <?=e(t('Tous les élèves du parcours'))?></label>
@@ -135,7 +136,7 @@ function render_progress_export_modal(array $course,array $students): void
             </div>
             <p class="muted-copy mt-2" data-progress-count role="status"><?=e(t(count($students)===1?':count élève sélectionné':':count élèves sélectionnés',['count'=>count($students)]))?></p>
           </div>
-          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal"><?=e(t('Fermer'))?></button><button type="submit" class="btn btn-primary" <?=$students?'':'disabled'?>><?=e(t('Exporter le CSV'))?></button></div>
+          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal"><?=e(t('Fermer'))?></button><button type="submit" class="btn btn-primary" <?=$students?'':'disabled'?>><?=e(t('Exporter'))?></button></div>
         </form>
       </div></div>
     </div>
