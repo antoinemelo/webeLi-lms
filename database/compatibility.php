@@ -18,7 +18,7 @@ return static function(PDO $pdo): void {
         'pathway_groups'=>['id','course_id','title','position'],
         'pathway_items'=>['group_id','id','course_id','page_id','position','access_mode','framework_tracking_enabled','event_data','revision','is_evaluation','self_evaluation_enabled','evaluation_weight','created_at','updated_at'],
         'pathway_item_students'=>['pathway_item_id','student_id'],
-        'progress'=>['id','enrollment_id','pathway_item_id','student_level','student_validated_at','completed_at','teacher_level','evaluation_score'],
+        'progress'=>['id','enrollment_id','pathway_item_id','student_level','student_validated_at','completed_at','teacher_level','evaluation_score','evaluation_included'],
         'student_private_notes'=>['student_id','pathway_item_id','body','updated_at'],
         'course_announcements'=>['audience','request_key','request_hash','id','course_id','created_by','title','body','created_at','archived'],
         'student_followups'=>['id','created_by','course_id','course_title','kind','occurred_at','title','body','revision','request_key','request_hash','created_at','updated_at'],

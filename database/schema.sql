@@ -289,6 +289,7 @@ CREATE TABLE progress (
     completed_at TEXT,
     teacher_level INTEGER CHECK(teacher_level BETWEEN 0 AND 3),
     evaluation_score REAL CHECK(evaluation_score BETWEEN 0 AND 10),
+    evaluation_included INTEGER NOT NULL DEFAULT 1 CHECK(evaluation_included IN (0,1)),
     teacher_note TEXT NOT NULL DEFAULT '',
     teacher_validated_at TEXT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -526,7 +527,7 @@ CREATE TABLE student_followups (
         CREATE TRIGGER clear_sent_mail_body_update AFTER UPDATE OF status,body ON notification_outbox WHEN NEW.status='sent' AND NEW.body<>''
         BEGIN UPDATE notification_outbox SET body='' WHERE id=NEW.id; END;
 
-PRAGMA user_version = 27;
+PRAGMA user_version = 28;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

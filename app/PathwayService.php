@@ -234,7 +234,7 @@ function student_detail_neighbors(PDO $pdo, int $courseId, int $enrollmentId): a
     return ['previous'=>$index>0?$ids[$index-1]:null,'next'=>$index<count($ids)-1?$ids[$index+1]:null];
 }
 
-/** @return array{by_student:array<int,int>,by_enrollment:array<int,int>,students:int,total:int,quiz:array} */
+/** @return array{by_student:array<int,int>,by_enrollment:array<int,int>,evaluations_by_student:array<int,int>,students:int,total:int,quiz:array} */
 function course_pending_review_counts(PDO $pdo,int $courseId): array
 {
     $quiz=Qcm::courseEvaluationCompletion($pdo,$courseId);
@@ -247,10 +247,10 @@ function course_pending_review_counts(PDO $pdo,int $courseId): array
         JOIN pathway_items pi ON pi.course_id=e.course_id
         LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id
         WHERE e.course_id=? AND e.status='active'");
-    $query->execute([$courseId]);$byStudent=[];$byEnrollment=[];
+    $query->execute([$courseId]);$byStudent=[];$byEnrollment=[];$evaluationsByStudent=[];
     foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
         $studentId=(int)$row['student_id'];$enrollmentId=(int)$row['enrollment_id'];$itemId=(int)$row['item_id'];
-        $byStudent[$studentId]??=0;$byEnrollment[$enrollmentId]??=0;
+        $byStudent[$studentId]??=0;$byEnrollment[$enrollmentId]??=0;$evaluationsByStudent[$studentId]??=0;
         if($row['teacher_validated_at']!==null)continue;
         $selfPending=(bool)$row['self_evaluation_enabled']&&$row['student_validated_at']!==null&&((bool)$row['accessible']||(bool)$row['is_evaluation']);
         $qcmPending=(bool)$row['is_evaluation']&&!empty($quiz['completed'][$studentId][$itemId]);
@@ -258,8 +258,9 @@ function course_pending_review_counts(PDO $pdo,int $courseId): array
         if($work){if((!$row['accessible']&&!$row['is_evaluation'])||!WorkSubmission::canReview((bool)$row['is_evaluation'],(bool)$row['self_evaluation_enabled'],(bool)$row['student_validated_at'],isset($quiz['expected'][$itemId]),!empty($quiz['completed'][$studentId][$itemId]),$work))continue;}
         elseif(!$selfPending&&!$qcmPending)continue;
         $byStudent[$studentId]++;$byEnrollment[$enrollmentId]++;
+        if($row['is_evaluation'])$evaluationsByStudent[$studentId]++;
     }
-    return ['by_student'=>$byStudent,'by_enrollment'=>$byEnrollment,'students'=>count(array_filter($byStudent)),'total'=>array_sum($byStudent),'quiz'=>$quiz];
+    return ['by_student'=>$byStudent,'by_enrollment'=>$byEnrollment,'evaluations_by_student'=>$evaluationsByStudent,'students'=>count(array_filter($byStudent)),'total'=>array_sum($byStudent),'quiz'=>$quiz];
 }
 
 function purge_course_enrollment(PDO $pdo,int $enrollmentId,int $teacherId): bool
@@ -512,6 +513,7 @@ function course_progress_students(PDO $pdo,int $courseId): array
     $studentAverages=course_student_averages($pdo,$courseId);
     foreach($students as &$student){
         $student['waiting']=$pendingReviews['by_student'][(int)$student['id']]??0;
+        $student['waiting_evaluations']=$pendingReviews['evaluations_by_student'][(int)$student['id']]??0;
         $student+=$studentAverages[(int)$student['enrollment_id']]??['evaluation_average'=>null,'self_average'=>null];
     }
     unset($student);
@@ -522,8 +524,8 @@ function course_progress_students(PDO $pdo,int $courseId): array
 function course_student_averages(PDO $pdo, int $courseId): array
 {
     $query=$pdo->prepare("SELECT e.id AS enrollment_id,
-        SUM(CASE WHEN pi.is_evaluation=1 AND pr.evaluation_score IS NOT NULL THEN pr.evaluation_score*pi.evaluation_weight END)
-          /SUM(CASE WHEN pi.is_evaluation=1 AND pr.evaluation_score IS NOT NULL THEN pi.evaluation_weight END) AS evaluation_average,
+        SUM(CASE WHEN pi.is_evaluation=1 AND pr.evaluation_included=1 AND pr.evaluation_score IS NOT NULL THEN pr.evaluation_score*pi.evaluation_weight END)
+          /SUM(CASE WHEN pi.is_evaluation=1 AND pr.evaluation_included=1 AND pr.evaluation_score IS NOT NULL THEN pi.evaluation_weight END) AS evaluation_average,
         AVG(CASE WHEN pi.self_evaluation_enabled=1 AND pr.student_validated_at IS NOT NULL THEN pr.student_level END) AS self_average
         FROM enrollments e JOIN users u ON u.id=e.student_id
         LEFT JOIN progress pr ON pr.enrollment_id=e.id
@@ -547,7 +549,7 @@ function course_evaluation_average(PDO $pdo, int $courseId): ?float
         JOIN progress pr ON pr.enrollment_id=e.id
         JOIN pathway_items pi ON pi.id=pr.pathway_item_id AND pi.course_id=e.course_id
         WHERE e.course_id=? AND e.status='active' AND u.account_status='active'
-          AND pi.is_evaluation=1 AND pi.framework_tracking_enabled=1 AND pr.evaluation_score IS NOT NULL
+          AND pi.is_evaluation=1 AND pi.framework_tracking_enabled=1 AND pr.evaluation_included=1 AND pr.evaluation_score IS NOT NULL
         GROUP BY e.id
     )");
     $query->execute([$courseId]);$average=$query->fetchColumn();
@@ -562,7 +564,7 @@ function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $tr
     if($studentId<1)return ['rows'=>[],'average'=>null,'graded'=>0,'total'=>0,'weight_total'=>0.0];
     $tracking=$trackedOnly?' AND pi.framework_tracking_enabled=1':'';
     $query=$pdo->prepare("SELECT pi.id,pi.position,pi.deadline,pi.evaluation_weight,pi.access_mode,pi.framework_tracking_enabled,p.title,
-        pr.evaluation_score,pr.teacher_note,pr.teacher_validated_at,
+        pr.evaluation_score,COALESCE(pr.evaluation_included,1) AS evaluation_included,pr.teacher_note,pr.teacher_validated_at,
         CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
             SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)) THEN 1 ELSE 0 END AS accessible
         FROM pathway_items pi JOIN pages p ON p.id=pi.page_id
@@ -578,8 +580,10 @@ function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $tr
         $row['evaluation_weight']=(float)$row['evaluation_weight'];
         if($row['evaluation_score']!==null){
             $row['evaluation_score']=(float)$row['evaluation_score'];
-            $weighted+=$row['evaluation_score']*$row['evaluation_weight'];
-            $weightTotal+=$row['evaluation_weight'];
+            if($row['evaluation_included']){
+                $weighted+=$row['evaluation_score']*$row['evaluation_weight'];
+                $weightTotal+=$row['evaluation_weight'];
+            }
             $graded++;
         }
     }
@@ -596,7 +600,7 @@ function framework_progress_in(PDO $pdo,int $courseId,int $enrollmentId,string $
     if($kind==='skill'){
         $query=$pdo->prepare("SELECT f.id AS framework_id,f.title,f.code,f.description,f.position AS framework_position,
             pi.id AS item_id,pi.position AS item_position,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,pi.framework_tracking_enabled,$access,
-            p.student_level,p.student_validated_at,p.teacher_level,p.evaluation_score,p.teacher_validated_at
+            p.student_level,p.student_validated_at,p.teacher_level,p.evaluation_score,p.teacher_validated_at,COALESCE(p.evaluation_included,1) AS evaluation_included
             FROM course_skills f LEFT JOIN item_skills l ON l.skill_id=f.id LEFT JOIN pathway_items pi ON pi.id=l.pathway_item_id
             LEFT JOIN progress p ON p.pathway_item_id=pi.id AND p.enrollment_id=?
             WHERE f.course_id=? ORDER BY f.position,f.id,pi.position,pi.id");
@@ -604,7 +608,7 @@ function framework_progress_in(PDO $pdo,int $courseId,int $enrollmentId,string $
     }else{
         $query=$pdo->prepare("SELECT po.id AS framework_id,po.title,'' AS code,po.description,pi.position AS framework_position,
             pi.id AS item_id,pi.position AS item_position,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,pi.framework_tracking_enabled,$access,
-            p.student_level,p.student_validated_at,p.teacher_level,p.evaluation_score,p.teacher_validated_at
+            p.student_level,p.student_validated_at,p.teacher_level,p.evaluation_score,p.teacher_validated_at,COALESCE(p.evaluation_included,1) AS evaluation_included
             FROM pathway_items pi JOIN page_objectives po ON po.page_id=pi.page_id
             LEFT JOIN progress p ON p.pathway_item_id=pi.id AND p.enrollment_id=?
             WHERE pi.course_id=? ORDER BY pi.position,po.position,po.id");
@@ -622,7 +626,7 @@ function framework_progress_in(PDO $pdo,int $courseId,int $enrollmentId,string $
         if(!$eligible)continue;
         $itemId=(int)$row['item_id'];$framework[$key]['items'][$itemId]=true;
         if(!$isEvaluation&&$row['student_validated_at']!==null&&$row['student_level']!==null){$framework[$key]['student_sum']+=(float)$row['student_level'];$framework[$key]['student_done']++;}
-        if($isEvaluation&&$row['evaluation_score']!==null){
+        if($isEvaluation&&$row['evaluation_included']&&$row['evaluation_score']!==null){
             $weight=(float)$row['evaluation_weight'];$framework[$key]['teacher_sum']+=(float)$row['evaluation_score']/10*3*$weight;$framework[$key]['teacher_weight']+=$weight;$framework[$key]['teacher_done']++;
         }elseif(!$isEvaluation&&$row['teacher_validated_at']!==null&&$row['teacher_level']!==null){
             $framework[$key]['teacher_sum']+=(float)$row['teacher_level']*.5;$framework[$key]['teacher_weight']+=.5;$framework[$key]['teacher_done']++;

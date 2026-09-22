@@ -205,8 +205,12 @@ php tests/pathway_groups.php
 node tests/pathway_groups_browser.mjs
 php tests/pathway_events.php
 node tests/pathway_events_browser.mjs
+node tests/date_fields_browser.mjs
 php tests/progress_export.php
 python3 tests/evaluation_grades_http.py
+php tests/evaluation_inclusion.php
+php tests/teacher_dashboard.php
+node tests/teacher_dashboard_browser.mjs
 php tests/progress_pdf.php /tmp/liike-progress-pdf-tests
 python3 tests/progress_pdf_layout.py /tmp/liike-progress-pdf-tests
 php tests/work_submissions.php

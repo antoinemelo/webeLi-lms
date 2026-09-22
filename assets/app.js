@@ -563,20 +563,6 @@ if (sessionGuardEnabled) {
   document.addEventListener('visibilitychange', checkVisibleSession);
 }
 
-document.querySelectorAll('input[type="date"]').forEach((input) => {
-  const iso = input.value;
-  input.type = 'text';
-  input.classList.add('date-input');
-  input.inputMode = 'numeric';
-  input.maxLength = 10;
-  input.pattern = '[0-3][0-9]/[01][0-9]/[0-9]{4}';
-  input.placeholder = 'jj/mm/aaaa';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) input.value = iso.split('-').reverse().join('/');
-  input.addEventListener('blur', () => {
-    const digits = input.value.replace(/\D/g, '').slice(0, 8);
-    if (digits.length === 8) input.value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-  });
-});
 
 document.addEventListener('click', (event) => {
   const add = event.target.closest('[data-add-block]');
@@ -1037,10 +1023,20 @@ if (frameworkPanel) {
 document.querySelectorAll('[data-pathway-type]').forEach((toggle) => {
   const form = toggle.closest('form');
   const weight = form?.querySelector('[data-evaluation-weight]');
+  const typeWarning = form?.querySelector('[data-pathway-type-warning]');
   const eventFields = form?.querySelector('[data-event-fields]');
   const allDay = form?.querySelector('[data-event-all-day]');
   const syncType = () => {
     if (weight) weight.hidden = toggle.value !== 'evaluation';
+    if (typeWarning) {
+      const original = typeWarning.dataset.originalType;
+      const evaluationChanged = (original === 'evaluation') !== (toggle.value === 'evaluation');
+      const selfEvaluationRemoved = original === 'self' && toggle.value !== 'self';
+      const teacherDataRemoved = (evaluationChanged || (selfEvaluationRemoved && toggle.value !== 'evaluation'))
+        && typeWarning.dataset.hasTeacherData === '1';
+      const studentDataRemoved = selfEvaluationRemoved && typeWarning.dataset.hasStudentData === '1';
+      typeWarning.hidden = !teacherDataRemoved && !studentDataRemoved;
+    }
     const isEvent = toggle.value === 'event';
     if (eventFields) eventFields.hidden = !isEvent;
     eventFields?.querySelectorAll('[data-event-date]').forEach((input) => { input.required = isEvent; });

@@ -90,6 +90,16 @@ function locale_code(): string
 function js_i18n(): array
 {
     return [
+        'date_label' => t('Date'),
+        'date_calendar' => t('Choisir dans le calendrier'),
+        'date_previous' => t('Mois précédent'),
+        'date_next' => t('Mois suivant'),
+        'date_today' => t('Aujourd’hui'),
+        'date_clear' => t('Effacer la date'),
+        'date_time' => t('Heure'),
+        'date_apply' => t('Appliquer'),
+        'date_invalid' => t('Saisissez une date valide (jj/mm/aaaa).'),
+        'datetime_invalid' => t('Saisissez une date et une heure valides (jj/mm/aaaa hh:mm).'),
         'pages' => t(':count page(s)'),
         'students' => t(':count élève(s) sur la plateforme'),
         'confirm_page' => t('Écraser cette page et remplacer tous ses blocs et tags ?'),

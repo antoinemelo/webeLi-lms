@@ -230,7 +230,8 @@ final class Qcm
               FROM qcm_attempts qa JOIN pathway_items pi ON pi.id=qa.pathway_item_id
               JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=qa.student_id AND e.status='active'
               JOIN users u ON u.id=qa.student_id AND u.account_status='active'
-              WHERE qa.pathway_item_id IN ($placeholders)
+              LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id
+              WHERE qa.pathway_item_id IN ($placeholders) AND (pi.is_evaluation=0 OR COALESCE(pr.evaluation_included,1)=1)
               GROUP BY qa.student_id,qa.pathway_item_id
             ) GROUP BY pathway_item_id");
         $scores->execute(array_keys($steps));

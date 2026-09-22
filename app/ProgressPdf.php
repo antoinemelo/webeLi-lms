@@ -77,7 +77,7 @@ function course_progress_export_pdf(array $data): string
                 $title=($accessible?$position.'. ':'').$item['title'];
                 $meta=[];
                 if(!$accessible)$meta[]=t('Accessible à l’élève').' : '.t('Non');
-                if(!$item['framework_tracking_enabled'])$meta[]=t('Inclus dans les moyennes').' : '.t('Non');
+                if(!$item['framework_tracking_enabled']||($item['is_evaluation']&&!($progress['evaluation_included']??1)))$meta[]=t('Inclus dans les moyennes').' : '.t('Non');
                 if($item['deadline'])$meta[]=t('Échéance').' : '.progress_pdf_date($item['deadline']);
                 if(!empty($progress['completed_at']))$meta[]=t('Réalisée le').' '.progress_pdf_date($progress['completed_at']);
                 if(!empty($progress['teacher_validated_at']))$meta[]=t('Confirmation enseignante le').' '.progress_pdf_date($progress['teacher_validated_at']);

@@ -196,3 +196,19 @@ La migration 26 crée `pathway_groups(id, course_id, title)` et ajoute `pathway_
 Les actions de gestion sont réservées aux enseignants autorisés et protégées par CSRF, le verrou `course_structure` et une empreinte des groupes, positions et rattachements. Un ancien onglet ne peut pas écraser une structure plus récente. Les vues élève construisent les groupes après le filtrage d’accès et la numérotation habituels, sans révéler les groupes vides ou inaccessibles. L’état replié reste dans `sessionStorage`, par compte, parcours, groupe et vue. Les groupes sont transportés par clés locales remappées lors des copies/imports ; un import avec référence inconnue ou groupe disjoint est refusé atomiquement.
 
 Le CSS applicatif est chargé avec une version dans son URL, comme le JavaScript : une mise à jour du style ne réutilise pas une ancienne réponse du cache HTTP ou PWA. Les groupes utilisent les composants Bootstrap Collapse, Dropdown et Modal.
+
+
+### Inclusion individuelle des évaluations — migration 28
+
+`progress.evaluation_included` est un booléen non nul, à `1` par défaut. Il est enregistré avec la note, y compris lorsque celle-ci est vide, pour chaque couple inscription/étape. La migration 28 ajoute cette colonne sans modifier les notes et validations existantes. Une valeur `0` retire la note et sa pondération des moyennes individuelles, du groupe et des acquis ; les résultats sources restent conservés. Les moyennes QCM du groupe appliquent également cette exclusion pour les étapes évaluatives. Les exports détaillés indiquent le statut dans **Inclus dans les moyennes**.
+
+`course_pending_review_counts()` expose également `evaluations_by_student`, sous-ensemble du total des confirmations. Le tableau utilise ce nombre pour distinguer les évaluations en rouge pastel, sans compter plusieurs fois une étape comportant plusieurs QCM.
+
+
+### Calendrier enseignant et préférence de navigation
+
+`TeacherDashboard.php` calcule des périodes semaine/mois en Europe/Zurich et interroge les échéances de tous les parcours actifs détenus ou partagés avec l’enseignant. La sélection d’un parcours ne filtre pas le calendrier. La grille va du lundi au dimanche ; la navigation mensuelle part du premier jour pour éviter les sauts de mois. La période est conservée dans la session par utilisateur.
+
+`date-fields.js` enrichit tous les `input[type=date]` et `input[type=datetime-local]`, y compris les contrôles ajoutés dynamiquement : saisie manuelle au format jour/mois/année et sélection via un calendrier de l’application, traduit par `Intl.DateTimeFormat` avec les mêmes locales que `locale_code()`. Le premier jour de semaine suit la locale (lundi pour les cinq locales proposées) ; le calendrier ne dépend pas de la langue du navigateur. Le contrôle nommé conserve sa valeur ISO pour les formulaires et les API. Les contraintes, les verrous et les réinitialisations sont synchronisés. Après une affectation de valeur par JavaScript sans événement, appeler `liikeDateFields.sync(form)` ; le suivi administratif le fait à l’ouverture de son éditeur.
+
+Le cookie `liike_pathway_view_<id>` mémorise uniquement `pathway` ou `teacher-preview`, pendant un an, au chemin de l’installation, avec HttpOnly et SameSite=Lax (Secure en HTTPS). Les valeurs absentes ou invalides donnent l’aperçu. La préférence concerne les liens génériques **Parcours** ; les liens d’édition explicites gardent leur destination. Aucune migration supplémentaire n’est nécessaire.

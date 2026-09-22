@@ -51,6 +51,7 @@
     form.reset(); input('request_key').value = freshKey(); input('followup_id').value = entry?.id || '0'; input('revision').value = entry?.revision || '0';
     input('kind').value = kind; input('course_id').value = editorRoot.dataset.followupCourse || '0';
     for (const key of ['kind', 'title', 'body', 'course_id', 'occurred_at']) if (entry && entry[key] != null) input(key).value = entry[key];
+    window.liikeDateFields?.sync(form);
     participants.forEach(control => { control.checked = selected.includes(Number(control.value)); control.closest('[data-followup-participant]').hidden = false; });
     text(feedback); preview.hidden = true; previewSerial++; dirty = false; filterParticipants();
     returnToStudent = root.classList.contains('show') ? student : 0;

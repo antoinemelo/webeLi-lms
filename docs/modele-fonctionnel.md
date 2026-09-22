@@ -70,7 +70,7 @@ niveau de l’évaluation = note / 10 × 3
 moyenne = somme(niveau × poids) / somme(poids)
 ```
 
-Une évaluation suivie reste incluse lorsqu’elle est masquée aux élèves. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Les types sont désormais exclusifs. Pour les anciennes étapes mixtes, la migration conserve le type Évaluation et les résultats historiques ; seule la note officielle contribue à la moyenne enseignante.
+Une évaluation suivie reste incluse lorsqu’elle est masquée aux élèves. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Une évaluation marquée **Non comptabilisé** pour un élève est également exclue du numérateur et du dénominateur, même lorsqu’une note est conservée. Ce choix individuel ne modifie ni la note des autres élèves ni les autoévaluations. Les types sont désormais exclusifs. Pour les anciennes étapes mixtes, la migration conserve le type Évaluation et les résultats historiques ; seule la note officielle contribue à la moyenne enseignante.
 
 L’affichage convertit une moyenne sur 3 en pourcentage pour la barre visuelle :
 

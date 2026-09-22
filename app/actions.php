@@ -740,7 +740,7 @@ function handle_action(string $action): never
     if ($action === 'teacher_validate' && $user['role'] === 'teacher') {
         $enrollmentId = (int) $_POST['enrollment_id'];
         $itemId = (int) $_POST['item_id'];
-        $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,p.title AS page_title,c.title AS course_title,pr.student_validated_at
+        $context = one("SELECT e.*,s.email,s.name,s.language,pi.course_id,pi.is_evaluation,pi.self_evaluation_enabled,pi.evaluation_weight,p.title AS page_title,c.title AS course_title,pr.student_validated_at,COALESCE(pr.evaluation_included,1) AS evaluation_included
             FROM enrollments e JOIN users s ON s.id=e.student_id JOIN pathway_items pi ON pi.id=? AND pi.course_id=e.course_id
             JOIN pages p ON p.id=pi.page_id JOIN courses c ON c.id=e.course_id LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE e.id=? AND e.status='active' AND s.account_status='active'
             AND ((pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=s.id))) OR pi.is_evaluation=1)", [$itemId,$enrollmentId]);
@@ -754,10 +754,15 @@ function handle_action(string $action): never
             flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);
         }
         $level=null;$score=null;
+        $evaluationIncluded=(int)$context['evaluation_included'];
         if($isEvaluation){
+            if(isset($_POST['evaluation_inclusion_present']))$evaluationIncluded=($_POST['evaluation_included']??'0')==='1'?1:0;
             $rawScore=str_replace(',','.',trim((string)($_POST['score']??'')));
             if($rawScore===''){
-                run("UPDATE progress SET evaluation_score=NULL,teacher_level=NULL,teacher_note=?,teacher_validated_at=NULL,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE enrollment_id=? AND pathway_item_id=?",[trim((string)($_POST['note']??'')),$enrollmentId,$itemId]);
+                run("INSERT INTO progress(enrollment_id,pathway_item_id,teacher_note,evaluation_included,updated_at)
+                    VALUES(?,?,?,?,strftime('%Y-%m-%d %H:%M:%f','now'))
+                    ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET evaluation_score=NULL,teacher_level=NULL,teacher_note=excluded.teacher_note,teacher_validated_at=NULL,evaluation_included=excluded.evaluation_included,updated_at=strftime('%Y-%m-%d %H:%M:%f','now')",
+                    [$enrollmentId,$itemId,trim((string)($_POST['note']??'')),$evaluationIncluded]);
                 flash(t('Note retirée. L’évaluation n’est plus validée.'));
                 redirect('student-detail',['enrollment'=>$enrollmentId]);
             }
@@ -765,10 +770,10 @@ function handle_action(string $action): never
             $score=round((float)$rawScore,2);
         }elseif($selfEvaluation)$level=max(0,min(3,(int)($_POST['level']??0)));
         $completedAt=!$selfEvaluation&&$isEvaluation?gmdate('Y-m-d H:i:s'):null;
-        run("INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,teacher_note,teacher_validated_at,completed_at,updated_at)
-            VALUES(?,?,?,?,?,strftime('%Y-%m-%d %H:%M:%f','now'),?,strftime('%Y-%m-%d %H:%M:%f','now'))
-            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,teacher_note=excluded.teacher_note,teacher_validated_at=strftime('%Y-%m-%d %H:%M:%f','now'),completed_at=COALESCE(progress.completed_at,excluded.completed_at),updated_at=strftime('%Y-%m-%d %H:%M:%f','now')",
-            [$enrollmentId,$itemId,$level,$score,trim((string)($_POST['note'] ?? '')),$completedAt]);
+        run("INSERT INTO progress(enrollment_id,pathway_item_id,teacher_level,evaluation_score,evaluation_included,teacher_note,teacher_validated_at,completed_at,updated_at)
+            VALUES(?,?,?,?,?,?,strftime('%Y-%m-%d %H:%M:%f','now'),?,strftime('%Y-%m-%d %H:%M:%f','now'))
+            ON CONFLICT(enrollment_id,pathway_item_id) DO UPDATE SET teacher_level=excluded.teacher_level,evaluation_score=excluded.evaluation_score,evaluation_included=excluded.evaluation_included,teacher_note=excluded.teacher_note,teacher_validated_at=strftime('%Y-%m-%d %H:%M:%f','now'),completed_at=COALESCE(progress.completed_at,excluded.completed_at),updated_at=strftime('%Y-%m-%d %H:%M:%f','now')",
+            [$enrollmentId,$itemId,$level,$score,$evaluationIncluded,trim((string)($_POST['note'] ?? '')),$completedAt]);
         $rewardId = (int) ($_POST['reward_type_id'] ?? 0);
         if ($rewardId > 0) {
             $reward = one('SELECT * FROM reward_types WHERE id=? AND course_id=? AND active=1', [$rewardId,$context['course_id']]);

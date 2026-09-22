@@ -1,4 +1,4 @@
-const CACHE = 'lms-shell-v140';
+const CACHE = 'lms-shell-v147';
 const SHELL = [
   'assets/vendor/bootstrap/bootstrap.min.css',
   'assets/vendor/bootstrap/bootstrap.bundle.min.js',
@@ -9,6 +9,7 @@ const SHELL = [
   'assets/vendor/pdfjs/pdf.worker.min.mjs',
   'assets/app.css',
   'assets/app.js',
+  'assets/date-fields.js',
   'assets/messaging.js',
   'assets/messaging.css',
   'assets/content-blocks.js',
