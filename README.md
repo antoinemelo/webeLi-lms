@@ -206,6 +206,7 @@ node tests/pathway_groups_browser.mjs
 php tests/pathway_events.php
 node tests/pathway_events_browser.mjs
 php tests/progress_export.php
+python3 tests/evaluation_grades_http.py
 php tests/progress_pdf.php /tmp/liike-progress-pdf-tests
 python3 tests/progress_pdf_layout.py /tmp/liike-progress-pdf-tests
 php tests/work_submissions.php

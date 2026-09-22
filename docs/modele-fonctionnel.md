@@ -33,7 +33,7 @@ Cette séparation est structurante :
 
 ## Types et événements
 
-Chaque étape propose un type exclusif : **Évaluation** (note enseignante sur 10), **Autoévaluation** (niveau élève sur 3), **Événement**, ou **Consultation simple**. L’évaluation prévaut sur l’autoévaluation pour les anciennes données mixtes ; la migration ne supprime ni les notes ni les commentaires historiques. Un changement manuel de type applique les règles existantes de réinitialisation des validations concernées.
+Chaque étape propose un type exclusif : **Évaluation** (note enseignante sur 10), **Autoévaluation** (niveau élève sur 3), **Événement**, ou **Consultation simple**. L’évaluation prévaut sur l’autoévaluation pour les anciennes données mixtes ; la migration ne supprime ni les notes ni les commentaires historiques. Un changement manuel de type est refusé lorsqu’une évaluation contient encore au moins une note, y compris zéro. Les notes doivent être explicitement retirées dans le suivi avant de changer de type. Les autres changements appliquent les règles existantes de réinitialisation des validations concernées.
 
 Un événement utilise le titre de sa page, un début et une fin en heure Europe/Zurich, un indicateur de journée entière et un lieu facultatif. Il n’active ni note ni autoévaluation. Sa consultation suit les règles d’une étape sans autoévaluation ; elle ne constitue pas un contrôle de présence. La date de l’événement est distincte de l’échéance pédagogique. Copie et import/export JSON conservent les deux ; la remise à zéro des échéances conserve les horaires de l’événement.
 

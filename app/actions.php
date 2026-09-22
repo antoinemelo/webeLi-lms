@@ -748,7 +748,9 @@ function handle_action(string $action): never
         $isEvaluation=(bool)$context['is_evaluation'];$selfEvaluation=(bool)$context['self_evaluation_enabled'];
         $quizCompletion=Qcm::courseEvaluationCompletion(db(),(int)$context['course_id']);
         $work=WorkSubmission::summary(db(),(int)$context['student_id'],$itemId);
-        if(!WorkSubmission::canReview($isEvaluation,$selfEvaluation,(bool)$context['student_validated_at'],isset($quizCompletion['expected'][$itemId]),!empty($quizCompletion['completed'][(int)$context['student_id']][$itemId]),$work['total']?$work:null)){
+        // Teachers may enter or correct an assessment grade even when its quiz
+        // has changed since submission. Readiness still drives pending reviews.
+        if(!$isEvaluation&&!WorkSubmission::canReview($isEvaluation,$selfEvaluation,(bool)$context['student_validated_at'],isset($quizCompletion['expected'][$itemId]),!empty($quizCompletion['completed'][(int)$context['student_id']][$itemId]),$work['total']?$work:null)){
             flash('Validation impossible.','error');redirect('student-detail',['enrollment'=>$enrollmentId]);
         }
         $level=null;$score=null;
@@ -1044,6 +1046,10 @@ function handle_action(string $action): never
                 if(!$allowedStudents){flash('Sélectionnez au moins un élève pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
             try{[$isEvaluation,$selfEvaluation,$eventData]=pathway_type_settings($_POST,$item);}catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            if(!$isEvaluation&&(bool)$item['is_evaluation']&&one('SELECT 1 FROM progress WHERE pathway_item_id=? AND evaluation_score IS NOT NULL LIMIT 1',[$id])){
+                flash(t('Cette évaluation contient des notes. Modifiez-les dans le suivi des élèves. Pour changer le type, retirez d’abord les notes depuis ce suivi.'),'error');
+                redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);
+            }
             $weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
             if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             $update=db()->prepare("UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,event_data=?,revision=revision+1,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
