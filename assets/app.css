@@ -270,9 +270,9 @@ button,a,summary{touch-action:manipulation}
 .calendar-modes [aria-current]{color:#5b4be7;background:#fff;box-shadow:0 1px 5px #29273b12;font-weight:750}
 .calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .calendar-weekdays{border-top:1px solid #eeecf4;background:#fbfaff;color:#858098;font-size:.68rem;font-weight:700;text-transform:uppercase;text-align:center;padding:.55rem 0}
-.calendar-day{height:112px;min-width:0;padding:.4rem;border-top:1px solid #eeecf4;border-right:1px solid #eeecf4;overflow:auto;scrollbar-width:thin}
+.calendar-day{min-height:112px;min-width:0;padding:.4rem;border-top:1px solid #eeecf4;border-right:1px solid #eeecf4}
 .calendar-day:nth-child(7n){border-right:0}
-.calendar-week .calendar-day{height:190px}
+.calendar-week .calendar-day{min-height:190px}
 .calendar-day.outside-month{background:#faf9fc}
 .calendar-day>time{display:block;margin:0 0 .3rem;color:#777187;font-size:.72rem}
 .calendar-day-number{display:inline-grid;place-items:center;min-width:1.5rem;height:1.5rem;border-radius:50%}
@@ -292,7 +292,7 @@ button,a,summary{touch-action:manipulation}
   .calendar-controls{width:100%;justify-content:space-between}
   .calendar-weekdays{display:none}
   .calendar-grid{display:block}
-  .calendar-day,.calendar-week .calendar-day{height:auto;overflow:visible;border-right:0;padding:.75rem 1rem}
+  .calendar-day,.calendar-week .calendar-day{min-height:0;border-right:0;padding:.75rem 1rem}
   .calendar-day:not(.has-deadlines){display:none}
   .calendar-day-number{display:none}
   .calendar-day-full{display:inline;font-weight:700;text-transform:capitalize}

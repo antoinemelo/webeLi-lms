@@ -86,7 +86,7 @@ function render_teacher_calendar(array $course): void
           <div class="calendar-day<?=$isToday?' is-today':''?><?=$outside?' outside-month':''?><?=$items?' has-deadlines':''?>" data-calendar-day="<?=$key?>">
             <time datetime="<?=$key?>" aria-label="<?=e(teacher_calendar_date_label($day,'EEEE d MMMM yyyy'))?>" <?=$isToday?'aria-current="date"':''?>><span class="calendar-day-number"><?=$day->format('j')?></span><span class="calendar-day-full"><?=e(teacher_calendar_date_label($day,'EEEE d MMMM yyyy'))?></span></time>
             <?php foreach($items as $entry): $accent=preg_match('/^#[0-9a-fA-F]{6}$/D',$entry['accent'])?$entry['accent']:'#6d5dfc';$href=$preferred==='pathway'||$entry['access_mode']==='none'?route('pathway',['course'=>$entry['course_id'],'edit'=>$entry['id']]).'#pathway-item-'.$entry['id']:route('teacher-preview-page',['item'=>$entry['id']]); ?>
-              <a class="calendar-entry" href="<?=e($href)?>" style="--calendar-course:<?=e($accent)?>" title="<?=e($entry['course_title'].' · '.$entry['title'])?>"><small><?=e($entry['course_title'])?></small><span><?php if($entry['is_evaluation']): ?><i class="bi bi-clipboard-check" aria-hidden="true"></i> <?php endif; ?><?=e($entry['title'])?></span></a>
+              <a class="calendar-entry" href="<?=e($href)?>" style="--calendar-course:<?=e($accent)?>" title="<?=e($entry['course_title'].' · '.$entry['title'])?>"><small><?=e($entry['course_title'])?></small><span><?php if($entry['is_evaluation']): ?><i class="bi bi-clipboard-check" aria-hidden="true"></i> <?php endif; ?><?=e(mb_strlen($entry['title'],'UTF-8')>40?mb_substr($entry['title'],0,37,'UTF-8').'...':$entry['title'])?></span></a>
             <?php endforeach; ?>
           </div>
         <?php endfor; ?>
