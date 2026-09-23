@@ -5,6 +5,7 @@ declare(strict_types=1);
 // French is the source language. These rows contain only interface copy; user-created
 // course and page content never passes through this catalogue.
 return [
+    'Évaluations à confirmer'=>['en'=>'Assessments awaiting confirmation','de'=>'Zu bestätigende Bewertungen','it'=>'Valutazioni da confermare','es'=>'Evaluaciones por confirmar'],
     'Choisir dans le calendrier'=>['en'=>'Choose from the calendar','de'=>'Im Kalender auswählen','it'=>'Scegli dal calendario','es'=>'Elegir en el calendario'],
     'Effacer la date'=>['en'=>'Clear date','de'=>'Datum löschen','it'=>'Cancella la data','es'=>'Borrar fecha'],
     'Heure'=>['en'=>'Time','de'=>'Uhrzeit','it'=>'Ora','es'=>'Hora'],
@@ -20,6 +21,8 @@ return [
     'Aujourd’hui'=>['en'=>'Today','de'=>'Heute','it'=>'Oggi','es'=>'Hoy'],
     'Affichage du calendrier'=>['en'=>'Calendar view','de'=>'Kalenderansicht','it'=>'Vista del calendario','es'=>'Vista del calendario'],
     'Semaine précédente'=>['en'=>'Previous week','de'=>'Vorherige Woche','it'=>'Settimana precedente','es'=>'Semana anterior'],
+    'Jour précédent'=>['en'=>'Previous day','de'=>'Vorheriger Tag','it'=>'Giorno precedente','es'=>'Día anterior'],
+    'Jour suivant'=>['en'=>'Next day','de'=>'Nächster Tag','it'=>'Giorno successivo','es'=>'Día siguiente'],
     'Semaine suivante'=>['en'=>'Next week','de'=>'Nächste Woche','it'=>'Settimana successiva','es'=>'Semana siguiente'],
     'Mois précédent'=>['en'=>'Previous month','de'=>'Vorheriger Monat','it'=>'Mese precedente','es'=>'Mes anterior'],
     'Mois suivant'=>['en'=>'Next month','de'=>'Nächster Monat','it'=>'Mese successivo','es'=>'Mes siguiente'],

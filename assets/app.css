@@ -251,7 +251,7 @@ button,a,summary{touch-action:manipulation}
 .student-last-activity{display:flex;align-items:center;gap:.35rem;color:var(--muted);font-size:.74rem;white-space:nowrap}.student-last-activity i{color:var(--purple)}
 .waiting-count{display:grid;width:1.8rem;height:1.8rem;place-items:center;border-radius:.55rem;background:#eeeef3}
 .waiting-count.has-waiting{background:#fff0d0;color:#8c5a08;font-weight:750}
-.waiting-count.has-evaluations{background:#fbe0e4;color:#9c3445;font-weight:750}
+.waiting-count.has-evaluations,.course-waiting-badge.has-evaluations{background:#fbe0e4;color:#9c3445;font-weight:750}
 .teacher-calendar{margin:0 0 1.5rem;border:1px solid var(--line,#e4e2ee);border-radius:1.25rem;background:#fff;overflow:hidden;scroll-margin-top:5rem}
 .calendar-heading,.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.25rem}
 .calendar-heading{padding-bottom:.4rem}
@@ -263,7 +263,7 @@ button,a,summary{touch-action:manipulation}
 .calendar-navigation h3{margin:0;min-width:12rem;text-align:center;font-size:.95rem;text-transform:capitalize}
 .calendar-arrow{display:grid;place-items:center;width:2.2rem;height:2.2rem;border:1px solid #e4e2ee;border-radius:.65rem;color:#565169}
 .calendar-arrow:hover,.calendar-today:hover{background:#f3f0ff;color:#5b4be7}
-.calendar-controls{gap:.8rem}
+.calendar-controls{gap:.8rem;flex-wrap:wrap}
 .calendar-today{font-size:.78rem;padding:.5rem .65rem;border-radius:.6rem;color:#565169}
 .calendar-modes{gap:.15rem;padding:.2rem;border-radius:.75rem;background:#f2f0f8}
 .calendar-modes a{padding:.45rem .8rem;border-radius:.55rem;font-size:.78rem;color:#716d87}
@@ -273,6 +273,12 @@ button,a,summary{touch-action:manipulation}
 .calendar-day{min-height:112px;min-width:0;padding:.4rem;border-top:1px solid #eeecf4;border-right:1px solid #eeecf4}
 .calendar-day:nth-child(7n){border-right:0}
 .calendar-week .calendar-day{min-height:190px}
+.calendar-daily .calendar-grid{grid-template-columns:minmax(0,1fr)}
+.calendar-daily .calendar-day{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,14rem),1fr));align-content:start;gap:.5rem;min-height:0;padding:1rem;border-right:0}
+.calendar-daily .calendar-day>time,.calendar-daily .calendar-day:not(.has-deadlines){display:none}
+.calendar-daily .calendar-entry{margin:0;padding:.55rem .65rem}
+.calendar-daily .calendar-entry>span{font-size:.82rem}
+.calendar-daily .calendar-entry small{font-size:.7rem}
 .calendar-day.outside-month{background:#faf9fc}
 .calendar-day>time{display:block;margin:0 0 .3rem;color:#777187;font-size:.72rem}
 .calendar-day-number{display:inline-grid;place-items:center;min-width:1.5rem;height:1.5rem;border-radius:50%}
@@ -289,6 +295,8 @@ button,a,summary{touch-action:manipulation}
   .calendar-heading{align-items:flex-start}
   .calendar-heading h2{font-size:1rem}
   .calendar-navigation{width:100%;justify-content:space-between}
+  .calendar-navigation h3{min-width:0;flex:1}
+  .calendar-navigation .calendar-arrow{flex-shrink:0}
   .calendar-controls{width:100%;justify-content:space-between}
   .calendar-weekdays{display:none}
   .calendar-grid{display:block}

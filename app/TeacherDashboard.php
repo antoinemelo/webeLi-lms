@@ -22,8 +22,10 @@ function teacher_calendar_period(string $mode,?string $date=null): array
     $zone=new DateTimeZone('Europe/Zurich');$today=new DateTimeImmutable('today',$zone);
     $anchor=$date&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$date)?DateTimeImmutable::createFromFormat('!Y-m-d',$date,$zone):false;
     if(!$anchor||$anchor->format('Y-m-d')!==$date)$anchor=$today;
-    $mode=$mode==='month'?'month':'week';
-    if($mode==='week'){
+    $mode=in_array($mode,['day','week','month'],true)?$mode:'day';
+    if($mode==='day'){
+        $start=$end=$anchor;$previous=$anchor->modify('-1 day');$next=$anchor->modify('+1 day');
+    }elseif($mode==='week'){
         $start=$anchor->modify('-'.((int)$anchor->format('N')-1).' days');$end=$start->modify('+6 days');
         $previous=$start->modify('-7 days');$next=$start->modify('+7 days');
     }else{
@@ -61,8 +63,8 @@ function teacher_calendar_date_label(DateTimeImmutable $date,string $pattern): s
 function render_teacher_calendar(array $course): void
 {
     $user=require_actor();$teacherId=(int)$user['id'];
-    $requested=$_GET['calendar_mode']??$_SESSION['teacher_calendar_modes'][$teacherId]??'week';
-    $mode=$requested==='month'?'month':'week';$_SESSION['teacher_calendar_modes'][$teacherId]=$mode;
+    $requested=$_GET['calendar_mode']??$_SESSION['teacher_calendar_modes'][$teacherId]??'day';
+    $mode=in_array($requested,['day','week','month'],true)?$requested:'day';$_SESSION['teacher_calendar_modes'][$teacherId]=$mode;
     $date=$_GET['calendar_date']??$_SESSION['teacher_calendar_dates'][$teacherId]??null;
     $period=teacher_calendar_period($mode,is_string($date)?$date:null);
     $_SESSION['teacher_calendar_dates'][$teacherId]=$period['anchor']->format('Y-m-d');
@@ -70,17 +72,22 @@ function render_teacher_calendar(array $course): void
     $base=['course'=>(int)$course['id']];
     foreach(['sort','dir'] as $key)if(is_string($_GET[$key]??null))$base[$key]=$_GET[$key];
     $link=static fn(string $display,DateTimeImmutable $date):string=>route('teacher',$base+['calendar_mode'=>$display,'calendar_date'=>$date->format('Y-m-d')]).'#teacher-calendar';
-    $title=$mode==='month'?teacher_calendar_date_label($period['anchor'],'LLLL yyyy'):teacher_calendar_date_label($period['start'],'d MMM').' – '.teacher_calendar_date_label($period['end'],'d MMM').' '.$period['end']->format('Y');
+    $title=match($mode){
+        'day'=>teacher_calendar_date_label($period['anchor'],'EEEE d MMMM yyyy'),
+        'month'=>teacher_calendar_date_label($period['anchor'],'LLLL yyyy'),
+        default=>teacher_calendar_date_label($period['start'],'d MMM').' – '.teacher_calendar_date_label($period['end'],'d MMM').' '.$period['end']->format('Y'),
+    };
+    [$previousLabel,$nextLabel]=match($mode){'day'=>['Jour précédent','Jour suivant'],'week'=>['Semaine précédente','Semaine suivante'],default=>['Mois précédent','Mois suivant']};
     $preferred=teacher_pathway_view($user);
     ?>
-    <section class="teacher-calendar calendar-<?=$mode?>" id="teacher-calendar" aria-labelledby="teacher-calendar-title">
+    <section class="teacher-calendar calendar-<?=$mode==='day'?'daily':$mode?>" id="teacher-calendar" aria-labelledby="teacher-calendar-title">
       <div class="calendar-heading"><div><h2 id="teacher-calendar-title"><?=e(t('Calendrier des échéances'))?></h2></div><span class="calendar-total"><?=e(t($count===1?':count échéance':':count échéances',['count'=>$count]))?></span></div>
       <div class="calendar-toolbar">
-        <div class="calendar-navigation"><a href="<?=e($link($mode,$period['previous']))?>" class="calendar-arrow" aria-label="<?=e(t($mode==='week'?'Semaine précédente':'Mois précédent'))?>"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><h3><?=e($title)?></h3><a href="<?=e($link($mode,$period['next']))?>" class="calendar-arrow" aria-label="<?=e(t($mode==='week'?'Semaine suivante':'Mois suivant'))?>"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></div>
-        <div class="calendar-controls"><a class="calendar-today" href="<?=e($link($mode,$period['today']))?>"><?=e(t('Aujourd’hui'))?></a><nav class="calendar-modes" aria-label="<?=e(t('Affichage du calendrier'))?>"><?php foreach(['week'=>'Semaine','month'=>'Mois'] as $display=>$label): ?><a href="<?=e($link($display,$period['anchor']))?>" <?=$mode===$display?'aria-current="true"':''?>><?=e(t($label))?></a><?php endforeach; ?></nav></div>
+        <div class="calendar-navigation"><a href="<?=e($link($mode,$period['previous']))?>" class="calendar-arrow" aria-label="<?=e(t($previousLabel))?>"><i class="bi bi-chevron-left" aria-hidden="true"></i></a><h3><?=e($title)?></h3><a href="<?=e($link($mode,$period['next']))?>" class="calendar-arrow" aria-label="<?=e(t($nextLabel))?>"><i class="bi bi-chevron-right" aria-hidden="true"></i></a></div>
+        <div class="calendar-controls"><a class="calendar-today" href="<?=e($link($mode,$period['today']))?>"><?=e(t('Aujourd’hui'))?></a><nav class="calendar-modes" aria-label="<?=e(t('Affichage du calendrier'))?>"><?php foreach(['day'=>'Jour','week'=>'Semaine','month'=>'Mois'] as $display=>$label): ?><a href="<?=e($link($display,$period['anchor']))?>" <?=$mode===$display?'aria-current="true"':''?>><?=e(t($label))?></a><?php endforeach; ?></nav></div>
       </div>
       <?php if(!$count): ?><p class="calendar-empty"><?=e(t('Aucune échéance sur cette période.'))?></p><?php endif; ?>
-      <div class="calendar-weekdays" aria-hidden="true"><?php for($index=0;$index<7;$index++): ?><span><?=e(teacher_calendar_date_label($period['start']->modify('+'.$index.' days'),'EEE'))?></span><?php endfor; ?></div>
+      <?php if($mode!=='day'): ?><div class="calendar-weekdays" aria-hidden="true"><?php for($index=0;$index<7;$index++): ?><span><?=e(teacher_calendar_date_label($period['start']->modify('+'.$index.' days'),'EEE'))?></span><?php endfor; ?></div><?php endif; ?>
       <div class="calendar-grid">
         <?php for($day=$period['start'];$day<=$period['end'];$day=$day->modify('+1 day')): $key=$day->format('Y-m-d');$items=$entries[$key]??[];$isToday=$key===$period['today']->format('Y-m-d');$outside=$mode==='month'&&$day->format('Y-m')!==$period['anchor']->format('Y-m'); ?>
           <div class="calendar-day<?=$isToday?' is-today':''?><?=$outside?' outside-month':''?><?=$items?' has-deadlines':''?>" data-calendar-day="<?=$key?>">

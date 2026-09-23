@@ -207,7 +207,7 @@ Le CSS applicatif est chargé avec une version dans son URL, comme le JavaScript
 
 ### Calendrier enseignant et préférence de navigation
 
-`TeacherDashboard.php` calcule des périodes semaine/mois en Europe/Zurich et interroge les échéances de tous les parcours actifs détenus ou partagés avec l’enseignant. La sélection d’un parcours ne filtre pas le calendrier. La grille va du lundi au dimanche ; la navigation mensuelle part du premier jour pour éviter les sauts de mois. La période est conservée dans la session par utilisateur.
+`TeacherDashboard.php` calcule des périodes jour/semaine/mois en Europe/Zurich (jour par défaut) et interroge les échéances de tous les parcours actifs détenus ou partagés avec l’enseignant. La sélection d’un parcours ne filtre pas le calendrier. La grille va du lundi au dimanche ; la navigation mensuelle part du premier jour pour éviter les sauts de mois. La période est conservée dans la session par utilisateur.
 
 `date-fields.js` enrichit tous les `input[type=date]` et `input[type=datetime-local]`, y compris les contrôles ajoutés dynamiquement : saisie manuelle au format jour/mois/année et sélection via un calendrier de l’application, traduit par `Intl.DateTimeFormat` avec les mêmes locales que `locale_code()`. Le premier jour de semaine suit la locale (lundi pour les cinq locales proposées) ; le calendrier ne dépend pas de la langue du navigateur. Le contrôle nommé conserve sa valeur ISO pour les formulaires et les API. Les contraintes, les verrous et les réinitialisations sont synchronisés. Après une affectation de valeur par JavaScript sans événement, appeler `liikeDateFields.sync(form)` ; le suivi administratif le fait à l’ouverture de son éditeur.
 
