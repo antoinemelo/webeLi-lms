@@ -689,7 +689,7 @@ function handle_action(string $action): never
         $level = max(0, min(3, (int) $_POST['level']));
         $item = one("SELECT pi.*,c.teacher_id,c.title AS course_title,p.title AS page_title,e.id AS enrollment_id,u.email AS teacher_email,u.language AS teacher_language
             FROM pathway_items pi JOIN courses c ON c.id=pi.course_id JOIN pages p ON p.id=pi.page_id
-            JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active' JOIN users u ON u.id=c.teacher_id WHERE pi.id=?
+            JOIN enrollments e ON e.course_id=c.id AND e.student_id=? AND e.status='active' JOIN users u ON u.id=c.teacher_id WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0)
             AND (pi.access_mode='all'
               OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))", [$user['id'],$itemId,$user['id']]);
         if (!$item) { flash('Étape introuvable.', 'error'); redirect('student'); }
@@ -903,7 +903,7 @@ function handle_action(string $action): never
         release_edit_locks(db(),(int)$user['id']);
         // Explicit notification also covers changes saved silently in earlier requests.
         $notifyStudents=($_POST['notify_students']??'')==='1'&&!$conflicts;
-        $recipients=$notifyStudents?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
+        $recipients=$notifyStudents?all("SELECT DISTINCT u.email,u.language FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id JOIN users u ON u.id=e.student_id WHERE pi.page_id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND e.status='active' AND u.account_status='active' AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))",[$pageId]):[];
         foreach($recipients as $recipient){$recipientLanguage=normalize_language((string)($recipient['language']??''))??'fr';enqueue('page.updated',$recipient['email'],t('Une ressource de votre parcours a changé',[],$recipientLanguage),t('La page « :page » vient d’être mise à jour.',['page'=>$title],$recipientLanguage));}
         flash($conflicts?t('Enregistrement partiel : :parts modifié(s) ailleurs ou verrouillé(s).',['parts'=>implode(', ',array_unique($conflicts))]):t($recipients?'Page enregistrée et notifications préparées.':'Page enregistrée.'),$conflicts?'error':'success');
         $returnCourseId=page_pathway_return_course(db(),$pageId,(int)$user['id'],(int)($_POST['return_course']??0));
@@ -1011,8 +1011,9 @@ function handle_action(string $action): never
     if($action==='save_pathway_group'&&$user['role']==='teacher'){
         $courseId=(int)($_POST['course_id']??0);
         try{
-            save_pathway_group(db(),$courseId,(int)$user['id'],(string)($_POST['operation']??''),(int)($_POST['group_id']??0),(string)($_POST['title']??''),(string)($_POST['structure_token']??''));
+            $savedGroupId=save_pathway_group(db(),$courseId,(int)$user['id'],(string)($_POST['operation']??''),(int)($_POST['group_id']??0),(string)($_POST['title']??''),(string)($_POST['structure_token']??''));
             flash('Regroupement mis à jour.');
+            if(in_array($_POST['operation']??'',['show','hide'],true)){header('Location: '.route('pathway',['course'=>$courseId]).'#pathway-group-'.$savedGroupId);exit;}
         }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
         redirect('pathway',['course'=>$courseId]);
     }

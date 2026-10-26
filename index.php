@@ -37,8 +37,11 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
     exit;
 }
 
+if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='qcm-class-state')qcm_class_http();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
+    if(($_POST['action']??'')==='qcm_class_command')qcm_class_http(true);
     handle_action((string) ($_POST['action'] ?? ''));
 }
 
@@ -62,6 +65,7 @@ if (!actor()) {
 }
 
 $user = require_actor();
+if(($_GET['view']??'')==='qcm-class'){render_qcm_class_page($user);exit;}
 if((int)($_GET['announcement']??0)>0)mark_announcement_read_for_user(db(),(int)$_GET['announcement'],(int)$user['id']);
 $view = (string) ($_GET['view'] ?? ($user['role'] === 'teacher' ? 'teacher' : 'student'));
 if($view==='event-download'){

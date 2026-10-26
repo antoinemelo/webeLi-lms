@@ -119,7 +119,7 @@ function render_docx_bytes(string $markdown, string $title): string
         if(preg_match('/^( *)([-*+]|\d+[.)])\s+(.+)$/u',str_replace("\t",'    ',$line),$list)){$depth=intdiv(strlen($list[1]),2)+1;$marker=preg_match('/^\d/',$list[2])?$list[2]:'•';$paragraphs[]=docx_paragraph($marker.' '.$list[3],'ListParagraph',$depth);continue;}
         if(preg_match('/^>\s?(.*)$/u',$trim,$quote)){$paragraphs[]=docx_paragraph($quote[1],'Quote');continue;}
         if(preg_match('/^(?:-{3,}|\*{3,}|_{3,})$/',preg_replace('/\s+/','',$trim)??'')){$paragraphs[]=docx_paragraph('────────────────────────','Separator');continue;}
-        if($trim===':::qcm'){$paragraphs[]=docx_paragraph(t('QCM'),'Heading3');continue;}
+        if(preg_match('/^:::\s*qcm(?:_strict|_classe)?$/iu',$trim)){$paragraphs[]=docx_paragraph(t('QCM'),'Heading3');continue;}
         if($trim===':::')continue;
         $paragraphs[]=docx_paragraph($line);
     }
@@ -197,7 +197,7 @@ function render_latex_document(string $markdown, string $title): string
         }
         if(preg_match('/^>\s?(.*)$/u',$trim,$quote)){$body[]='\\begin{quote}'.latex_inline($quote[1]).'\\end{quote}';continue;}
         if(preg_match('/^(?:-{3,}|\*{3,}|_{3,})$/',preg_replace('/\s+/','',$trim)??'')){$body[]='\\par\\noindent\\rule{\\linewidth}{0.4pt}\\par';continue;}
-        if($trim===':::qcm'){$body[]='\\subsubsection*{'.latex_escape(t('QCM')).'}';continue;}
+        if(preg_match('/^:::\s*qcm(?:_strict|_classe)?$/iu',$trim)){$body[]='\\subsubsection*{'.latex_escape(t('QCM')).'}';continue;}
         if($trim===':::')continue;
         $body[]=latex_inline($line).'\\par';
     }

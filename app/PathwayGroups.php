@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 function pathway_groups(PDO $pdo,int $courseId): array
 {
-    $query=$pdo->prepare('SELECT id,course_id,title,position FROM pathway_groups WHERE course_id=? ORDER BY position,id');
+    $query=$pdo->prepare('SELECT id,course_id,title,position,is_visible FROM pathway_groups WHERE course_id=? ORDER BY position,id');
     $query->execute([$courseId]);
     return $query->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -96,8 +96,8 @@ function save_pathway_group(PDO $pdo,int $courseId,int $teacherId,string $operat
 {
     if(!teacher_can_access_course($pdo,$courseId,$teacherId))throw new InvalidArgumentException('Parcours introuvable.');
     $title=trim($title);
-    if(!in_array($operation,['create','rename','delete'],true))throw new InvalidArgumentException('Regroupement introuvable.');
-    if($operation!=='delete'&&($title===''||mb_strlen($title)>120))throw new InvalidArgumentException('Le titre du regroupement doit contenir entre 1 et 120 caractères.');
+    if(!in_array($operation,['create','rename','delete','show','hide'],true))throw new InvalidArgumentException('Regroupement introuvable.');
+    if(in_array($operation,['create','rename'],true)&&($title===''||mb_strlen($title)>120))throw new InvalidArgumentException('Le titre du regroupement doit contenir entre 1 et 120 caractères.');
     $lock=acquire_edit_lock($pdo,'course_structure',$courseId,$teacherId);
     if(!$lock['ok'])throw new InvalidArgumentException('La structure du parcours est momentanément verrouillée par un autre enseignant.');
     try{
@@ -114,6 +114,7 @@ function save_pathway_group(PDO $pdo,int $courseId,int $teacherId,string $operat
                 $remaining=[];foreach($sections as $section){if((int)($section['group']['id']??0)===$groupId){foreach($section['items'] as $item)$remaining[]=['group'=>null,'items'=>[$item]];}else $remaining[]=$section;}
                 store_pathway_sections($pdo,$courseId,$remaining);
             }
+            elseif(in_array($operation,['show','hide'],true))$pdo->prepare('UPDATE pathway_groups SET is_visible=? WHERE id=? AND course_id=?')->execute([$operation==='show'?1:0,$groupId,$courseId]);
             else $pdo->prepare('UPDATE pathway_groups SET title=? WHERE id=? AND course_id=?')->execute([$title,$groupId,$courseId]);
         }
         $pdo->commit();return $groupId;

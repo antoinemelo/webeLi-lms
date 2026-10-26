@@ -5,46 +5,46 @@ declare(strict_types=1);
 final class Qcm
 {
     /**
-     * @return list<array{type:'markdown'|'qcm',source:string,index?:int,valid?:bool,questions?:array}>
+     * @return list<array{type:'markdown'|'qcm',source:string,mode?:string,index?:int,valid?:bool,questions?:array}>
      */
     public static function sections(string $source): array
     {
         $lines=explode("\n",str_replace(["\r\n","\r"],"\n",$source));
-        $sections=[];$markdown=[];$quiz=[];$inQuiz=false;$quizIndex=0;
+        $sections=[];$markdown=[];$quiz=[];$inQuiz=false;$quizIndex=0;$mode='classic';
         $flushMarkdown=static function()use(&$sections,&$markdown):void{
             $text=trim(implode("\n",$markdown));$markdown=[];
             if($text!=='')$sections[]=['type'=>'markdown','source'=>$text];
         };
         foreach($lines as $line){
-            if(!$inQuiz&&preg_match('/^\s*:::\s*qcm\s*$/iu',$line)){
-                $flushMarkdown();$inQuiz=true;$quiz=[];continue;
+            if(!$inQuiz&&preg_match('/^\s*:::\s*qcm(_strict|_classe)?\s*$/iu',$line,$opening)){
+                $flushMarkdown();$inQuiz=true;$quiz=[];$mode=match(mb_strtolower($opening[1]??'')){ '_strict'=>'strict','_classe'=>'classe',default=>'classic' };continue;
             }
             if($inQuiz&&preg_match('/^\s*:::\s*$/u',$line)){
                 $raw=trim(implode("\n",$quiz));$parsed=self::parseQuiz($raw);
-                $sections[]=['type'=>'qcm','source'=>$raw,'index'=>$quizIndex++,'valid'=>$parsed['valid'],'questions'=>$parsed['questions']];
+                $sections[]=['type'=>'qcm','mode'=>$mode,'source'=>$raw,'index'=>$quizIndex++,'valid'=>$parsed['valid'],'questions'=>$parsed['questions']];
                 $quiz=[];$inQuiz=false;continue;
             }
             if($inQuiz)$quiz[]=$line;else $markdown[]=$line;
         }
         if($inQuiz){
             $raw=trim(implode("\n",$quiz));$parsed=self::parseQuiz($raw);
-            $sections[]=['type'=>'qcm','source'=>$raw,'index'=>$quizIndex,'valid'=>false,'questions'=>$parsed['questions']];
+            $sections[]=['type'=>'qcm','mode'=>$mode,'source'=>$raw,'index'=>$quizIndex,'valid'=>false,'questions'=>$parsed['questions']];
         }
         $flushMarkdown();
         return $sections;
     }
 
-    public static function hasValidQuiz(string $source): bool
+    public static function hasValidQuiz(string $source,bool $individualOnly=false): bool
     {
-        foreach(self::sections($source) as $section)if($section['type']==='qcm'&&!empty($section['valid']))return true;
+        foreach(self::sections($source) as $section)if($section['type']==='qcm'&&!empty($section['valid'])&&(!$individualOnly||$section['mode']!=='classe'))return true;
         return false;
     }
 
     /** @return list<string> */
-    public static function quizKeys(string $source,int $blockId): array
+    public static function quizKeys(string $source,int $blockId,bool $individualOnly=false): array
     {
         $keys=[];
-        foreach(self::sections($source) as $section)if($section['type']==='qcm'&&!empty($section['valid']))$keys[]=self::key($blockId,(int)$section['index'],$section['source']);
+        foreach(self::sections($source) as $section)if($section['type']==='qcm'&&!empty($section['valid'])&&(!$individualOnly||$section['mode']!=='classe'))$keys[]=self::key($blockId,(int)$section['index'],$section['source'],$section['mode']);
         return $keys;
     }
 
@@ -54,8 +54,12 @@ final class Qcm
         foreach(self::sections($source) as $section){
             if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
             if(empty($section['valid'])){$html[]='<section class="qcm-card qcm-invalid"><b>'.e(t('QCM incomplet')).'</b><p>'.e(t('Ce questionnaire doit être corrigé par l’équipe enseignante.')).'</p></section>';continue;}
-            $key=self::key($blockId,(int)$section['index'],$section['source']);
-            $html[]=self::renderQuizForm($pdo,$section['questions'],$key,$blockId,$itemId,$studentId);
+            $key=self::key($blockId,(int)$section['index'],$section['source'],$section['mode']);
+            if($section['mode']==='classe'){
+                $html[]='<section class="qcm-card qcm-class-entry"><h3>'.e(t('QCM en classe')).'</h3><p>'.e(t('Répondez au rythme de votre enseignant.')).'</p><a class="button primary" href="'.e(route('qcm-class',['item'=>$itemId,'block'=>$blockId,'key'=>$key])).'">'.e(t('Rejoindre la séance')).'</a></section>';
+            }else{
+                $html[]=self::renderQuizForm($pdo,$section['questions'],$key,$blockId,$itemId,$studentId,$section['mode']==='strict');
+            }
         }
         return implode("\n",$html);
     }
@@ -83,7 +87,7 @@ final class Qcm
         foreach(self::sections($source) as $section){
             if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
             if(empty($section['valid'])){$html[]='<section class="qcm-card qcm-invalid"><b>'.e(t('QCM incomplet')).'</b><p>'.e(t('Ce questionnaire doit être corrigé par l’équipe enseignante.')).'</p></section>';continue;}
-            $quiz='<section class="qcm-card qcm-preview"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t('QCM')).'</span><small>'.e(t('Interaction désactivée dans l’aperçu')).'</small></header><form>';
+            $quiz='<section class="qcm-card qcm-preview"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t(match($section['mode']){'strict'=>'QCM strict','classe'=>'QCM en classe',default=>'QCM'})).'</span><small>'.e(t('Interaction désactivée dans l’aperçu')).'</small></header><form>';
             if($isEvaluation)$quiz.='<p class="qcm-evaluation-notice"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> '.e(t('Cette évaluation ne peut être envoyée qu’une seule fois.')).'</p>';
             foreach($section['questions'] as $questionIndex=>$question){
                 $quiz.='<fieldset class="qcm-question"><legend><span>'.($questionIndex+1).'</span>'.e($question['title']).'</legend><div class="qcm-options">';
@@ -123,7 +127,7 @@ final class Qcm
     {
         $access=$pdo->prepare("SELECT pi.id,pi.page_id,pi.course_id,pi.is_evaluation FROM pathway_items pi
             JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
-            WHERE pi.id=? AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
                 SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
         $access->execute([$studentId,$itemId,$studentId]);$item=$access->fetch(PDO::FETCH_ASSOC);
         if(!$item)return ['status'=>'forbidden'];
@@ -131,8 +135,8 @@ final class Qcm
         $block->execute([$blockId,$item['page_id']]);$block=$block->fetch(PDO::FETCH_ASSOC);
         if(!$block)return ['status'=>'invalid'];
         foreach(self::sections((string)$block['body']) as $section){
-            if($section['type']!=='qcm'||empty($section['valid']))continue;
-            $candidate=self::key($blockId,(int)$section['index'],$section['source']);
+            if($section['type']!=='qcm'||empty($section['valid'])||$section['mode']==='classe')continue;
+            $candidate=self::key($blockId,(int)$section['index'],$section['source'],$section['mode']);
             if(!hash_equals($candidate,$key))continue;
             return ['status'=>'available','item'=>$item,'section'=>$section];
         }
@@ -191,7 +195,7 @@ final class Qcm
         $blocks->execute([$courseId]);$expectedKeys=[];
         foreach($blocks->fetchAll(PDO::FETCH_ASSOC) as $block){
             $itemId=(int)$block['item_id'];$blockId=(int)$block['block_id'];
-            foreach(self::quizKeys((string)$block['body'],$blockId) as $key)$expectedKeys[$itemId][$blockId."\0".$key]=true;
+            foreach(self::quizKeys((string)$block['body'],$blockId,true) as $key)$expectedKeys[$itemId][$blockId."\0".$key]=true;
         }
         if(!$expectedKeys)return ['expected'=>[],'completed'=>[]];
         $attempts=$pdo->prepare("SELECT qa.student_id,qa.pathway_item_id,qa.page_block_id,qa.qcm_key
@@ -220,7 +224,7 @@ final class Qcm
         $query->execute([$courseId]);$steps=[];
         foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
             $itemId=(int)$row['item_id'];
-            if(isset($steps[$itemId])||!self::hasValidQuiz((string)$row['body']))continue;
+            if(isset($steps[$itemId])||!self::hasValidQuiz((string)$row['body'],true))continue;
             $steps[$itemId]=['item_id'=>$itemId,'position'=>(int)$row['position'],'title'=>(string)$row['title'],'score_percent'=>null];
         }
         if(!$steps)return [];
@@ -265,9 +269,9 @@ final class Qcm
         }
     }
 
-    private static function key(int $blockId,int $index,string $source): string
+    public static function key(int $blockId,int $index,string $source,string $mode='classic'): string
     {
-        return substr(hash('sha256',$blockId."\0".$index."\0".trim($source)),0,32);
+        return substr(hash('sha256',$blockId."\0".$index."\0".trim($source).($mode==='classic'?'':"\0".$mode)),0,32);
     }
 
     private static function parseQuiz(string $source): array
@@ -308,7 +312,7 @@ final class Qcm
         return ['correct'=>$correctQuestions,'total'=>$total,'score'=>$total?round($correctQuestions/$total*100,2):0.0];
     }
 
-    private static function renderQuizForm(PDO $pdo,array $questions,string $key,int $blockId,int $itemId,int $studentId): string
+    private static function renderQuizForm(PDO $pdo,array $questions,string $key,int $blockId,int $itemId,int $studentId,bool $strict=false): string
     {
         $evaluationQuery=$pdo->prepare('SELECT is_evaluation FROM pathway_items WHERE id=?');
         $evaluationQuery->execute([$itemId]);$isEvaluation=(bool)$evaluationQuery->fetchColumn();
@@ -333,7 +337,25 @@ final class Qcm
         }
         $button=$isEvaluation?t('Terminer le QCM'):($attempt?t('Réessayer'):t('Vérifier mes réponses'));
         $html.='<p class="muted" role="status" aria-live="polite" data-qcm-status data-saved="'.e(t('Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.')).'" data-saving="'.e(t('Enregistrement du brouillon…')).'" data-error="'.e(t('Brouillon non enregistré sur le serveur. Gardez cette page ouverte et vérifiez votre connexion.')).'" data-conflict="'.e(t('Ce QCM a été modifié ou terminé ailleurs. Rechargez la page avant de continuer.')).'">'.e(t($draft?'Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.':'Vos réponses seront sauvegardées automatiquement pendant la saisie.')).'</p>';
-        return $html.'<button class="button primary" type="submit">'.e($button).'</button></form></section>';
+        $form=$html.'<button class="button primary" type="submit">'.e($button).'</button></form></section>';
+        return $strict?self::strictForm($form,$attempt?:null):$form;
+    }
+
+    public static function uiLabels(): array
+    {
+        return [
+            'fullscreenUnavailable'=>t('Le plein écran n’est pas disponible. Le questionnaire reste utilisable dans cette fenêtre.'),
+            'fullscreenExited'=>t('Plein écran quitté. Vos réponses sont conservées ; vous pouvez continuer ou réactiver le plein écran.'),
+            'copied'=>t('Exemple copié.'),
+            'copyFallback'=>t('Exemple sélectionné : utilisez la commande Copier de votre appareil.'),
+            'choose'=>t('Sélectionnez une réponse.'),
+        ];
+    }
+
+    private static function strictForm(string $form,?array $attempt): string
+    {
+        $result=$attempt?'<p class="qcm-strict-result"><strong>'.e(t('Résultat : :score %',['score'=>self::formatScore((float)$attempt['score_percent'])])).'</strong></p>':'';
+        return '<div class="qcm-strict" data-qcm-strict data-qcm-labels="'.e(json_encode(self::uiLabels(),JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)).'"><div data-qcm-strict-intro><h3>'.e(t('QCM strict')).'</h3>'.$result.'<p>'.e(t('Le questionnaire masque la navigation du cours jusqu’à la remise. Le plein écran dépend de votre navigateur et ne verrouille pas votre appareil.')).'</p><button type="button" class="button primary" data-qcm-start>'.e(t($attempt?'Réessayer':'Commencer le QCM')).'</button><noscript><p>'.e(t('Activez JavaScript pour ouvrir ce questionnaire.')).'</p></noscript></div><dialog class="qcm-strict-dialog" aria-label="'.e(t('QCM strict')).'"><div class="qcm-strict-toolbar"><strong>'.e(t('QCM strict')).'</strong><button type="button" class="button secondary" data-qcm-fullscreen>'.e(t('Plein écran')).'</button></div><p data-qcm-screen-status role="status"></p>'.$form.'</dialog></div>';
     }
 
     private static function shuffledAnswers(array $answers): array

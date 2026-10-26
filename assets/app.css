@@ -883,7 +883,7 @@ h1{font-size:2.25rem}
 .pathway-group-grip{color:#9995a8;flex-shrink:0}
 .pathway-group-toggle.btn{padding:.45rem .2rem;border:0;box-shadow:none;min-width:0;font-size:.88rem;font-weight:700;color:var(--ink)}
 .pathway-group-title{min-width:0;overflow-wrap:anywhere}
-.pathway-group-count{margin-left:.2rem;color:var(--muted)!important;font-size:.7rem;font-weight:600;flex-shrink:0}
+.pathway-group-count{vertical-align:middle;margin-left:.2rem;color:var(--muted)!important;font-size:.7rem;font-weight:600;flex-shrink:0}
 .pathway-group-chevron{font-size:.75rem;flex-shrink:0;transition:transform .15s}
 .pathway-group-toggle.collapsed .pathway-group-chevron{transform:rotate(-90deg)}
 .pathway-group-actions{flex-shrink:0}
@@ -906,3 +906,4 @@ h1{font-size:2.25rem}
 @media(max-width:600px){.pathway-group{margin:.4rem}.pathway-group-header{padding:.3rem .4rem;gap:.3rem!important}.pathway-group-toggle.btn{font-size:.82rem}.pathway-group-items>.pathway-row{padding:.75rem .55rem}}
 
 .pathway-list:has(.dropdown-menu.show){overflow:visible}
+.pathway-group-hidden{border-style:dashed;background:#f3f2f6}.pathway-group-hidden>.pathway-group-header{background:#eeecf3}.pathway-group-visibility-form{margin:0}

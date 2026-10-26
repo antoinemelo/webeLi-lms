@@ -60,7 +60,7 @@ final class WorkSubmission
             JOIN page_blocks b ON b.page_id=pi.page_id AND b.id=? AND b.type='submission'
             JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
             JOIN users u ON u.id=e.student_id AND u.role='student' AND u.account_status='active'
-            WHERE pi.id=? AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
                 SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=e.student_id)))");
         $q->execute([$blockId,$studentId,$itemId]);return $q->fetch(PDO::FETCH_ASSOC)?:null;
     }

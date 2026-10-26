@@ -62,7 +62,7 @@ function translations_for(string $language): array
     if ($language === 'fr') return [];
     if (!isset($translations[$language])) {
         $file = __DIR__ . '/translations/' . $language . '.php';
-        $catalogue = array_replace(require __DIR__ . '/translations/common.php', require __DIR__ . '/translations/messaging.php');
+        $catalogue = array_replace(require __DIR__ . '/translations/common.php', require __DIR__ . '/translations/messaging.php', require __DIR__ . '/translations/qcm.php');
         $shared = [];
         foreach ($catalogue as $french => $values) {
             if (isset($values[$language])) $shared[$french] = $values[$language];

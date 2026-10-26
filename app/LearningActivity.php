@@ -11,7 +11,7 @@ function record_learning_activity(PDO $pdo, int $studentId, int $itemId, string 
         JOIN courses c ON c.id=pi.course_id
         JOIN enrollments e ON e.course_id=c.id
         JOIN users u ON u.id=e.student_id
-        WHERE pi.id=? AND e.student_id=? AND e.status='active'
+        WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND e.student_id=? AND e.status='active'
           AND c.archived=0 AND u.account_status='active'
           AND (pi.access_mode='all'
             OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");

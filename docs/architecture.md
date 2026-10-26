@@ -195,6 +195,12 @@ La migration 26 crée `pathway_groups(id, course_id, title)` et ajoute `pathway_
 
 Les actions de gestion sont réservées aux enseignants autorisés et protégées par CSRF, le verrou `course_structure` et une empreinte des groupes, positions et rattachements. Un ancien onglet ne peut pas écraser une structure plus récente. Les vues élève construisent les groupes après le filtrage d’accès et la numérotation habituels, sans révéler les groupes vides ou inaccessibles. L’état replié reste dans `sessionStorage`, par compte, parcours, groupe et vue. Les groupes sont transportés par clés locales remappées lors des copies/imports ; un import avec référence inconnue ou groupe disjoint est refusé atomiquement.
 
+La migration 30 ajoute `pathway_groups.is_visible`, booléen à `1` par défaut pour préserver les parcours existants. Les opérations `show` et `hide` partagent les contrôles de gestion et ne mettent à jour que cette colonne : `pathway_items.access_mode`, les restrictions nominatives, les révisions et les données pédagogiques restent intacts. L’empreinte de structure inclut la visibilité.
+
+L’accès effectif élève exige à la fois un regroupement visible (ou aucun regroupement) et l’autorisation individuelle sur l’étape. Ce filtre s’applique aux listes, à la navigation, aux lectures directes, aux PDF et événements, aux remises, aux QCM individuels et collectifs, aux notes privées et au suivi d’activité. Les règles de calcul des notes, moyennes, acquis et confirmations enseignantes continuent d’utiliser les réglages pédagogiques des étapes. Les synthèses conservent les résultats historiques ; une évaluation masquée sans résultat ne révèle pas son titre dans les acquis. L’aperçu global élève filtre les groupes masqués, mais un enseignant peut toujours inspecter directement leur contenu avec une icône indiquant le masquage.
+
+Le format d’export ajoute un booléen `is_visible` à chaque groupe. Les copies le conservent ; les anciens documents qui omettent ce champ sont importés avec leurs groupes visibles. Une valeur présente non booléenne est rejetée. La suppression d’un groupe masqué détache ses étapes, qui retrouvent alors leurs propres règles d’accès ; la confirmation le précise.
+
 Le CSS applicatif est chargé avec une version dans son URL, comme le JavaScript : une mise à jour du style ne réutilise pas une ancienne réponse du cache HTTP ou PWA. Les groupes utilisent les composants Bootstrap Collapse, Dropdown et Modal.
 
 

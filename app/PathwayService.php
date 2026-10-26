@@ -113,13 +113,14 @@ function student_achievement_change_types_for_session(PDO $pdo,array $window,int
 }
 
 /** @return array<int,int> item id => visible position */
-function pathway_display_position_map(PDO $pdo,int $courseId,?int $studentId=null): array
+function pathway_display_position_map(PDO $pdo,int $courseId,?int $studentId=null,bool $visibleGroupsOnly=false): array
 {
     if($studentId===null){
-        $query=$pdo->prepare('SELECT id,access_mode FROM pathway_items WHERE course_id=? ORDER BY position,id');
+        $visibility=$visibleGroupsOnly?' AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pathway_items.group_id AND visibility_group.is_visible=0)':'';
+        $query=$pdo->prepare('SELECT id,access_mode FROM pathway_items WHERE course_id=?'.$visibility.' ORDER BY position,id');
         $query->execute([$courseId]);
     }else{
-        $query=$pdo->prepare("SELECT pi.id,pi.access_mode FROM pathway_items pi WHERE pi.course_id=?
+        $query=$pdo->prepare("SELECT pi.id,pi.access_mode FROM pathway_items pi WHERE pi.course_id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0)
             AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
                 SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))
             ORDER BY pi.position,pi.id");
@@ -132,11 +133,11 @@ function pathway_display_position_map(PDO $pdo,int $courseId,?int $studentId=nul
     return $positions;
 }
 
-function pathway_item_display_position(PDO $pdo,int $itemId,?int $studentId=null): ?int
+function pathway_item_display_position(PDO $pdo,int $itemId,?int $studentId=null,bool $visibleGroupsOnly=false): ?int
 {
     $query=$pdo->prepare('SELECT course_id FROM pathway_items WHERE id=?');$query->execute([$itemId]);
     $courseId=(int)($query->fetchColumn()?:0);if($courseId<1)return null;
-    return pathway_display_position_map($pdo,$courseId,$studentId)[$itemId]??null;
+    return pathway_display_position_map($pdo,$courseId,$studentId,$visibleGroupsOnly)[$itemId]??null;
 }
 
 function new_entity_reference(string $prefix): string
@@ -274,6 +275,7 @@ function purge_course_enrollment(PDO $pdo,int $enrollmentId,int $teacherId): boo
     try{
         $itemScope='SELECT id FROM pathway_items WHERE course_id=?';
         foreach(['learning_visits','qcm_attempts','qcm_drafts','student_private_notes','work_submissions','work_submission_versions'] as $table)$pdo->prepare("DELETE FROM $table WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
+        $pdo->prepare("DELETE FROM qcm_class_votes WHERE student_id=? AND session_id IN (SELECT id FROM qcm_class_sessions WHERE pathway_item_id IN ($itemScope))")->execute([$studentId,$courseId]);
         $pdo->prepare("DELETE FROM pathway_item_students WHERE student_id=? AND pathway_item_id IN ($itemScope)")->execute([$studentId,$courseId]);
         $pdo->prepare('DELETE FROM announcement_reads WHERE student_id=? AND announcement_id IN (SELECT id FROM course_announcements WHERE course_id=?)')->execute([$studentId,$courseId]);
         $pdo->prepare('DELETE FROM course_accesses WHERE user_id=? AND course_id=?')->execute([$studentId,$courseId]);
@@ -320,7 +322,7 @@ function complete_consultation_step(PDO $pdo, int $studentId, int $itemId): bool
         JOIN courses c ON c.id=pi.course_id
         JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
         JOIN users u ON u.id=e.student_id AND u.account_status='active'
-        WHERE pi.id=? AND c.archived=0 AND pi.self_evaluation_enabled=0 AND pi.is_evaluation=0
+        WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND c.archived=0 AND pi.self_evaluation_enabled=0 AND pi.is_evaluation=0
           AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
               SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
     $query->execute([$studentId,$itemId,$studentId]);$enrollmentId=(int)($query->fetchColumn()?:0);
@@ -407,8 +409,8 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
         }
 
         $groupMap=[];
-        $insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title,position) VALUES(?,?,?)');
-        foreach(pathway_groups($pdo,$sourceId) as $group){$insertGroup->execute([$newCourseId,$group['title'],$group['position']]);$groupMap[(int)$group['id']]=(int)$pdo->lastInsertId();}
+        $insertGroup=$pdo->prepare('INSERT INTO pathway_groups(course_id,title,position,is_visible) VALUES(?,?,?,?)');
+        foreach(pathway_groups($pdo,$sourceId) as $group){$insertGroup->execute([$newCourseId,$group['title'],$group['position'],$group['is_visible']]);$groupMap[(int)$group['id']]=(int)$pdo->lastInsertId();}
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
@@ -489,7 +491,7 @@ function save_student_private_note(PDO $pdo, int $studentId, int $itemId, string
     if(mb_strlen($body)>10000)return false;
     $access=$pdo->prepare("SELECT 1 FROM pathway_items pi
         JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
-        WHERE pi.id=? AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+        WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
             SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
     $access->execute([$studentId,$itemId,$studentId]);
     if(!$access->fetchColumn())return false;
@@ -565,8 +567,8 @@ function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $tr
     $tracking=$trackedOnly?' AND pi.framework_tracking_enabled=1':'';
     $query=$pdo->prepare("SELECT pi.id,pi.position,pi.deadline,pi.evaluation_weight,pi.access_mode,pi.framework_tracking_enabled,p.title,
         pr.evaluation_score,COALESCE(pr.evaluation_included,1) AS evaluation_included,pr.teacher_note,pr.teacher_validated_at,
-        CASE WHEN pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
-            SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)) THEN 1 ELSE 0 END AS accessible
+        CASE WHEN NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
+            SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?))) THEN 1 ELSE 0 END AS accessible
         FROM pathway_items pi JOIN pages p ON p.id=pi.page_id
         LEFT JOIN progress pr ON pr.pathway_item_id=pi.id AND pr.enrollment_id=?
         WHERE pi.course_id=? AND pi.is_evaluation=1$tracking

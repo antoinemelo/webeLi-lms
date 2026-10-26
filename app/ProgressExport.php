@@ -31,9 +31,9 @@ function course_progress_export_data(PDO $pdo,int $courseId,int $teacherId,array
             foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row)if(isset($wanted[(int)$row['student_id']]))$data['access'][(int)$row['student_id']][(int)$row['pathway_item_id']]=true;
             $query=$pdo->prepare("SELECT pi.id AS item_id,b.id,b.body,b.caption FROM pathway_items pi JOIN page_blocks b ON b.page_id=pi.page_id AND b.type='markdown' WHERE pi.course_id=? ORDER BY pi.position,b.position,b.id");$query->execute([$courseId]);
             foreach($query->fetchAll(PDO::FETCH_ASSOC) as $block){
-                $keys=Qcm::quizKeys($block['body'],(int)$block['id']);$index=0;
+                $keys=Qcm::quizKeys($block['body'],(int)$block['id'],true);$index=0;
                 foreach(Qcm::sections($block['body']) as $section){
-                    if($section['type']!=='qcm'||empty($section['valid']))continue;
+                    if($section['type']!=='qcm'||empty($section['valid'])||$section['mode']==='classe')continue;
                     $data['quizzes'][(int)$block['item_id']][]=['block_id'=>(int)$block['id'],'key'=>$keys[$index++],'caption'=>$block['caption'],'questions'=>count($section['questions'])];
                 }
             }

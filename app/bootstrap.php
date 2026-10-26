@@ -11,6 +11,7 @@ require_once __DIR__ . '/ContentBlock.php';
 require_once __DIR__ . '/ContentBlockViews.php';
 require_once __DIR__ . '/WorkSubmissionViews.php';
 require_once __DIR__ . '/Qcm.php';
+require_once __DIR__ . '/QcmClass.php';
 require_once __DIR__ . '/MailDelivery.php';
 require_once __DIR__ . '/NotificationOutbox.php';
 require_once __DIR__ . '/RegistrationPolicy.php';
