@@ -201,6 +201,10 @@ function open_authenticated_session(array $user): never
     flash(t('Bienvenue :name !',['name'=>$user['first_name']]));
     if($user['role']==='student'&&!empty($_SESSION['pending_join_course_code']))redirect('join');
     unset($_SESSION['pending_join_course_code']);
+    if($user['role']==='teacher'&&!empty($_SESSION['pending_library_share'])){
+        $share=(string)$_SESSION['pending_library_share'];unset($_SESSION['pending_library_share']);
+        redirect('shared-content',['share'=>$share]);
+    }
     redirect($user['role']==='teacher'?'teacher':'student');
 }
 
@@ -406,6 +410,16 @@ function handle_action(string $action): never
     }
 
     $user = require_actor();
+    if(in_array($action,['create_library_share','revoke_library_share'],true)){
+        $pageId=(int)($_POST['page_id']??0);
+        try{
+            if($user['role']!=='teacher')throw new InvalidArgumentException('Partage non autorisé.');
+            if($action==='create_library_share')library_share_create(db(),$pageId,(int)$user['id'],(string)($_POST['mode']??''));
+            else library_share_revoke(db(),$pageId,(int)$user['id'],(string)($_POST['mode']??''));
+            flash($action==='create_library_share'?'Lien de partage créé.':'Lien de partage désactivé.');
+        }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
+        header('Location: '.route('page-edit',['id'=>$pageId]).'#library-sharing');exit;
+    }
     if($action==='export_progress'){
         header('Cache-Control: private, no-store');
         try{

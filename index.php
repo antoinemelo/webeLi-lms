@@ -39,6 +39,8 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
 
 if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='qcm-class-state')qcm_class_http();
 
+if(($_GET['view']??'')==='shared-content')library_share_http();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     if(($_POST['action']??'')==='qcm_class_command')qcm_class_http(true);
@@ -134,6 +136,17 @@ if($view==='pdf-download'){
         echo '<!doctype html><html lang="'.e(current_language()).'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.e(t('Export PDF indisponible')).'</title><body style="font:16px system-ui;max-width:42rem;margin:12vh auto;padding:1.5rem"><h1>'.e(t('Export PDF indisponible')).'</h1><p>'.e(import_failure_message($exception)).'</p><p><a href="'.e($returnRoute).'">'.e(t('Retour au parcours')).'</a></p></body></html>';
         exit;
     }
+}
+if($view==='course-document'){
+    header('Cache-Control: private, no-store');
+    try{
+        if($user['role']!=='teacher')throw new TransferException('Document introuvable.');
+        $id=(int)($_GET['id']??0);$bytes=course_docx_bytes(db(),$id,(int)$user['id']);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        header('Content-Disposition: attachment; filename="parcours-'.$id.'.docx"');
+        header('Content-Length: '.strlen($bytes));echo $bytes;
+    }catch(TransferException $exception){http_response_code(404);header('Content-Type: text/plain; charset=UTF-8');echo t('Document introuvable.');}
+    exit;
 }
 if($view==='document-download'){
     $courseId=0;

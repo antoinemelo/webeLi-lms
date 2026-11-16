@@ -124,7 +124,13 @@ function render_docx_bytes(string $markdown, string $title): string
         $paragraphs[]=docx_paragraph($line);
     }
 
-    $document='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'.implode('',$paragraphs).'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
+    return render_docx_body(implode('',$paragraphs),$title);
+}
+
+function render_docx_body(string $body,string $title,bool $landscape=false): string
+{
+    $pageSize=$landscape?'<w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>':'<w:pgSz w:w="11906" w:h="16838"/>';
+    $document='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'.$body.'<w:sectPr>'.$pageSize.'<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
     $styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Aptos" w:hAnsi="Aptos"/><w:sz w:val="22"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:spacing w:before="280" w:after="160"/></w:pPr><w:rPr><w:b/><w:color w:val="29273B"/><w:sz w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:spacing w:before="240" w:after="120"/></w:pPr><w:rPr><w:b/><w:color w:val="6757DF"/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading4"><w:name w:val="heading 4"/><w:basedOn w:val="Heading3"/></w:style><w:style w:type="paragraph" w:styleId="Heading5"><w:name w:val="heading 5"/><w:basedOn w:val="Heading3"/></w:style><w:style w:type="paragraph" w:styleId="Heading6"><w:name w:val="heading 6"/><w:basedOn w:val="Heading3"/></w:style><w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Quote"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:left="360"/><w:spacing w:before="80" w:after="80"/></w:pPr><w:rPr><w:i/><w:color w:val="555166"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Code"><w:name w:val="Code"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="0" w:after="0"/><w:shd w:fill="29273B"/></w:pPr><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New"/><w:color w:val="FFFFFF"/><w:sz w:val="19"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Separator"><w:name w:val="Separator"/><w:basedOn w:val="Normal"/><w:rPr><w:color w:val="B6B2C1"/></w:rPr></w:style></w:styles>';
     $created=gmdate('Y-m-d\TH:i:s\Z');
     $entries=[
@@ -137,6 +143,38 @@ function render_docx_bytes(string $markdown, string $title): string
         'docProps/app.xml'=>'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>liike</Application></Properties>',
     ];
     return document_zip_bytes($entries);
+}
+
+/** A real editable table, with the same sections and references as the PDF. */
+function course_docx_bytes(PDO $pdo,int $courseId,int $teacherId): string
+{
+    $data=course_summary_data($pdo,$courseId,$teacherId);$course=$data['course'];
+    $body=docx_paragraph($course['title'],'Heading1',0,false,true).docx_paragraph($course['description'],null,0,false,true);
+    $body.=docx_paragraph(t('Code').' '.$course['code'].' · '.t($course['archived']?'Archivé':'Actif'),null,0,false,true);
+    if($data['objectives'])$body.=docx_paragraph(t('Objectifs').' : '.implode(', ',array_map(static fn(array $row):string=>$row['title'].' ('.implode(', ',$row['item_positions']).')',$data['objectives'])),null,0,false,true);
+    $widths=[850,9650,2200,1870];
+    $row=function(array $cells,bool $header=false,bool $group=false)use($widths):string{
+        $xml='<w:tr><w:trPr><w:cantSplit/>'.($header?'<w:tblHeader/>':'').'</w:trPr>';
+        foreach($cells as $index=>$text){
+            $xml.='<w:tc><w:tcPr><w:tcW w:w="'.($group?array_sum($widths):$widths[$index]).'" w:type="dxa"/>'.($group?'<w:gridSpan w:val="4"/>':'').($header||$group?'<w:shd w:fill="ECE9FF"/>':'').'</w:tcPr><w:p><w:pPr><w:spacing w:before="60" w:after="60"/>'.($group?'<w:keepNext/>':'').'</w:pPr>'.docx_run((string)$text,['bold'=>$header||$group]).'</w:p></w:tc>';
+        }
+        return $xml.'</w:tr>';
+    };
+    $body.='<w:tbl><w:tblPr><w:tblW w:w="14570" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>';
+    foreach(['top','left','bottom','right','insideH','insideV'] as $edge)$body.='<w:'.$edge.' w:val="single" w:sz="4" w:color="DCD9E5"/>';
+    $body.='</w:tblBorders><w:tblCellMar><w:left w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>';
+    foreach($widths as $width)$body.='<w:gridCol w:w="'.$width.'"/>';
+    $body.='</w:tblGrid>'.$row(['',t('Nom'),t('Échéance'),t('Durée')],true);
+    foreach($data['sections'] as $section){
+        if($section['group'])$body.=$row([$section['group']['title']],false,true);
+        foreach($section['items'] as $item){
+            $codes=array_column($data['skillsByItem'][(int)$item['id']]??[],'code');
+            $body.=$row([$item['display_position']??'–',$item['title'].($codes?' / '.implode(' · ',$codes):''),pdf_date_fr($item['deadline']),$item['estimated_minutes'].' min']);
+        }
+    }
+    $body.='</w:tbl>';
+    if($data['usedSkills'])$body.=docx_paragraph(t('Compétences').' : '.implode(', ',array_map(static fn(array $row):string=>$row['code'].' - '.$row['title'].' ('.implode(', ',$row['item_positions']).')',$data['usedSkills'])),null,0,false,true);
+    return render_docx_body($body,$course['title'],true);
 }
 
 function latex_escape(string $value): string

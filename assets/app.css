@@ -907,3 +907,7 @@ h1{font-size:2.25rem}
 
 .pathway-list:has(.dropdown-menu.show){overflow:visible}
 .pathway-group-hidden{border-style:dashed;background:#f3f2f6}.pathway-group-hidden>.pathway-group-header{background:#eeecf3}.pathway-group-visibility-form{margin:0}
+
+.timeline-entry{position:relative}.evaluation-return{display:block;margin:-.3rem 1rem 1rem 3.75rem;font-size:.875rem}.timeline-entry:target,.evaluation-list article:target{outline:2px solid #6757df;outline-offset:4px;border-radius:12px}.timeline-entry,.evaluation-list article{scroll-margin-top:6rem}
+
+.timeline-entry:not(:last-child){border-bottom:1px solid var(--line)}.timeline-entry>.timeline-item{border:0}.library-sharing{margin-top:2rem}.library-sharing input[readonly]{width:100%;min-width:0}

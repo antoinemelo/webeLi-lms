@@ -1,4 +1,4 @@
-const CACHE = 'lms-shell-v152';
+const CACHE = 'lms-shell-v153';
 const SHELL = [
   'assets/vendor/bootstrap/bootstrap.min.css',
   'assets/vendor/bootstrap/bootstrap.bundle.min.js',

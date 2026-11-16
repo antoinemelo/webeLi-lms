@@ -370,7 +370,7 @@ Dans l’onglet **Parcours**, le bouton à trois points situé à droite du titr
 - l’option **Remettre toutes les échéances à zéro** ignore les échéances pédagogiques du fichier, en conservant les dates des événements ;
 - toutes les pages référencées sont vérifiées avant écriture. Une page absente arrête entièrement l’import.
 
-Le menu à trois points de **Gestion du parcours** donne directement accès à la **Vue synthétique du parcours** et télécharge son PDF : numéro d’étape, nom, échéance et durée. À droite de chaque étape, le menu à trois points propose PDF, Markdown, DOCX et LaTeX. Le choix PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
+Le menu à trois points de **Gestion du parcours** propose **Vue synthétique du parcours · PDF** et **Vue synthétique du parcours · DOCX** : numéro d’étape, nom, échéance et durée. Les deux formats conservent les titres et l’ordre des regroupements, y compris les groupes vides, ainsi que les légendes d’objectifs et compétences. Le DOCX contient un tableau A4 paysage modifiable dans Word ou LibreOffice. À droite de chaque étape, le menu à trois points propose PDF, Markdown, DOCX et LaTeX. Le choix PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
 
 ### Importer et exporter les élèves
 
@@ -412,3 +412,24 @@ Une même page peut donc être utilisée dans plusieurs cours avec un ordre, une
 ### Vue du parcours mémorisée
 
 Le lien **Parcours** de la navigation ouvre par défaut **l’aperçu élève**. La bascule en haut de page permet de passer à l’édition ou de revenir à l’aperçu. Le dernier mode ouvert est mémorisé pendant un an dans ce navigateur, séparément pour chaque compte enseignant et chaque installation, même après déconnexion. Les liens explicitement destinés à organiser ou modifier un parcours continuent d’ouvrir l’édition.
+
+
+### Passer des évaluations au parcours
+
+Dans **Acquis → Évaluations**, cliquer sur le titre d’une évaluation ramène à l’étape correspondante dans **Parcours**, avec son regroupement ouvert. Le lien **Voir mon évaluation**, sous cette étape et dans son lecteur, revient à la bonne ligne des évaluations. Le parcours courant est conservé. Une étape devenue inaccessible garde ses résultats selon les règles existantes, mais son titre ne permet plus d’ouvrir son contenu.
+
+### Partager un contenu avec des collègues
+
+Dans **Bibliothèque**, ouvrir une page puis **Partager ce contenu**. Ce bouton est également disponible dans l’aperçu enseignant de l’étape. La page doit être enregistrée avec le statut **Prêt**. Son propriétaire peut créer un lien distinct pour chaque usage :
+
+| Mode | Utilisation | Effet des modifications |
+|---|---|---|
+| **Contenu partagé** | Le collègue se connecte à la même plateforme et récupère la page dans sa bibliothèque, éventuellement dans l’un de ses parcours. | La même page est utilisée et modifiable par les équipes des parcours concernés ; les modifications du contenu sont communes. Les consignes, échéances et résultats restent propres à chaque parcours. |
+| **Copie indépendante** | Le collègue récupère sa propre page ou télécharge le JSON pour l’importer dans une autre installation liike. | La copie possède sa référence, ses blocs, objectifs et catégories. Aucune modification ultérieure n’est synchronisée. |
+| **Utilisation externe** | Le lien ouvre directement le contenu sans compte ; il peut être transmis aux élèves ou utilisé dans une intégration externe. | Le contenu suit la page source. Les QCM sont des entraînements avec correction immédiate et essais libres, sans suivi nominatif ni enregistrement des résultats. |
+
+Une récupération directement dans un parcours crée une étape de consultation simple ; le collègue règle ensuite son type, ses consignes et échéances. Réutiliser le même lien de copie avec le même compte retrouve la copie déjà créée, sans la remplacer. Aucun élève, résultat, commentaire privé ou historique du parcours source n’est transféré.
+
+Les liens donnent accès à toute personne qui les possède : transmettre le lien **Contenu partagé** seulement aux collègues autorisés à modifier la page ; réserver le lien **Utilisation externe** aux élèves. Le JSON de copie contient les réponses du QCM nécessaires à son édition. Les QCM stricts et collectifs deviennent des entraînements individuels dans le lecteur externe. Les blocs de travail restent consultables, mais la remise et la notation demandent une inscription à un parcours. Les intégrations dépendent toujours des autorisations du site intégré. Les fichiers locaux d’images et documents de moins de 10 Mo sont embarqués dans le JSON ; les autres références de fichiers et médias doivent rester accessibles depuis l’installation de destination.
+
+**Désactiver ce lien** bloque ses prochaines utilisations. Les contenus et copies déjà récupérés restent chez les collègues. Recréer un lien produit une nouvelle URL et laisse l’ancienne inactive. Le retour de la page en brouillon suspend ses liens tant qu’elle n’est pas remise au statut Prêt. Le partage ne donne aucun accès au parcours source ni à ses élèves.

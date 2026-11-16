@@ -26,11 +26,11 @@ function teacher_owns_course(PDO $pdo, int $courseId, int $teacherId): bool
 
 function teacher_can_access_page(PDO $pdo, int $pageId, int $teacherId): bool
 {
-    $query=$pdo->prepare("SELECT 1 FROM pages p WHERE p.id=? AND (p.owner_id=? OR EXISTS(
+    $query=$pdo->prepare("SELECT 1 FROM pages p WHERE p.id=? AND (p.owner_id=? OR EXISTS(SELECT 1 FROM page_collaborators pc WHERE pc.page_id=p.id AND pc.teacher_id=?) OR EXISTS(
         SELECT 1 FROM pathway_items pi JOIN courses c ON c.id=pi.course_id
         WHERE pi.page_id=p.id AND (c.teacher_id=? OR EXISTS(SELECT 1 FROM course_teachers ct WHERE ct.course_id=c.id AND ct.teacher_id=?))
     ))");
-    $query->execute([$pageId,$teacherId,$teacherId,$teacherId]);
+    $query->execute([$pageId,$teacherId,$teacherId,$teacherId,$teacherId]);
     return (bool)$query->fetchColumn();
 }
 

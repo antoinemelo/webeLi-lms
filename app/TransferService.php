@@ -46,7 +46,8 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
     if($existing&&$overwrite&&(int)$existing['owner_id']!==$teacherId)throw new TransferException('Cette référence de page appartient à un autre enseignant.');
     if($overwrite && !$existing)$existing=null;
 
-    $pdo->beginTransaction();
+    $ownTransaction=!$pdo->inTransaction();
+    if($ownTransaction)$pdo->beginTransaction();
     try{
         if($overwrite && $existing){
             $pageId=(int)$existing['id'];
@@ -75,8 +76,8 @@ function import_page_document(PDO $pdo, array $document, int $teacherId, string 
         foreach(array_values($objectives) as $index=>$objective){$name=trim((string)$objective['title']);$key=mb_strtolower($name,'UTF-8');if(isset($seenObjectives[$key]))continue;$seenObjectives[$key]=true;$insertObjective->execute([$pageId,$name,trim((string)($objective['description']??'')),$index+1]);}
         Qcm::syncPageTag($pdo,$pageId);
         WorkSubmission::reconcilePage($pdo,$pageId);
-        $pdo->commit(); return $pageId;
-    }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
+        if($ownTransaction)$pdo->commit(); return $pageId;
+    }catch(Throwable $exception){if($ownTransaction&&$pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }
 
 function export_course_document(PDO $pdo, int $courseId, int $teacherId, bool $includeOptions): array

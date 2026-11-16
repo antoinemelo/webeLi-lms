@@ -553,7 +553,7 @@ CREATE TABLE IF NOT EXISTS qcm_class_votes (
     PRIMARY KEY(session_id,student_id,question_index)
 );
 
-PRAGMA user_version = 30;
+PRAGMA user_version = 31;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -581,3 +581,26 @@ CREATE TRIGGER touch_pathway_event_after_update AFTER UPDATE OF event_data ON pa
 CREATE INDEX idx_pathway_items_group ON pathway_items(group_id);
 CREATE TRIGGER pathway_group_course_insert BEFORE INSERT ON pathway_items WHEN NEW.group_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM pathway_groups WHERE id=NEW.group_id AND course_id=NEW.course_id) BEGIN SELECT RAISE(ABORT,'pathway group belongs to another course'); END;
 CREATE TRIGGER pathway_group_course_update BEFORE UPDATE OF group_id,course_id ON pathway_items WHEN NEW.group_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM pathway_groups WHERE id=NEW.group_id AND course_id=NEW.course_id) BEGIN SELECT RAISE(ABORT,'pathway group belongs to another course'); END;
+
+CREATE TABLE IF NOT EXISTS page_shares (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+        mode TEXT NOT NULL CHECK(mode IN ('shared','copy','external')),
+        token TEXT NOT NULL UNIQUE,
+        created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        revoked_at TEXT,
+        UNIQUE(page_id,mode)
+    );
+    CREATE TABLE IF NOT EXISTS page_collaborators (
+        page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+        teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        added_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY(page_id,teacher_id)
+    );
+    CREATE TABLE IF NOT EXISTS page_share_receipts (
+        share_id INTEGER NOT NULL REFERENCES page_shares(id) ON DELETE CASCADE,
+        teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        page_id INTEGER REFERENCES pages(id) ON DELETE SET NULL,
+        PRIMARY KEY(share_id,teacher_id)
+    );

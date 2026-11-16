@@ -81,6 +81,32 @@ final class Qcm
         return implode("\n",$html);
     }
 
+    /** Anonymous practice: server-side correction, no draft, attempt or grade writes. */
+    public static function renderExternal(string $source,int $blockId,array $post=[]): string
+    {
+        $html='';
+        foreach(self::sections($source) as $section){
+            if($section['type']==='markdown'){$html.=Markdown::render($section['source']);continue;}
+            if(empty($section['valid'])){$html.='<p>'.e(t('QCM incomplet')).'</p>';continue;}
+            $key=self::key($blockId,(int)$section['index'],$section['source'],$section['mode']);
+            $submitted=($post['action']??'')==='external_qcm'&&is_string($post['quiz']??null)&&$post['quiz']===$key;
+            $answers=$submitted&&is_array($post['answers']??null)?$post['answers']:[];
+            // Only flat, scalar selections may reach the common scoring function.
+            foreach($answers as $name=>$values){$answers[$name]=is_array($values)?array_values(array_filter($values,'is_scalar')):[];}
+            $html.='<section class="qcm-card" id="qcm-'.e($key).'"><header><span>'.e(t('QCM')).'</span></header>';
+            if($submitted){$result=self::score($section['questions'],$answers);$html.='<p class="alert alert-success mx-3 mt-3" role="status">'.e(t(':correct question(s) juste(s) sur :total',$result)).' · '.e(t('Résultat : :score %',['score'=>self::formatScore($result['score'])])).'</p>';}
+            $html.='<form method="post" action="#qcm-'.e($key).'">'.csrf_field().'<input type="hidden" name="action" value="external_qcm"><input type="hidden" name="quiz" value="'.e($key).'">';
+            foreach($section['questions'] as $index=>$question){
+                $html.='<fieldset class="qcm-question"><legend><span>'.($index+1).'</span>'.e($question['title']).'</legend>';
+                $html.='<div class="qcm-options">';
+                foreach(self::shuffledAnswers($question['answers']) as $answer)$html.='<label><input type="'.($question['multiple']?'checkbox':'radio').'" name="answers[q'.$index.'][]" value="'.$answer['index'].'"'.(in_array($answer['index'],array_map('intval',$answers['q'.$index]??[]),true)?' checked':'').'><span>'.e($answer['text']).'</span></label>';
+                $html.='</div></fieldset>';
+            }
+            $html.='<button class="button primary btn btn-dark">'.e(t('Vérifier mes réponses')).'</button></form></section>';
+        }
+        return $html;
+    }
+
     public static function renderPreview(string $source,bool $isEvaluation=false): string
     {
         $html=[];
