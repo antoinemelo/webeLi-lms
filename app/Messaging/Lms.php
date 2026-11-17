@@ -26,6 +26,27 @@ function messaging_teacher(array $course,int $id): bool
 {
     return (int)$course['teacher_id']===$id||(bool)one('SELECT 1 FROM course_teachers WHERE course_id=? AND teacher_id=?',[$course['id'],$id]);
 }
+function messaging_active_member(array $course,array $user): bool
+{
+    if(($user['account_status']??'')!=='active')return false;
+    if($user['role']==='teacher')return messaging_teacher($course,(int)$user['id']);
+    return $user['role']==='student'&&(bool)one("SELECT 1 FROM enrollments WHERE student_id=? AND course_id=? AND status='active'",[$user['id'],$course['id']]);
+}
+function messaging_pair_allowed(array $course,array $first,array $second): bool
+{
+    return (bool)$course['messaging_enabled']&&!(int)$course['archived']
+        &&(int)$first['id']!==(int)$second['id']
+        &&($first['role']==='teacher'||$second['role']==='teacher')
+        &&messaging_active_member($course,$first)&&messaging_active_member($course,$second);
+}
+function messaging_recipients(array $user,array $course): array
+{
+    if(!(int)$course['messaging_enabled']||(int)$course['archived']||!messaging_active_member($course,$user))return [];
+    return all("SELECT u.id,u.name,u.role FROM users u WHERE u.account_status='active' AND u.id<>? AND (
+        (u.role='teacher' AND (u.id=? OR EXISTS(SELECT 1 FROM course_teachers ct WHERE ct.course_id=? AND ct.teacher_id=u.id)))
+        OR (?='teacher' AND u.role='student' AND EXISTS(SELECT 1 FROM enrollments e WHERE e.course_id=? AND e.student_id=u.id AND e.status='active'))
+        ) ORDER BY CASE u.role WHEN 'teacher' THEN 0 ELSE 1 END,u.name,u.id",[$user['id'],$course['teacher_id'],$course['id'],$user['role'],$course['id']]);
+}
 function messaging_authorize(array $user,array $thread,bool $write=false,bool $manage=false): bool
 {
     if(($user['account_status']??'')!=='active')return false;
@@ -33,9 +54,13 @@ function messaging_authorize(array $user,array $thread,bool $write=false,bool $m
     if($manage)return messaging_super($user)||($course&&$user['role']==='teacher'&&(int)$course['teacher_id']===(int)$user['id']);
     if(!in_array($key,array_column($thread['participants'],'user_key'),true))return false;
     if(!$course)return false;
-    if($write&&(!(int)$course['messaging_enabled']||(int)$course['archived']))return false;
+    if($write){
+        $others=array_values(array_filter($thread['participants'],static fn(array $p):bool=>$p['user_key']!==$key));
+        $other=count($others)===1?messaging_person($others[0]['user_key']):null;
+        return $other&&messaging_pair_allowed($course,$user,$other);
+    }
     if($user['role']==='teacher')return messaging_teacher($course,(int)$user['id']);
-    return (bool)one("SELECT 1 FROM enrollments WHERE student_id=? AND course_id=?".($write?" AND status='active'":''),[$user['id'],$course['id']]);
+    return (bool)one("SELECT 1 FROM enrollments WHERE student_id=? AND course_id=?",[$user['id'],$course['id']]);
 }
 function messaging_thread(array $user,string $id,bool $write=false,bool $manage=false): array
 {
@@ -46,10 +71,13 @@ function messaging_open(array $user,int $courseId,int $otherId): string
 {
     $course=one('SELECT * FROM courses WHERE id=?',[$courseId]);$other=one("SELECT * FROM users WHERE id=? AND account_status='active'",[$otherId]);
     if(!$course||!$other||!(int)$course['messaging_enabled']||(int)$course['archived'])throw new InvalidArgumentException('Les discussions sont désactivées pour ce parcours.');
-    [$student,$teacher]=$user['role']==='student'?[$user,$other]:[$other,$user];
-    if($student['role']!=='student'||$teacher['role']!=='teacher'||!messaging_teacher($course,(int)$teacher['id'])||!one("SELECT 1 FROM enrollments WHERE student_id=? AND course_id=? AND status='active'",[$student['id'],$courseId]))throw new InvalidArgumentException('Accès interdit.');
+    if(!messaging_pair_allowed($course,$user,$other))throw new InvalidArgumentException('Accès interdit.');
+    // Preserve existing student/teacher identities. Teacher pairs use a stable
+    // order so either colleague reopens the same conversation in this course.
+    [$first,$second]=$user['role']==='student'?[$user,$other]:[$other,$user];
+    if($user['role']==='teacher'&&$other['role']==='teacher'&&strcmp(messaging_key($first),messaging_key($second))>0)[$first,$second]=[$second,$first];
     $person=fn($u)=>['key'=>messaging_key($u),'name'=>$u['name']];
-    return messaging_store()->open(messaging_key($course),$person($student),$person($teacher),$course['title']);
+    return messaging_store()->open(messaging_key($course),$person($first),$person($second),$course['title']);
 }
 function messaging_threads(array $user,?string $person=null): array
 {

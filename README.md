@@ -123,7 +123,7 @@ python3 scripts/apr.py \
 - boîte de notifications alimentée lors d’une mise à jour annoncée volontairement ou d’une validation ;
 - courriels/annonces ciblés avec modèles personnels et récapitulatif enseignant ;
 - suivi administratif collectif et exports complets PDF/Markdown par élève ;
-- discussions privées par parcours, gestion et exports, notifications push et reconnexion PWA de 90 jours ;
+- discussions privées par parcours entre élèves et enseignants ou entre enseignants autorisés, gestion et exports, notifications push et reconnexion PWA de 90 jours ;
 - interface responsive, mobile-first et PWA installable (Bootstrap local, manifest, cache des assets, navigation basse et safe areas).
 
 Une page reste neutre et réutilisable. Les objectifs et compétences sont liés à son **étape dans un cours**, car la même ressource peut servir des intentions différentes selon le cours.

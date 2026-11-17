@@ -198,7 +198,7 @@ Le menu à trois points de la fenêtre propose **Exporter en PDF**, **Exporter e
 
 ### Discussions privées
 
-Dans **Paramètres du parcours**, le responsable peut activer **Autoriser les élèves à contacter les enseignants**. L’icône de discussion à droite du nom du compte ouvre les échanges. Les messages sont limités à 256 caractères et modifiables par leur auteur durant trois minutes. Sur téléphone, les commandes de notification et **Nouvelle discussion** sont dans le menu à trois points du titre ; le fil s’adapte à l’espace visible du clavier.
+Dans **Paramètres du parcours**, le responsable peut activer **Autoriser les discussions dans ce parcours**. L’icône de discussion à droite du nom du compte ouvre les échanges. Les enseignants d’un même parcours peuvent aussi discuter entre eux si cette autorisation est activée : **Nouvelle discussion**, choix du parcours, puis du collègue. Les messages sont limités à 256 caractères et modifiables par leur auteur durant trois minutes. Sur téléphone, les commandes de notification et **Nouvelle discussion** sont dans le menu à trois points du titre ; le fil s’adapte à l’espace visible du clavier.
 
 **Activer les notifications** devient **Désactiver les notifications** lorsque l’abonnement de cet appareil est actif. Le badge additionne annonces et messages non lus lorsque le système le permet. La demande d’effacement, la gestion par le responsable du parcours et l’accès global du superadmin sont détaillés dans le [guide des discussions](discussions.md).
 

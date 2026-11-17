@@ -67,12 +67,6 @@ return json_decode(<<<'JSON'
     "it": "Nessuna conversazione.",
     "es": "No hay conversaciones."
   },
-  "Autoriser les élèves à contacter les enseignants": {
-    "en": "Allow students to contact teachers",
-    "de": "Schülern erlauben, Lehrpersonen zu kontaktieren",
-    "it": "Consenti agli studenti di contattare gli insegnanti",
-    "es": "Permitir que los estudiantes contacten con los docentes"
-  },
   "Cette discussion est en lecture seule.": {
     "en": "This discussion is read-only.",
     "de": "Dieses Gespräch ist schreibgeschützt.",
@@ -330,6 +324,18 @@ return json_decode(<<<'JSON'
     "de": "Ungültige Benachrichtigungsschlüssel. Aktivieren Sie Benachrichtigungen in den Browsereinstellungen erneut.",
     "it": "Chiavi di notifica non valide. Riattiva le notifiche nelle impostazioni del browser.",
     "es": "Claves de notificación no válidas. Vuelva a activar las notificaciones en la configuración del navegador."
+  },
+  "Autoriser les discussions dans ce parcours": {
+    "en": "Allow discussions in this pathway",
+    "de": "Gespräche in diesem Lernpfad erlauben",
+    "it": "Consenti le conversazioni in questo percorso",
+    "es": "Permitir conversaciones en este itinerario"
+  },
+  "Échanges entre élèves et enseignants, ainsi qu’entre enseignants du parcours.": {
+    "en": "Exchanges between students and teachers, and between teachers in this pathway.",
+    "de": "Austausch zwischen Lernenden und Lehrpersonen sowie zwischen den Lehrpersonen dieses Lernpfads.",
+    "it": "Scambi tra studenti e docenti e tra i docenti di questo percorso.",
+    "es": "Intercambios entre estudiantes y docentes, y entre docentes de este itinerario."
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

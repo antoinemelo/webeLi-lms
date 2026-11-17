@@ -12,13 +12,15 @@ final class Store
     {
         $this->db->exec('BEGIN IMMEDIATE');try{$result=$work();$this->db->exec('COMMIT');return $result;}catch(\Throwable $e){$this->db->exec('ROLLBACK');throw $e;}
     }
-    public function open(string $scope,array $student,array $teacher,string $title): string
+    // The historical student_key/teacher_key columns identify the two people;
+    // the LMS adapter also permits teacher pairs and fixes their ordering.
+    public function open(string $scope,array $first,array $second,string $title): string
     {
-        return $this->transaction(function()use($scope,$student,$teacher,$title){
+        return $this->transaction(function()use($scope,$first,$second,$title){
             $id=bin2hex(random_bytes(16));$now=time();
-            $this->run('INSERT OR IGNORE INTO conversations VALUES(?,?,?,?,?,?,?)',[$id,$scope,$student['key'],$teacher['key'],$title,$now,$now]);
-            $id=$this->query('SELECT id FROM conversations WHERE scope_key=? AND student_key=? AND teacher_key=?',[$scope,$student['key'],$teacher['key']])[0]['id'];
-            foreach([$student,$teacher] as $person)$this->run('INSERT INTO participants(conversation_id,user_key,name) VALUES(?,?,?) ON CONFLICT(conversation_id,user_key) DO UPDATE SET name=excluded.name',[$id,$person['key'],$person['name']]);
+            $this->run('INSERT OR IGNORE INTO conversations VALUES(?,?,?,?,?,?,?)',[$id,$scope,$first['key'],$second['key'],$title,$now,$now]);
+            $id=$this->query('SELECT id FROM conversations WHERE scope_key=? AND student_key=? AND teacher_key=?',[$scope,$first['key'],$second['key']])[0]['id'];
+            foreach([$first,$second] as $person)$this->run('INSERT INTO participants(conversation_id,user_key,name) VALUES(?,?,?) ON CONFLICT(conversation_id,user_key) DO UPDATE SET name=excluded.name',[$id,$person['key'],$person['name']]);
             return $id;
         });
     }
