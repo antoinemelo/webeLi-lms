@@ -61,6 +61,7 @@
   const labels = JSON.parse(root.dataset.labels);
   const teacher = root.dataset.teacher === '1';
   const projection = root.dataset.projection === '1';
+  const guest = root.dataset.guest === '1';
   const content = root.querySelector('[data-qcm-live-content]');
   const controls = root.querySelector('[data-qcm-live-controls]');
   const error = root.querySelector('[data-qcm-live-error]');
@@ -89,6 +90,7 @@
       if (!state || state.phase === 'waiting') {
         content.append(element('h1', label(teacher && !projection ? 'ready' : 'waiting')));
         content.append(element('p', label('join')));
+        if (guest && state) { const count = element('p', '', 'qcm-live-count'); count.dataset.liveCount = ''; count.setAttribute('aria-live', 'polite'); content.append(count); }
         if (teacher && !projection) button(state ? 'open' : 'start', state ? 'open' : 'start');
       } else {
         content.append(element('p', label('question', { number: state.index + 1, total: state.total }), 'qcm-live-progress'));
@@ -135,14 +137,17 @@
             if (!state.revealed) button('reveal', 'reveal');
             button(state.index + 1 === state.total ? 'finish' : 'next', state.index + 1 === state.total ? 'finish' : 'next');
           }
-          if (state.phase === 'finished') button('restart', 'start');
+          if (state.phase === 'finished' && !guest) button('restart', 'start');
         }
       }
     }
-    if (state?.question) {
+    if (guest && teacher && !projection && state && state.phase !== 'finished' && !controls.querySelector('[data-live-action=stop],[data-live-action=finish]')) button('finish', 'stop');
+    if (state && state.eligible !== undefined) {
       const count = content.querySelector('[data-live-count]');
       const countText = label('count', { count: state.responded, total: state.eligible });
       if (count && count.textContent !== countText) count.textContent = countText;
+    }
+    if (state?.question) {
       content.querySelectorAll('[data-answer-index]').forEach((row) => {
         const answer = state.question.answers.find((entry) => entry.index === Number(row.dataset.answerIndex));
         const tally = row.querySelector('[data-answer-count]');
@@ -159,7 +164,7 @@
     if (fetching || sending) return;
     fetching = true; const requestGeneration = generation;
     try {
-      const url = new URL(location.href); url.search = new URLSearchParams({ view: 'qcm-class-state', ...context });
+      const url = new URL(location.href); url.search = new URLSearchParams({ view: root.dataset.stateView || 'qcm-class-state', ...context });
       const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
       const data = await response.json();
       if (requestGeneration !== generation) return;
@@ -174,7 +179,7 @@
     if (sending || !online) return;
     sending = true; generation++; enable();
     const data = new FormData();
-    Object.entries({ action: 'qcm_class_command', token: document.body.dataset.csrf, ...context, command, session: state?.id || 0, revision: state?.revision || 0, question: state?.index ?? -1 }).forEach(([key, value]) => data.set(key, value));
+    Object.entries({ action: root.dataset.commandAction || 'qcm_class_command', token: document.body.dataset.csrf, ...context, command, session: state?.id || 0, revision: state?.revision || 0, question: state?.index ?? -1 }).forEach(([key, value]) => data.set(key, value));
     answers.forEach((value) => data.append('answers[]', value));
     if (command === 'vote') voteStatus.textContent = label('pending');
     try {

@@ -11,35 +11,63 @@ function library_share_description(string $mode): string
     return match($mode){
         'shared'=>'Les collègues connectés à cette plateforme utilisent la même page. Les modifications du contenu sont communes à tous les parcours qui l’utilisent.',
         'copy'=>'Chaque collègue récupère sa propre copie. Les modifications ultérieures restent indépendantes. Un fichier JSON permet aussi de la transférer vers une autre installation liike.',
-        default=>'Toute personne disposant du lien peut consulter le contenu sans compte et faire les QCM en entraînement. Aucun résultat, note ou travail rendu n’est enregistré. Les modes strict et classe deviennent des entraînements individuels.',
+        default=>'Consultez le contenu sans inscription ou animez un QCM en classe. Les élèves rejoignent la séance par lien ou QR code, sans nom ni compte. Les réponses anonymes sont temporaires et ne deviennent pas des notes.',
     };
 }
 
-function library_share_create(PDO $pdo,int $pageId,int $teacherId,string $mode): string
+function library_share_settings(PDO $pdo,int $pageId): array
 {
-    if(!isset(library_share_modes()[$mode])||!teacher_owns_page($pdo,$pageId,$teacherId))throw new InvalidArgumentException('Partage non autorisé.');
-    $query=$pdo->prepare("SELECT 1 FROM pages p JOIN users u ON u.id=p.owner_id WHERE p.id=? AND p.status='ready' AND u.role='teacher' AND u.account_status='active'");$query->execute([$pageId]);
-    if(!$query->fetchColumn())throw new InvalidArgumentException('Enregistrez la page avec le statut Prêt avant de la partager.');
-    $token=bin2hex(random_bytes(32));
-    $pdo->prepare("INSERT INTO page_shares(page_id,mode,token,created_by) VALUES(?,?,?,?) ON CONFLICT(page_id,mode) DO UPDATE SET token=CASE WHEN page_shares.revoked_at IS NULL THEN page_shares.token ELSE excluded.token END,revoked_at=NULL,created_at=CURRENT_TIMESTAMP")->execute([$pageId,$mode,$token,$teacherId]);
-    $query=$pdo->prepare('SELECT token FROM page_shares WHERE page_id=? AND mode=?');$query->execute([$pageId,$mode]);return (string)$query->fetchColumn();
+    $query=$pdo->prepare('SELECT * FROM page_share_links WHERE page_id=?');$query->execute([$pageId]);
+    return $query->fetch(PDO::FETCH_ASSOC)?:['page_id'=>$pageId,'token'=>'','enabled'=>0,'allow_shared'=>0,'allow_copy'=>0,'allow_external'=>0,'revision'=>0];
 }
 
-function library_share_revoke(PDO $pdo,int $pageId,int $teacherId,string $mode): void
+/** The single URL survives policy changes and disabling/re-enabling. */
+function library_share_save(PDO $pdo,int $pageId,int $teacherId,bool $enabled,array $modes,int $revision): string
 {
     if(!teacher_owns_page($pdo,$pageId,$teacherId))throw new InvalidArgumentException('Partage non autorisé.');
-    $pdo->prepare('UPDATE page_shares SET revoked_at=CURRENT_TIMESTAMP WHERE page_id=? AND mode=?')->execute([$pageId,$mode]);
+    foreach($modes as $mode)if(!is_string($mode)||!isset(library_share_modes()[$mode]))throw new InvalidArgumentException('Mode de partage invalide.');
+    $modes=array_values(array_unique($modes));
+    if($enabled&&!$modes)throw new InvalidArgumentException('Choisissez au moins un mode de partage.');
+    $pdo->beginTransaction();
+    try{
+        $settings=library_share_settings($pdo,$pageId);
+        if((int)$settings['revision']!==$revision)throw new InvalidArgumentException('Le partage a changé. Rechargez la page avant de réessayer.');
+        $query=$pdo->prepare("SELECT p.status FROM pages p JOIN users u ON u.id=p.owner_id WHERE p.id=? AND u.role='teacher' AND u.account_status='active'");$query->execute([$pageId]);$status=$query->fetchColumn();
+        if(!$status)throw new InvalidArgumentException('Partage non autorisé.');
+        if($enabled&&$status!=='ready')throw new InvalidArgumentException('Enregistrez la page avec le statut Prêt avant de la partager.');
+        $token=$settings['token']?:bin2hex(random_bytes(32));
+        $pdo->prepare('INSERT INTO page_share_links(page_id,token,enabled,allow_shared,allow_copy,allow_external) VALUES(?,?,?,?,?,?) ON CONFLICT(page_id) DO UPDATE SET enabled=excluded.enabled,allow_shared=excluded.allow_shared,allow_copy=excluded.allow_copy,allow_external=excluded.allow_external,revision=page_share_links.revision+1')
+            ->execute([$pageId,$token,(int)$enabled,(int)in_array('shared',$modes,true),(int)in_array('copy',$modes,true),(int)in_array('external',$modes,true)]);
+        if(!$enabled||!in_array('external',$modes,true))$pdo->prepare("UPDATE qcm_guest_sessions SET phase='finished',revision=revision+1 WHERE page_id=? AND phase<>'finished'")->execute([$pageId]);
+        // Legacy mode records now serve as receipt identities; their URLs are never displayed.
+        foreach($modes as $mode)$pdo->prepare('INSERT OR IGNORE INTO page_shares(page_id,mode,token,created_by) VALUES(?,?,?,?)')->execute([$pageId,$mode,bin2hex(random_bytes(32)),$teacherId]);
+        $pdo->commit();return $token;
+    }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
 }
 
 function library_share_resolve(PDO $pdo,string $token): array
 {
     if(!preg_match('/^[a-f0-9]{64}$/D',$token))throw new InvalidArgumentException('Ce lien de partage est indisponible.');
-    $query=$pdo->prepare("SELECT s.id AS share_id,s.mode,p.id AS page_id,p.title,p.summary,p.owner_id,p.estimated_minutes,u.name AS owner_name FROM page_shares s JOIN pages p ON p.id=s.page_id JOIN users u ON u.id=p.owner_id WHERE s.token=? AND s.revoked_at IS NULL AND p.status='ready' AND u.account_status='active' AND u.role='teacher'");$query->execute([$token]);
-    $share=$query->fetch(PDO::FETCH_ASSOC);if(!$share)throw new InvalidArgumentException('Ce lien de partage est indisponible.');return $share;
+    $query=$pdo->prepare("SELECT l.*,p.id AS page_id,p.title,p.summary,p.owner_id,p.estimated_minutes,u.name AS owner_name FROM page_share_links l JOIN pages p ON p.id=l.page_id JOIN users u ON u.id=p.owner_id WHERE (l.token=? OR EXISTS(SELECT 1 FROM page_shares legacy WHERE legacy.page_id=l.page_id AND legacy.token=? AND legacy.revoked_at IS NULL)) AND l.enabled=1 AND p.status='ready' AND u.account_status='active' AND u.role='teacher'");$query->execute([$token,$token]);
+    $share=$query->fetch(PDO::FETCH_ASSOC);if(!$share)throw new InvalidArgumentException('Ce lien de partage est indisponible.');
+    $share['modes']=array_values(array_filter(array_keys(library_share_modes()),static fn(string $mode):bool=>(bool)$share['allow_'.$mode]));
+    if(!hash_equals($share['token'],$token)){
+        // Legacy links retain their original mode, within the owner's current policy.
+        $query=$pdo->prepare('SELECT mode FROM page_shares WHERE page_id=? AND token=? AND revoked_at IS NULL');$query->execute([$share['page_id'],$token]);
+        $legacyMode=(string)$query->fetchColumn();
+        if(!in_array($legacyMode,$share['modes'],true))throw new InvalidArgumentException('Ce lien de partage est indisponible.');
+        $share['modes']=[$legacyMode];
+    }
+    return $share;
+}
+
+function library_share_require_mode(array $share,string $mode): void
+{
+    if(!in_array($mode,$share['modes'],true))throw new InvalidArgumentException('Ce mode de partage n’est plus autorisé.');
 }
 
 /** A receipt makes refresh/double submit idempotent. No enrollment or progress is copied. */
-function library_share_accept(PDO $pdo,string $token,int $teacherId,int $courseId=0): int
+function library_share_accept(PDO $pdo,string $token,int $teacherId,int $courseId=0,string $mode=''): int
 {
     $query=$pdo->prepare("SELECT 1 FROM users WHERE id=? AND role='teacher' AND account_status='active'");$query->execute([$teacherId]);
     if(!$query->fetchColumn())throw new InvalidArgumentException('Un compte enseignant est nécessaire.');
@@ -50,9 +78,11 @@ function library_share_accept(PDO $pdo,string $token,int $teacherId,int $courseI
     }
     try{
         $pdo->beginTransaction();$share=library_share_resolve($pdo,$token);
-        if(!in_array($share['mode'],['copy','shared'],true))throw new InvalidArgumentException('Ce lien ne permet pas de récupérer une page.');
+        library_share_require_mode($share,$mode);
+        if(!in_array($mode,['copy','shared'],true))throw new InvalidArgumentException('Ce lien ne permet pas de récupérer une page.');
         $pageId=(int)$share['page_id'];
-        if($share['mode']==='shared'){
+        $query=$pdo->prepare('SELECT id FROM page_shares WHERE page_id=? AND mode=?');$query->execute([$pageId,$mode]);$share['share_id']=(int)$query->fetchColumn();
+        if($mode==='shared'){
             if((int)$share['owner_id']!==$teacherId)$pdo->prepare('INSERT OR IGNORE INTO page_collaborators(page_id,teacher_id,added_by) VALUES(?,?,?)')->execute([$pageId,$teacherId,$share['owner_id']]);
         }else{
             $query=$pdo->prepare('SELECT page_id FROM page_share_receipts WHERE share_id=? AND teacher_id=?');$query->execute([$share['share_id'],$teacherId]);$received=(int)$query->fetchColumn();
@@ -74,7 +104,5 @@ function library_share_accept(PDO $pdo,string $token,int $teacherId,int $courseI
 
 function library_share_url(string $token): string
 {
-    // Same deployment-aware base as course invitations, including /dev/public/.
-    $invitation=course_invitation_url('');
-    return substr($invitation,0,(int)strpos($invitation,'?')).route('shared-content',['share'=>$token]);
+    return app_public_base_url().'/'.route('shared-content',['share'=>$token]);
 }

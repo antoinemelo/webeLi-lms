@@ -202,8 +202,8 @@ function open_authenticated_session(array $user): never
     if($user['role']==='student'&&!empty($_SESSION['pending_join_course_code']))redirect('join');
     unset($_SESSION['pending_join_course_code']);
     if($user['role']==='teacher'&&!empty($_SESSION['pending_library_share'])){
-        $share=(string)$_SESSION['pending_library_share'];unset($_SESSION['pending_library_share']);
-        redirect('shared-content',['share'=>$share]);
+        $share=(string)$_SESSION['pending_library_share'];$mode=(string)($_SESSION['pending_library_mode']??'');unset($_SESSION['pending_library_share'],$_SESSION['pending_library_mode']);
+        redirect('shared-content',['share'=>$share,'mode'=>$mode]);
     }
     redirect($user['role']==='teacher'?'teacher':'student');
 }
@@ -410,15 +410,22 @@ function handle_action(string $action): never
     }
 
     $user = require_actor();
-    if(in_array($action,['create_library_share','revoke_library_share'],true)){
-        $pageId=(int)($_POST['page_id']??0);
+    if($action==='save_library_share'){
+        $pageId=(int)($_POST['page_id']??0);$courseId=(int)($_POST['return_course']??0);
         try{
             if($user['role']!=='teacher')throw new InvalidArgumentException('Partage non autorisé.');
-            if($action==='create_library_share')library_share_create(db(),$pageId,(int)$user['id'],(string)($_POST['mode']??''));
-            else library_share_revoke(db(),$pageId,(int)$user['id'],(string)($_POST['mode']??''));
-            flash($action==='create_library_share'?'Lien de partage créé.':'Lien de partage désactivé.');
+            library_share_save(db(),$pageId,(int)$user['id'],isset($_POST['enabled']),is_array($_POST['modes']??null)?$_POST['modes']:[],(int)($_POST['share_revision']??-1));
+            flash('Réglages du partage enregistrés.');
         }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
-        header('Location: '.route('page-edit',['id'=>$pageId]).'#library-sharing');exit;
+        $destination=route('page-edit',['id'=>$pageId]);
+        if($courseId&&teacher_can_access_course(db(),$courseId,(int)$user['id'])){
+            if(($_POST['return_view']??'')==='pathway')$destination=route('pathway',['course'=>$courseId]);
+            elseif(($_POST['return_view']??'')==='teacher-preview-page'){
+                $item=one('SELECT id FROM pathway_items WHERE course_id=? AND page_id=? AND id=?',[$courseId,$pageId,(int)($_POST['return_item']??0)]);
+                if($item)$destination=route('teacher-preview-page',['item'=>$item['id']]);
+            }
+        }
+        header('Location: '.$destination.'#page-share-'.$pageId);exit;
     }
     if($action==='export_progress'){
         header('Cache-Control: private, no-store');

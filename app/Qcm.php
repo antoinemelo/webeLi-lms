@@ -82,11 +82,12 @@ final class Qcm
     }
 
     /** Anonymous practice: server-side correction, no draft, attempt or grade writes. */
-    public static function renderExternal(string $source,int $blockId,array $post=[]): string
+    public static function renderExternal(string $source,int $blockId,array $post=[],?int $onlyIndex=null): string
     {
         $html='';
         foreach(self::sections($source) as $section){
-            if($section['type']==='markdown'){$html.=Markdown::render($section['source']);continue;}
+            if($section['type']==='markdown'){if($onlyIndex===null)$html.=Markdown::render($section['source']);continue;}
+            if($onlyIndex!==null&&(int)$section['index']!==$onlyIndex)continue;
             if(empty($section['valid'])){$html.='<p>'.e(t('QCM incomplet')).'</p>';continue;}
             $key=self::key($blockId,(int)$section['index'],$section['source'],$section['mode']);
             $submitted=($post['action']??'')==='external_qcm'&&is_string($post['quiz']??null)&&$post['quiz']===$key;

@@ -67,6 +67,21 @@ function render_qcm_class_page(array $user): void
     catch(DomainException $exception){http_response_code($exception->getCode());echo '<!doctype html><meta charset="utf-8"><p>'.e(t($exception->getMessage())).'</p>';return;}
     $teacher=$context['teacher'];$projection=$teacher&&($_GET['projection']??'')==='1';
     $params=['item'=>$item,'block'=>$block,'key'=>$key];
+    $strings=qcm_class_labels();
+    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title><?=e(t('QCM en classe'))?> · <?=e($context['item']['title'])?></title><link rel="stylesheet" href="assets/app.css?v=154"><link rel="stylesheet" href="assets/qcm-modes.css?v=1"></head>
+    <body class="qcm-class-page<?=$projection?' qcm-projection':''?>" data-csrf="<?=e(csrf_token())?>">
+    <main class="qcm-live" data-qcm-live data-teacher="<?=$teacher?'1':'0'?>" data-projection="<?=$projection?'1':'0'?>" data-context="<?=e(json_encode($params,JSON_THROW_ON_ERROR))?>" data-labels="<?=e(json_encode($strings,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE))?>">
+      <header class="qcm-live-header"><a class="back" href="<?=e(route($teacher?'teacher-preview-page':'learn',['item'=>$item]))?>">← <?=e(t('Retour à l’étape'))?></a><div class="qcm-live-tools"><?php if($teacher&&!$projection): ?><a class="button secondary" href="<?=e(route('qcm-class',$params+['projection'=>1]))?>" target="_blank" rel="noopener"><?=e(t('Ouvrir la projection'))?></a><?php endif; ?><button type="button" class="button secondary" data-qcm-fullscreen><?=e(t('Plein écran'))?></button></div></header>
+      <p class="eyebrow"><?=e(t('QCM en classe'))?> · <?=e($context['item']['title'])?></p>
+      <p data-qcm-screen-status role="status"></p><p data-qcm-live-error role="alert" hidden></p>
+      <div data-qcm-live-content><p><?=e(t('Chargement de la séance…'))?></p></div>
+      <p data-qcm-vote-status role="status"></p><div class="qcm-live-controls" data-qcm-live-controls></div>
+      <noscript><?=e(t('Activez JavaScript pour participer à la séance.'))?></noscript>
+    </main><script src="assets/qcm-modes.js?v=2"></script></body></html><?php
+}
+
+function qcm_class_labels(): array
+{
     $strings=Qcm::uiLabels();
     foreach(['waiting'=>'En attente de l’enseignant…','ready'=>'Préparez la séance, puis ouvrez la première question.',
         'start'=>'Créer une séance','open'=>'Ouvrir la première question','close'=>'Fermer les réponses et afficher les résultats',
@@ -77,14 +92,5 @@ function render_qcm_class_page(array $user): void
         'single'=>'Une seule réponse possible.','pending'=>'Envoi en cours…','error'=>'Connexion interrompue. Les réponses sont désactivées jusqu’à la reconnexion.',
         'right'=>'Réponse juste','wrong'=>'Réponse fausse','neutral'=>'Réponse neutre','login'=>'Session expirée. Reconnectez-vous puis revenez à cette séance.',
         'join'=>'Élèves : ouvrez cette étape dans votre parcours et choisissez « Rejoindre la séance ».'] as $name=>$label)$strings[$name]=t($label);
-    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title><?=e(t('QCM en classe'))?> · <?=e($context['item']['title'])?></title><link rel="stylesheet" href="assets/app.css?v=152"><link rel="stylesheet" href="assets/qcm-modes.css?v=1"></head>
-    <body class="qcm-class-page<?=$projection?' qcm-projection':''?>" data-csrf="<?=e(csrf_token())?>">
-    <main class="qcm-live" data-qcm-live data-teacher="<?=$teacher?'1':'0'?>" data-projection="<?=$projection?'1':'0'?>" data-context="<?=e(json_encode($params,JSON_THROW_ON_ERROR))?>" data-labels="<?=e(json_encode($strings,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE))?>">
-      <header class="qcm-live-header"><a class="back" href="<?=e(route($teacher?'teacher-preview-page':'learn',['item'=>$item]))?>">← <?=e(t('Retour à l’étape'))?></a><div class="qcm-live-tools"><?php if($teacher&&!$projection): ?><a class="button secondary" href="<?=e(route('qcm-class',$params+['projection'=>1]))?>" target="_blank" rel="noopener"><?=e(t('Ouvrir la projection'))?></a><?php endif; ?><button type="button" class="button secondary" data-qcm-fullscreen><?=e(t('Plein écran'))?></button></div></header>
-      <p class="eyebrow"><?=e(t('QCM en classe'))?> · <?=e($context['item']['title'])?></p>
-      <p data-qcm-screen-status role="status"></p><p data-qcm-live-error role="alert" hidden></p>
-      <div data-qcm-live-content><p><?=e(t('Chargement de la séance…'))?></p></div>
-      <p data-qcm-vote-status role="status"></p><div class="qcm-live-controls" data-qcm-live-controls></div>
-      <noscript><?=e(t('Activez JavaScript pour participer à la séance.'))?></noscript>
-    </main><script src="assets/qcm-modes.js?v=1"></script></body></html><?php
+    return $strings;
 }

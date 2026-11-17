@@ -94,7 +94,7 @@ python3 scripts/apr.py \
 ## Ce qui est couvert
 
 - bibliothèque de pages indépendantes, prêtes ou en brouillon ;
-- liens de partage des contenus : contenu commun entre collègues, copie indépendante et lecture externe avec QCM d’entraînement sans compte ;
+- lien unique de partage des contenus avec modes modifiables : contenu commun, copie indépendante et lecture externe avec QCM collectif anonyme par QR code ;
 - recherche de pages par texte, statut, tags et objectifs ;
 - import/export JSON des pages, parcours et élèves ;
 - six blocs : texte Markdown avec aperçu, image avec description alternative et légende, document téléchargeable, vidéo/audio, intégration externe (iframe) et travail à rendre ;
@@ -181,7 +181,7 @@ Depuis la fiche de suivi d’un élève, le bouton à droite des points ouvre la
 Dans l’éditeur de contenu, **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton d’enregistrement, sauvegarde puis prépare un courriel par élève actif ayant accès à la page, y compris lorsque les modifications ont déjà été enregistrées silencieusement. Aucun courriel n’est préparé si la sauvegarde échoue ou rencontre un conflit. Les changements restent signalés dans **Depuis la dernière visite** côté élève.
 
 
-Les envois et formulaires publics sont protégés sans CAPTCHA : jetons à usage unique, champ piège, quotas persistants et contrôles anti-injection. Voir la [configuration de sécurité des emails](docs/exploitation.md#protection-contre-les-abus-sans-captcha), notamment `APP_MAIL_BASE_URL` pour le domaine public et `APP_MAIL_ENABLED=0` pour couper les envois.
+Les envois et formulaires publics sont protégés sans CAPTCHA : jetons à usage unique, champ piège, quotas persistants et contrôles anti-injection. Voir la [configuration de sécurité des emails](docs/exploitation.md#protection-contre-les-abus-sans-captcha), notamment `APP_PUBLIC_URL` pour l’adresse publique de l’installation et `APP_MAIL_ENABLED=0` pour couper les envois.
 
 Les actions préparent des messages dans `notification_outbox`. En développement, on les consulte dans **Notifications**. L’aperçu CLI ne transmet rien :
 
@@ -236,6 +236,7 @@ php tests/announcement_messages.php
 php tests/student_admin_history.php
 php tests/pathway_groups.php
 php tests/library_sharing.php /tmp/liike-exports
+php tests/guest_qcm.php
 node tests/library_sharing_browser.mjs
 node tests/pathway_groups_browser.mjs
 php tests/pathway_events.php

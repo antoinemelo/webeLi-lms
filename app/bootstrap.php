@@ -22,6 +22,8 @@ require_once __DIR__ . '/LearningActivity.php';
 require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/LibrarySharing.php';
 require_once __DIR__ . '/LibrarySharingViews.php';
+require_once __DIR__ . '/QcmGuest.php';
+require_once __DIR__ . '/QcmGuestViews.php';
 require_once __DIR__ . '/PathwayService.php';
 require_once __DIR__ . '/PathwayEvent.php';
 require_once __DIR__ . '/ProgressExport.php';
@@ -231,12 +233,7 @@ function password_reset_url(string $token): string
 
 function course_invitation_url(string $code): string
 {
-    $host=(string)($_SERVER['HTTP_HOST']??'127.0.0.1:8080');
-    if(!preg_match('/^[A-Za-z0-9.:-]+$/',$host))$host='127.0.0.1:8080';
-    $scheme=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')?'https':'http';
-    $script=(string)($_SERVER['SCRIPT_NAME']??'/lms/index.php');
-    $base=rtrim(str_replace('\\','/',dirname($script)),'/');
-    return $scheme.'://'.$host.$base.'/'.route('join',['code'=>$code]);
+    return app_public_base_url().'/'.route('join',['code'=>$code]);
 }
 
 function purge_expired_registrations(): int
@@ -284,3 +281,5 @@ function render_level_picker(string $name, ?int $selected = null): string
 
 purge_expired_registrations();
 purge_learning_activity(db());
+
+QcmGuest::purge(db());

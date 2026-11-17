@@ -39,6 +39,11 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
 
 if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='qcm-class-state')qcm_class_http();
 
+if(($_GET['view']??'')==='guest-class-state')qcm_guest_http();
+if(($_GET['view']??'')==='guest-class'){
+    if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['action']??'')==='guest_class_command'){verify_csrf();qcm_guest_http(true);}
+    render_qcm_guest_page();
+}
 if(($_GET['view']??'')==='shared-content')library_share_http();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -22,3 +22,7 @@ Le socle courant est en version 30. La migration 30 ajoute la visibilité indép
 La migration historique 24 comporte une passerelle d’installation de la base de messagerie pour les anciens outils de maintenance. Cette exception déjà publiée ne doit pas être modifiée ni servir de modèle pour les migrations ordinaires. La Maintenance actuelle planifie les deux chaînes et sauvegarde la messagerie avant sa migration ; un échec ultérieur du socle restaure cette sauvegarde. L’optimisation des copies de code ne change aucune version de base. Voir [discussions et mises à jour](../../docs/discussions.md#données-mises-à-jour-et-limites).
 
 La migration 31 ajoute les liens de partage de pages, les collaborateurs de page et les reçus de copie. Elle ne crée aucun lien actif automatiquement et ne modifie pas les contenus, parcours ou résultats existants.
+
+La migration 32 ajoute le lien unique et ses modes autorisés, ainsi que les séances QCM anonymes et leurs votes temporaires. Les copies et droits déjà récupérés sont préservés. Aucune donnée pédagogique existante n’est modifiée. La migration est idempotente.
+
+La migration 33 distingue le jeton du lien unique des anciens liens par mode. Ces derniers restent utilisables dans leur seul mode d’origine, si le propriétaire l’autorise toujours : un ancien lien externe transmis aux élèves ne donne ainsi aucun accès aux sources ou à l’édition.

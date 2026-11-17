@@ -370,7 +370,7 @@ Dans l’onglet **Parcours**, le bouton à trois points situé à droite du titr
 - l’option **Remettre toutes les échéances à zéro** ignore les échéances pédagogiques du fichier, en conservant les dates des événements ;
 - toutes les pages référencées sont vérifiées avant écriture. Une page absente arrête entièrement l’import.
 
-Le menu à trois points de **Gestion du parcours** propose **Vue synthétique du parcours · PDF** et **Vue synthétique du parcours · DOCX** : numéro d’étape, nom, échéance et durée. Les deux formats conservent les titres et l’ordre des regroupements, y compris les groupes vides, ainsi que les légendes d’objectifs et compétences. Le DOCX contient un tableau A4 paysage modifiable dans Word ou LibreOffice. À droite de chaque étape, le menu à trois points propose PDF, Markdown, DOCX et LaTeX. Le choix PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
+Le menu à trois points de **Gestion du parcours** propose une seule entrée **Vue synthétique du parcours**, puis une fenêtre permet de choisir **PDF** ou **DOCX** : numéro d’étape, nom, échéance et durée. Les deux formats conservent les titres et l’ordre des regroupements, y compris les groupes vides, ainsi que les légendes d’objectifs et compétences. Le DOCX contient un tableau A4 paysage modifiable dans Word ou LibreOffice. À droite de chaque étape, le menu à trois points propose PDF, Markdown, DOCX et LaTeX. Le choix PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
 
 ### Importer et exporter les élèves
 
@@ -420,16 +420,27 @@ Dans **Acquis → Évaluations**, cliquer sur le titre d’une évaluation ramè
 
 ### Partager un contenu avec des collègues
 
-Dans **Bibliothèque**, ouvrir une page puis **Partager ce contenu**. Ce bouton est également disponible dans l’aperçu enseignant de l’étape. La page doit être enregistrée avec le statut **Prêt**. Son propriétaire peut créer un lien distinct pour chaque usage :
+Dans le parcours, **Partager ce contenu** se trouve à côté du bouton d’export PDF dans l’aperçu enseignant, et à côté des exports dans la ligne d’étape. Il est aussi accessible dans l’éditeur de la bibliothèque. La page doit être au statut **Prêt**. Seul le propriétaire peut activer le partage et sélectionner les modes autorisés. Un seul lien est proposé : le collègue qui l’ouvre choisit son mode parmi ceux autorisés.
 
 | Mode | Utilisation | Effet des modifications |
 |---|---|---|
 | **Contenu partagé** | Le collègue se connecte à la même plateforme et récupère la page dans sa bibliothèque, éventuellement dans l’un de ses parcours. | La même page est utilisée et modifiable par les équipes des parcours concernés ; les modifications du contenu sont communes. Les consignes, échéances et résultats restent propres à chaque parcours. |
 | **Copie indépendante** | Le collègue récupère sa propre page ou télécharge le JSON pour l’importer dans une autre installation liike. | La copie possède sa référence, ses blocs, objectifs et catégories. Aucune modification ultérieure n’est synchronisée. |
-| **Utilisation externe** | Le lien ouvre directement le contenu sans compte ; il peut être transmis aux élèves ou utilisé dans une intégration externe. | Le contenu suit la page source. Les QCM sont des entraînements avec correction immédiate et essais libres, sans suivi nominatif ni enregistrement des résultats. |
+| **Utilisation externe** | Consultation sans compte, entraînement individuel ou séance collective `qcm_classe` animée par un enseignant. | Le contenu suit la page source. Les élèves participent sans inscription et sans note nominative. |
 
 Une récupération directement dans un parcours crée une étape de consultation simple ; le collègue règle ensuite son type, ses consignes et échéances. Réutiliser le même lien de copie avec le même compte retrouve la copie déjà créée, sans la remplacer. Aucun élève, résultat, commentaire privé ou historique du parcours source n’est transféré.
 
-Les liens donnent accès à toute personne qui les possède : transmettre le lien **Contenu partagé** seulement aux collègues autorisés à modifier la page ; réserver le lien **Utilisation externe** aux élèves. Le JSON de copie contient les réponses du QCM nécessaires à son édition. Les QCM stricts et collectifs deviennent des entraînements individuels dans le lecteur externe. Les blocs de travail restent consultables, mais la remise et la notation demandent une inscription à un parcours. Les intégrations dépendent toujours des autorisations du site intégré. Les fichiers locaux d’images et documents de moins de 10 Mo sont embarqués dans le JSON ; les autres références de fichiers et médias doivent rester accessibles depuis l’installation de destination.
+Le propriétaire peut changer les modes ou désactiver le partage à tout moment. **L’URL reste identique**, y compris après réactivation. Les réglages s’appliquent aux nouvelles utilisations ; les pages déjà récupérées et les copies restent chez les collègues. Désactiver le partage ou le mode externe ferme également les séances anonymes ouvertes. Le retour en brouillon suspend l’accès externe. Le partage ne donne aucun accès au parcours source ni à ses élèves.
 
-**Désactiver ce lien** bloque ses prochaines utilisations. Les contenus et copies déjà récupérés restent chez les collègues. Recréer un lien produit une nouvelle URL et laisse l’ancienne inactive. Le retour de la page en brouillon suspend ses liens tant qu’elle n’est pas remise au statut Prêt. Le partage ne donne aucun accès au parcours source ni à ses élèves.
+Le lien de contenu est destiné aux collègues : si les modes partagé ou copie sont autorisés, il permet de modifier la page ou d’en obtenir les sources, avec les réponses des QCM. Pour une séance collective, transmettre aux élèves uniquement **le lien ou le QR code de la séance**.
+
+#### Animer un QCM en classe sans inscription des élèves
+
+1. Le collègue ouvre le lien, choisit **Utilisation externe**, puis se connecte avec son compte enseignant.
+2. Pour chaque bloc `:::qcm_classe`, **Animer une séance anonyme** crée une séance distincte. Les séances des différents collègues sont indépendantes.
+3. Il affiche le QR code, éventuellement dans **Ouvrir la projection**, ou transmet le lien de la séance. Les élèves cliquent sur **Rejoindre anonymement**, sans nom, courriel ni compte.
+4. L’enseignant ouvre les questions, ferme les votes et révèle les corrections. Les résultats sont des totaux anonymes. Un vote peut être modifié tant que la question reste ouverte ; aucune note n’est ajoutée à un parcours.
+
+Une séance est disponible 24 heures. Les identifiants aléatoires et réponses expirés sont supprimés au prochain accès à l’application. Le QR code est généré dans le navigateur, sans service externe. La participation est liée à la session du navigateur : changer de navigateur peut créer une nouvelle participation, et les résultats ne permettent pas d’identifier les élèves. Limites : 500 participations par séance et 20 séances simultanées par enseignant.
+
+Les QCM simples et stricts restent des entraînements individuels dans le lecteur externe. Les blocs de travail sont consultables, mais la remise et la notation demandent une inscription à un parcours. Les intégrations dépendent des autorisations du site intégré. Les fichiers locaux d’images et documents de moins de 10 Mo sont embarqués dans le JSON ; les autres références doivent rester accessibles depuis l’installation de destination.

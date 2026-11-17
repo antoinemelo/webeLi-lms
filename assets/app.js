@@ -1430,3 +1430,9 @@ document.querySelectorAll('[data-work-storage]').forEach((card) => {
   setInterval(() => { void save(); }, 15000);
   if (dirty) void save();
 });
+
+// Return to the sharing dialog after saving its settings, in the same context.
+if (/^#page-share-\d+$/.test(location.hash)) {
+  const shareDialog = document.getElementById(location.hash.slice(1));
+  if (shareDialog) bootstrap.Modal.getOrCreateInstance(shareDialog).show();
+}

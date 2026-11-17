@@ -7,24 +7,35 @@ require_once __DIR__.'/MailAbuseProtection.php';
 const APP_MAIL_FROM_ADDRESS = 'noreply@lms.webe.li';
 const APP_MAIL_FROM_NAME = 'liike';
 
-/** Email links must never inherit an attacker-controlled HTTP Host header. */
-function app_mail_link(string $parameter, string $token): string
+/** Use the deployment URL, never an invented subdomain or forwarded/Host header. */
+function app_public_base_url(): string
 {
-    $base = getenv('APP_MAIL_BASE_URL');
+    $base = getenv('APP_PUBLIC_URL') ?: getenv('APP_MAIL_BASE_URL');
     if ($base === false || $base === '') {
+        $server=(string)($_SERVER['SERVER_NAME']??'');
+        if($server===''||preg_match('/[\s\x00-\x1f\x7f\/@?#]/',$server))throw new RuntimeException('Configurez APP_PUBLIC_URL avec l’adresse publique de cette installation.');
+        if(filter_var($server,FILTER_VALIDATE_IP,FILTER_FLAG_IPV6))$server='['.$server.']';
+        $https=(!empty($_SERVER['HTTPS'])&&strtolower((string)$_SERVER['HTTPS'])!=='off')||($_SERVER['REQUEST_SCHEME']??'')==='https';
+        $port=filter_var($_SERVER['SERVER_PORT']??($https?443:80),FILTER_VALIDATE_INT);
+        if(!$port||$port<1||$port>65535)throw new RuntimeException('Port public invalide. Configurez APP_PUBLIC_URL.');
         $script = (string)($_SERVER['SCRIPT_NAME'] ?? '/index.php');
         $path = rtrim(str_replace('\\', '/', dirname($script)), '/.');
-        if (!preg_match('~^(?:/[A-Za-z0-9_-]+)*$~D', $path)) $path = '';
-        $base = 'https://lms.webe.li'.$path;
+        if (!preg_match('#^(?:/[A-Za-z0-9_.~%-]+)*$#D', $path)) throw new RuntimeException('Chemin public invalide. Configurez APP_PUBLIC_URL.');
+        $base=($https?'https':'http').'://'.$server.(($https&&$port===443)||(!$https&&$port===80)?'':':'.$port).$path;
     }
     $parts = parse_url($base);
     if (!filter_var($base, FILTER_VALIDATE_URL) || !is_array($parts)
         || !in_array($parts['scheme'] ?? '', ['https','http'], true)
         || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])
         || preg_match('/[\x00-\x20\x7f]/', $base)) {
-        throw new RuntimeException('APP_MAIL_BASE_URL doit être une URL absolue sans paramètres.');
+        throw new RuntimeException('APP_PUBLIC_URL / APP_MAIL_BASE_URL doit être une URL absolue sans paramètres.');
     }
-    return rtrim($base, '/').'/?'.rawurlencode($parameter).'='.rawurlencode($token);
+    return rtrim($base, '/');
+}
+
+function app_mail_link(string $parameter, string $token): string
+{
+    return app_public_base_url().'/?'.rawurlencode($parameter).'='.rawurlencode($token);
 }
 
 function app_mail_address_valid(string $address): bool

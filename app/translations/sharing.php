@@ -2,18 +2,6 @@
 declare(strict_types=1);
 return json_decode(<<<'JSON'
 {
-  "Vue synthétique du parcours · PDF": {
-    "en": "Pathway overview · PDF",
-    "de": "Lernpfadübersicht · PDF",
-    "it": "Sintesi del percorso · PDF",
-    "es": "Resumen del itinerario · PDF"
-  },
-  "Vue synthétique du parcours · DOCX": {
-    "en": "Pathway overview · DOCX",
-    "de": "Lernpfadübersicht · DOCX",
-    "it": "Sintesi del percorso · DOCX",
-    "es": "Resumen del itinerario · DOCX"
-  },
   "Voir mon évaluation": {
     "en": "View my assessment",
     "de": "Meine Bewertung ansehen",
@@ -44,12 +32,6 @@ return json_decode(<<<'JSON'
     "it": "Uso esterno",
     "es": "Uso externo"
   },
-  "Choisissez le lien à transmettre à vos collègues. Seul le propriétaire peut créer ou désactiver ces liens.": {
-    "en": "Choose the link to send to colleagues. Only the owner can create or deactivate these links.",
-    "de": "Wählen Sie den Link für Ihre Kolleginnen und Kollegen. Nur die Eigentümerin oder der Eigentümer kann diese Links erstellen oder deaktivieren.",
-    "it": "Scegli il link da inviare ai colleghi. Solo il proprietario può creare o disattivare questi link.",
-    "es": "Elija el enlace para sus colegas. Solo el propietario puede crear o desactivar estos enlaces."
-  },
   "Lien à partager": {
     "en": "Sharing link",
     "de": "Freigabelink",
@@ -61,18 +43,6 @@ return json_decode(<<<'JSON'
     "de": "Link öffnen",
     "it": "Apri il link",
     "es": "Abrir enlace"
-  },
-  "Créer le lien": {
-    "en": "Create link",
-    "de": "Link erstellen",
-    "it": "Crea il link",
-    "es": "Crear enlace"
-  },
-  "Désactiver ce lien": {
-    "en": "Deactivate this link",
-    "de": "Diesen Link deaktivieren",
-    "it": "Disattiva questo link",
-    "es": "Desactivar este enlace"
   },
   "Partage non autorisé.": {
     "en": "Sharing is not allowed.",
@@ -158,18 +128,6 @@ return json_decode(<<<'JSON'
     "it": "Scarica la pagina JSON",
     "es": "Descargar la página JSON"
   },
-  "Lien de partage créé.": {
-    "en": "Sharing link created.",
-    "de": "Freigabelink erstellt.",
-    "it": "Link di condivisione creato.",
-    "es": "Enlace creado."
-  },
-  "Lien de partage désactivé.": {
-    "en": "Sharing link deactivated.",
-    "de": "Freigabelink deaktiviert.",
-    "it": "Link di condivisione disattivato.",
-    "es": "Enlace desactivado."
-  },
   "Les collègues connectés à cette plateforme utilisent la même page. Les modifications du contenu sont communes à tous les parcours qui l’utilisent.": {
     "en": "Colleagues signed in to this platform use the same page. Content changes apply to all pathways using it.",
     "de": "Auf dieser Plattform angemeldete Kolleginnen und Kollegen nutzen dieselbe Seite. Änderungen gelten für alle Lernpfade, die sie verwenden.",
@@ -182,23 +140,209 @@ return json_decode(<<<'JSON'
     "it": "Ogni collega riceve la propria copia. Le modifiche successive restano indipendenti. Un file JSON consente il trasferimento a un’altra installazione liike.",
     "es": "Cada colega recibe su propia copia. Los cambios posteriores son independientes. Un archivo JSON permite transferirla a otra instalación de liike."
   },
-  "Toute personne disposant du lien peut consulter le contenu sans compte et faire les QCM en entraînement. Aucun résultat, note ou travail rendu n’est enregistré. Les modes strict et classe deviennent des entraînements individuels.": {
-    "en": "Anyone with the link can view the content without an account and practice quizzes. No results, grades or submissions are saved. Strict and classroom modes become individual practice.",
-    "de": "Alle Personen mit dem Link können den Inhalt ohne Konto ansehen und Quizfragen üben. Ergebnisse, Noten und Abgaben werden nicht gespeichert. Strikter Modus und Klassenmodus werden zu individuellen Übungen.",
-    "it": "Chiunque abbia il link può consultare il contenuto senza account e svolgere i quiz per esercitarsi. Risultati, voti e consegne non vengono salvati. Le modalità rigorosa e classe diventano esercizi individuali.",
-    "es": "Cualquier persona con el enlace puede consultar el contenido sin cuenta y practicar los cuestionarios. No se guardan resultados, notas ni entregas. Los modos estricto y clase se convierten en práctica individual."
-  },
-  "Désactiver un lien bloque ses prochaines utilisations. Les copies et les contenus déjà récupérés par des collègues restent dans leurs bibliothèques et parcours. Un nouveau lien ne réactive pas l’ancienne URL.": {
-    "en": "Deactivating a link blocks future uses. Copies and content already imported by colleagues remain in their libraries and pathways. A new link does not reactivate the old URL.",
-    "de": "Ein deaktivierter Link kann nicht mehr verwendet werden. Bereits übernommene Kopien und Inhalte bleiben in den Bibliotheken und Lernpfaden der Kolleginnen und Kollegen. Ein neuer Link reaktiviert die alte URL nicht.",
-    "it": "La disattivazione blocca gli utilizzi futuri del link. Le copie e i contenuti già importati restano nelle biblioteche e nei percorsi dei colleghi. Un nuovo link non riattiva il vecchio URL.",
-    "es": "Desactivar un enlace bloquea sus usos futuros. Las copias y contenidos ya importados permanecen en las bibliotecas e itinerarios de los colegas. Un nuevo enlace no reactiva la URL anterior."
-  },
   "Une page ajoutée au parcours commence en consultation simple. Vous pouvez ensuite régler son type et ses échéances.": {
     "en": "A page added to a pathway starts in read-only consultation mode. You can then set its type and deadlines.",
     "de": "Eine dem Lernpfad hinzugefügte Seite beginnt als einfache Lektüre. Anschliessend können Sie Typ und Fristen festlegen.",
     "it": "Una pagina aggiunta al percorso inizia come consultazione semplice. Puoi poi impostarne il tipo e le scadenze.",
     "es": "Una página añadida al itinerario comienza en consulta simple. Después puede ajustar el tipo y los plazos."
+  },
+  "Vue synthétique du parcours": {
+    "en": "Pathway overview",
+    "de": "Lernpfadübersicht",
+    "it": "Sintesi del percorso",
+    "es": "Resumen del itinerario"
+  },
+  "Choisir le format d’export": {
+    "en": "Choose export format",
+    "de": "Exportformat wählen",
+    "it": "Scegli il formato di esportazione",
+    "es": "Elegir el formato de exportación"
+  },
+  "Un seul lien. Vous choisissez les modes autorisés ; votre collègue choisit comment utiliser le contenu.": {
+    "en": "One link. You choose the allowed modes; your colleague chooses how to use the content.",
+    "de": "Ein Link. Sie erlauben die Nutzungsarten; Ihre Kolleginnen und Kollegen wählen, wie sie den Inhalt verwenden.",
+    "it": "Un solo link. Scegli le modalità consentite; il collega sceglie come usare il contenuto.",
+    "es": "Un solo enlace. Usted permite los modos; su colega elige cómo usar el contenido."
+  },
+  "Autoriser le partage": {
+    "en": "Enable sharing",
+    "de": "Freigabe aktivieren",
+    "it": "Abilita la condivisione",
+    "es": "Permitir compartir"
+  },
+  "Modes autorisés": {
+    "en": "Allowed modes",
+    "de": "Erlaubte Nutzungsarten",
+    "it": "Modalità consentite",
+    "es": "Modos permitidos"
+  },
+  "Enregistrer le partage": {
+    "en": "Save sharing settings",
+    "de": "Freigabe speichern",
+    "it": "Salva la condivisione",
+    "es": "Guardar la configuración"
+  },
+  "Réglages du partage enregistrés.": {
+    "en": "Sharing settings saved.",
+    "de": "Freigabeeinstellungen gespeichert.",
+    "it": "Impostazioni di condivisione salvate.",
+    "es": "Configuración guardada."
+  },
+  "Le lien reste identique après modification des modes ou réactivation. Les nouvelles utilisations suivent vos réglages ; les copies et les contenus déjà récupérés sont conservés. Désactiver l’utilisation externe ferme aussi les séances anonymes en cours.": {
+    "en": "The link stays the same after changing modes or reactivating sharing. New uses follow your settings; existing copies and imports are kept. Disabling external use also closes active anonymous sessions.",
+    "de": "Der Link bleibt nach Änderungen oder Reaktivierung gleich. Neue Nutzungen folgen Ihren Einstellungen; vorhandene Kopien und Importe bleiben erhalten. Das Deaktivieren der externen Nutzung beendet auch laufende anonyme Sitzungen.",
+    "it": "Il link resta invariato dopo modifiche o riattivazione. I nuovi utilizzi seguono le impostazioni; copie e contenuti già importati restano disponibili. Disattivare l’uso esterno chiude anche le sessioni anonime in corso.",
+    "es": "El enlace no cambia al modificar los modos o reactivarlo. Los nuevos usos siguen su configuración; se conservan las copias e importaciones existentes. Desactivar el uso externo también cierra las sesiones anónimas activas."
+  },
+  "Consultez le contenu sans inscription ou animez un QCM en classe. Les élèves rejoignent la séance par lien ou QR code, sans nom ni compte. Les réponses anonymes sont temporaires et ne deviennent pas des notes.": {
+    "en": "View content without registration or host a classroom quiz. Students join via a link or QR code, without a name or account. Anonymous answers are temporary and are not recorded as grades.",
+    "de": "Inhalte ohne Registrierung ansehen oder ein Klassenquiz leiten. Lernende treten per Link oder QR-Code bei, ohne Namen oder Konto. Anonyme Antworten sind vorübergehend und werden nicht zu Noten.",
+    "it": "Consulta i contenuti senza registrazione o avvia un quiz in classe. Gli studenti partecipano tramite link o codice QR, senza nome né account. Le risposte anonime sono temporanee e non diventano voti.",
+    "es": "Consulte el contenido sin registrarse o dirija un cuestionario en clase. El alumnado accede mediante enlace o código QR, sin nombre ni cuenta. Las respuestas anónimas son temporales y no se convierten en notas."
+  },
+  "Comment souhaitez-vous utiliser ce contenu ?": {
+    "en": "How would you like to use this content?",
+    "de": "Wie möchten Sie diesen Inhalt verwenden?",
+    "it": "Come desideri usare questo contenuto?",
+    "es": "¿Cómo desea utilizar este contenido?"
+  },
+  "Choisir ce mode": {
+    "en": "Choose this mode",
+    "de": "Diese Nutzungsart wählen",
+    "it": "Scegli questa modalità",
+    "es": "Elegir este modo"
+  },
+  "Choisir un autre mode": {
+    "en": "Choose another mode",
+    "de": "Andere Nutzungsart wählen",
+    "it": "Scegli un’altra modalità",
+    "es": "Elegir otro modo"
+  },
+  "Enseignant : se connecter pour animer une séance": {
+    "en": "Teacher: sign in to host a session",
+    "de": "Lehrperson: anmelden, um eine Sitzung zu leiten",
+    "it": "Docente: accedi per avviare una sessione",
+    "es": "Docente: inicie sesión para dirigir una sesión"
+  },
+  "Animer une séance anonyme": {
+    "en": "Host an anonymous session",
+    "de": "Anonyme Sitzung leiten",
+    "it": "Avvia una sessione anonima",
+    "es": "Dirigir una sesión anónima"
+  },
+  "Votre enseignant vous donnera le lien ou le QR code de la séance.": {
+    "en": "Your teacher will give you the session link or QR code.",
+    "de": "Ihre Lehrperson gibt Ihnen den Link oder QR-Code zur Sitzung.",
+    "it": "Il docente fornirà il link o il codice QR della sessione.",
+    "es": "Su docente le dará el enlace o el código QR de la sesión."
+  },
+  "Aucun nom, courriel ou compte n’est demandé. Un identifiant aléatoire sert uniquement à vos réponses dans cette séance.": {
+    "en": "No name, email or account is required. A random identifier is used only for your answers in this session.",
+    "de": "Es werden weder Name noch E-Mail oder Konto verlangt. Eine zufällige Kennung dient nur Ihren Antworten in dieser Sitzung.",
+    "it": "Non sono richiesti nome, email o account. Un identificativo casuale serve solo alle risposte in questa sessione.",
+    "es": "No se pide nombre, correo ni cuenta. Un identificador aleatorio se usa solo para sus respuestas en esta sesión."
+  },
+  "Rejoindre anonymement": {
+    "en": "Join anonymously",
+    "de": "Anonym teilnehmen",
+    "it": "Partecipa anonimamente",
+    "es": "Participar de forma anónima"
+  },
+  "Scannez le QR code ou ouvrez le lien pour rejoindre anonymement.": {
+    "en": "Scan the QR code or open the link to join anonymously.",
+    "de": "QR-Code scannen oder Link öffnen, um anonym teilzunehmen.",
+    "it": "Scansiona il codice QR o apri il link per partecipare anonimamente.",
+    "es": "Escanee el código QR o abra el enlace para participar de forma anónima."
+  },
+  "Réponses : :count / :total participants": {
+    "en": "Answers: :count / :total participants",
+    "de": "Antworten: :count / :total Teilnehmende",
+    "it": "Risposte: :count / :total partecipanti",
+    "es": "Respuestas: :count / :total participantes"
+  },
+  "Rejoignez la séance pour continuer.": {
+    "en": "Join the session to continue.",
+    "de": "Treten Sie der Sitzung bei, um fortzufahren.",
+    "it": "Partecipa alla sessione per continuare.",
+    "es": "Únase a la sesión para continuar."
+  },
+  "Participation anonyme": {
+    "en": "Anonymous participation",
+    "de": "Anonyme Teilnahme",
+    "it": "Partecipazione anonima",
+    "es": "Participación anónima"
+  },
+  "QR code pour rejoindre la séance": {
+    "en": "QR code to join the session",
+    "de": "QR-Code zur Teilnahme",
+    "it": "Codice QR per partecipare",
+    "es": "Código QR para participar"
+  },
+  "Inviter les élèves": {
+    "en": "Invite students",
+    "de": "Lernende einladen",
+    "it": "Invita gli studenti",
+    "es": "Invitar al alumnado"
+  },
+  "Lien de la séance": {
+    "en": "Session link",
+    "de": "Sitzungslink",
+    "it": "Link della sessione",
+    "es": "Enlace de la sesión"
+  },
+  "Lien valable 24 heures. Les réponses anonymes sont ensuite supprimées automatiquement.": {
+    "en": "Link valid for 24 hours. Anonymous answers are then automatically deleted.",
+    "de": "Link 24 Stunden gültig. Anonyme Antworten werden danach automatisch gelöscht.",
+    "it": "Link valido 24 ore. Le risposte anonime vengono poi eliminate automaticamente.",
+    "es": "Enlace válido durante 24 horas. Las respuestas anónimas se eliminan después automáticamente."
+  },
+  "Activez JavaScript pour participer à la séance.": {
+    "en": "Enable JavaScript to join the session.",
+    "de": "Aktivieren Sie JavaScript, um teilzunehmen.",
+    "it": "Attiva JavaScript per partecipare.",
+    "es": "Active JavaScript para participar."
+  },
+  "Connexion interrompue. Réessayez dans un instant.": {
+    "en": "Connection interrupted. Please try again shortly.",
+    "de": "Verbindung unterbrochen. Versuchen Sie es gleich erneut.",
+    "it": "Connessione interrotta. Riprova tra poco.",
+    "es": "Conexión interrumpida. Inténtelo de nuevo en un momento."
+  },
+  "Terminez une séance avant d’en créer une nouvelle.": {
+    "en": "End a session before creating another.",
+    "de": "Beenden Sie eine Sitzung, bevor Sie eine neue erstellen.",
+    "it": "Termina una sessione prima di crearne un’altra.",
+    "es": "Finalice una sesión antes de crear otra."
+  },
+  "Cette séance a atteint sa capacité.": {
+    "en": "This session is full.",
+    "de": "Diese Sitzung ist voll.",
+    "it": "Questa sessione ha raggiunto la capacità massima.",
+    "es": "Esta sesión está completa."
+  },
+  "Mode de partage invalide.": {
+    "en": "Invalid sharing mode.",
+    "de": "Ungültige Nutzungsart.",
+    "it": "Modalità di condivisione non valida.",
+    "es": "Modo de uso no válido."
+  },
+  "Choisissez au moins un mode de partage.": {
+    "en": "Choose at least one sharing mode.",
+    "de": "Wählen Sie mindestens eine Nutzungsart.",
+    "it": "Scegli almeno una modalità di condivisione.",
+    "es": "Elija al menos un modo de uso."
+  },
+  "Le partage a changé. Rechargez la page avant de réessayer.": {
+    "en": "Sharing settings changed. Reload the page before trying again.",
+    "de": "Die Freigabe wurde geändert. Laden Sie die Seite neu und versuchen Sie es erneut.",
+    "it": "La condivisione è cambiata. Ricarica la pagina e riprova.",
+    "es": "La configuración cambió. Recargue la página antes de volver a intentarlo."
+  },
+  "Ce mode de partage n’est plus autorisé.": {
+    "en": "This sharing mode is no longer allowed.",
+    "de": "Diese Nutzungsart ist nicht mehr erlaubt.",
+    "it": "Questa modalità di condivisione non è più consentita.",
+    "es": "Este modo de uso ya no está permitido."
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);
