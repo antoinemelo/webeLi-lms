@@ -343,6 +343,162 @@ return json_decode(<<<'JSON'
     "de": "Diese Nutzungsart ist nicht mehr erlaubt.",
     "it": "Questa modalità di condivisione non è più consentita.",
     "es": "Este modo de uso ya no está permitido."
+  },
+  "Utilisation anonyme": {
+    "en": "Anonymous use",
+    "de": "Anonyme Nutzung",
+    "it": "Uso anonimo",
+    "es": "Uso anónimo"
+  },
+  "Compris": {
+    "en": "Understood",
+    "de": "Verstanden",
+    "it": "Ho capito",
+    "es": "Entendido"
+  },
+  "Connexion enseignant nécessaire": {
+    "en": "Teacher sign-in required",
+    "de": "Anmeldung als Lehrperson erforderlich",
+    "it": "Accesso docente necessario",
+    "es": "Se requiere acceso docente"
+  },
+  "Connectez-vous avec un compte enseignant pour accéder à cette utilisation.": {
+    "en": "Sign in with a teacher account to access this use.",
+    "de": "Melden Sie sich mit einem Lehrpersonenkonto an, um diese Nutzung aufzurufen.",
+    "it": "Accedi con un account docente per questa modalità di utilizzo.",
+    "es": "Inicie sesión con una cuenta docente para acceder a este uso."
+  },
+  "Ce contenu n’est pas disponible en utilisation anonyme.": {
+    "en": "This content is not available for anonymous use.",
+    "de": "Dieser Inhalt ist nicht anonym nutzbar.",
+    "it": "Questo contenuto non è disponibile per l’uso anonimo.",
+    "es": "Este contenido no está disponible para uso anónimo."
+  },
+  "Enseignant : se connecter": {
+    "en": "Teacher: sign in",
+    "de": "Lehrperson: anmelden",
+    "it": "Docente: accedi",
+    "es": "Docente: iniciar sesión"
+  },
+  "Contenu partagé de :name": {
+    "en": "Content shared by :name",
+    "de": "Von :name geteilter Inhalt",
+    "it": "Contenuto condiviso da :name",
+    "es": "Contenido compartido por :name"
+  },
+  "Mon contenu utilisé par d’autres enseignants": {
+    "en": "My content used by other teachers",
+    "de": "Mein von anderen Lehrpersonen genutzter Inhalt",
+    "it": "Il mio contenuto usato da altri docenti",
+    "es": "Mi contenido utilizado por otros docentes"
+  },
+  "Copie indépendante autorisée": {
+    "en": "Independent copying allowed",
+    "de": "Unabhängige Kopie erlaubt",
+    "it": "Copia indipendente consentita",
+    "es": "Copia independiente permitida"
+  },
+  "Utilisation externe autorisée": {
+    "en": "External use allowed",
+    "de": "Externe Nutzung erlaubt",
+    "it": "Uso esterno consentito",
+    "es": "Uso externo permitido"
+  },
+  "Origine": {
+    "en": "Origin",
+    "de": "Herkunft",
+    "it": "Origine",
+    "es": "Origen"
+  },
+  "Voir tous les contenus": {
+    "en": "View all content",
+    "de": "Alle Inhalte anzeigen",
+    "it": "Mostra tutti i contenuti",
+    "es": "Ver todos los contenidos"
+  },
+  "Filtrer par enseignants": {
+    "en": "Filter by teachers",
+    "de": "Nach Lehrpersonen filtern",
+    "it": "Filtra per docenti",
+    "es": "Filtrar por docentes"
+  },
+  "(moi)": {
+    "en": "(me)",
+    "de": "(ich)",
+    "it": "(io)",
+    "es": "(yo)"
+  },
+  "Partage": {
+    "en": "Sharing",
+    "de": "Freigabe",
+    "it": "Condivisione",
+    "es": "Uso compartido"
+  },
+  "Tous les modes": {
+    "en": "All modes",
+    "de": "Alle Nutzungsarten",
+    "it": "Tutte le modalità",
+    "es": "Todos los modos"
+  },
+  "Filtrer par partage": {
+    "en": "Filter by sharing",
+    "de": "Nach Freigabe filtern",
+    "it": "Filtra per condivisione",
+    "es": "Filtrar por uso compartido"
+  },
+  "Mes contenus partagés": {
+    "en": "My shared content",
+    "de": "Meine geteilten Inhalte",
+    "it": "I miei contenuti condivisi",
+    "es": "Mis contenidos compartidos"
+  },
+  "Copies indépendantes effectuées": {
+    "en": "Independent copies made",
+    "de": "Erstellte unabhängige Kopien",
+    "it": "Copie indipendenti effettuate",
+    "es": "Copias independientes realizadas"
+  },
+  "Utilisations externes autorisées": {
+    "en": "External uses allowed",
+    "de": "Erlaubte externe Nutzungen",
+    "it": "Utilizzi esterni consentiti",
+    "es": "Usos externos permitidos"
+  },
+  "Les copies indépendantes font partie de vos contenus.": {
+    "en": "Independent copies are part of your own content.",
+    "de": "Unabhängige Kopien gehören zu Ihren eigenen Inhalten.",
+    "it": "Le copie indipendenti fanno parte dei tuoi contenuti.",
+    "es": "Las copias independientes forman parte de sus contenidos."
+  },
+  "Repères de partage": {
+    "en": "Sharing indicators",
+    "de": "Freigabekennzeichnungen",
+    "it": "Indicatori di condivisione",
+    "es": "Indicadores de uso compartido"
+  },
+  "Utilisé par des collègues": {
+    "en": "Used by colleagues",
+    "de": "Von Kolleginnen und Kollegen genutzt",
+    "it": "Usato da colleghi",
+    "es": "Utilizado por colegas"
+  },
+  "Contenu d’un autre enseignant": {
+    "en": "Content owned by another teacher",
+    "de": "Inhalt einer anderen Lehrperson",
+    "it": "Contenuto di un altro docente",
+    "es": "Contenido de otro docente"
+  },
+  "Propriétaire : :name": {
+    "en": "Owner: :name",
+    "de": "Eigentümer: :name",
+    "it": "Proprietario: :name",
+    "es": "Propietario: :name"
+  },
+  "Copie indépendante de :name": {
+    "en": "Independent copy from :name",
+    "de": "Unabhängige Kopie von :name",
+    "it": "Copia indipendente da :name",
+    "es": "Copia independiente de :name"
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

@@ -141,7 +141,11 @@ Si le compte participe au cours d’un autre enseignant, son archivage ou sa sup
 
 ### Suivre un cours
 
-Depuis **Suivi**, ouvrir un élève. La dernière visite connue apparaît à droite de chaque étape. Le bouton **Historique des visites** ouvre un tableau par jour et par page avec la première visite, la dernière activité, le nombre de sessions et le temps actif estimé.
+Le logo **liike** ouvre le tableau de bord (`?view=teacher`). La navigation enseignante propose **Élèves**, **Bibliothèque** et **Parcours** ; sur mobile, **Bibliothèque** est nommée **Contenus**.
+
+Le chevron placé avant **Progression des élèves** affiche ou masque la liste, fermée par défaut. Le dernier choix est mémorisé dans le navigateur pour le compte connecté, indépendamment du parcours consulté. Il s’agit uniquement d’un réglage d’affichage.
+
+Dans cette liste, ouvrir un élève. La dernière visite connue apparaît à droite de chaque étape. Le bouton **Historique des visites** ouvre un tableau par jour et par page avec la première visite, la dernière activité, le nombre de sessions et le temps actif estimé.
 
 Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps actif toutes les 60 secondes et à la fermeture ou au masquage de l’onglet. Les données de plus d’un mois sont automatiquement supprimées.
 
@@ -173,7 +177,7 @@ Sous **Laissez la note vide pour annuler la validation**, l’interrupteur est v
 
 ### Exporter la progression des élèves
 
-Dans **Suivi** (`?view=teacher`), ouvrir le menu **⋮** en haut à droite du titre, puis **Exporter la progression**. La même fenêtre regroupe les formats **CSV** et **PDF**, les modes **Récapitulatif** et **Détaillé**, ainsi que les noms des élèves actifs du parcours sélectionné. Tous sont cochés initialement ; la recherche, les cases individuelles et la sélection globale permettent de préparer un sous-ensemble. Le bouton unique **Exporter** lance le téléchargement.
+Dans le **Tableau de bord**, accessible par le logo liike (`?view=teacher`), ouvrir le menu **⋮** en haut à droite du titre, puis **Exporter la progression**. La même fenêtre regroupe les formats **CSV** et **PDF**, les modes **Récapitulatif** et **Détaillé**, ainsi que les noms des élèves actifs du parcours sélectionné. Tous sont cochés initialement ; la recherche, les cases individuelles et la sélection globale permettent de préparer un sous-ensemble. Le bouton unique **Exporter** lance le téléchargement.
 
 | Mode | CSV | PDF |
 |---|---|---|
@@ -188,7 +192,7 @@ Depuis la fiche de suivi (`?view=student-detail`), le bouton immédiatement à d
 
 ### Suivi administratif
 
-Dans **Élèves**, le statut actif/inactif apparaît à côté des initiales et **Gérer**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. Le suivi pédagogique détaillé reste accessible depuis **Suivi**.
+Dans **Élèves**, le statut actif/inactif apparaît à côté des initiales et **Gérer**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. Le suivi pédagogique détaillé reste accessible depuis le **Tableau de bord**, en cliquant sur le logo liike puis en ouvrant **Progression des élèves**.
 
 **Ajouter un suivi** enregistre une Réunion (y compris une discussion), une Correspondance ou un Paiement pour un ou plusieurs élèves. Ces actions sont également accessibles depuis le menu Actions du tableau de bord. Le compte rendu commun comporte une date et une heure, un titre de 160 caractères maximum, un contenu Markdown de 5 000 caractères maximum et, facultativement, un parcours. Il peut reprendre un modèle. Son enregistrement n’envoie pas de courriel ; Paiement est une catégorie de compte rendu, sans transaction financière.
 
@@ -281,7 +285,7 @@ Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. S
 
 Dans **Acquis → Évaluations**, une évaluation masquée reste présente pour assurer la continuité du suivi. Tant qu’elle n’est ni accessible ni notée, son vrai titre est remplacé par **Évaluation à venir**.
 
-La recherche porte sur le titre, le résumé, les tags et les objectifs des parcours qui utilisent la page. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant ne voit et ne modifie que sa propre bibliothèque.
+La recherche porte sur le titre, le résumé, les tags, les objectifs et le nom du propriétaire ou de l’auteur connu d’une copie. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant accède à ses contenus ainsi qu’aux contenus partagés auxquels il est autorisé à contribuer ; le filtre initial affiche uniquement ses propres contenus.
 
 Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent visibles dans une barre persistante au-dessus des réglages pendant le défilement des blocs. **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton, sauvegarde puis prépare un courriel par élève actif ayant accès à la page. On peut donc enregistrer plusieurs corrections, puis prévenir une seule fois, même si la dernière version est déjà sauvegardée. Une erreur ou un conflit de sauvegarde empêche cet envoi. Les modifications restent signalées dans **Depuis la dernière visite** côté élève. Une page en brouillon ou hors parcours reste invisible dans le chemin de travail des élèves.
 
@@ -418,6 +422,21 @@ Le lien **Parcours** de la navigation ouvre par défaut **l’aperçu élève**.
 
 Dans **Acquis → Évaluations**, cliquer sur le titre d’une évaluation ramène à l’étape correspondante dans **Parcours**, avec son regroupement ouvert. Le lien **Voir mon évaluation**, sous cette étape et dans son lecteur, revient à la bonne ligne des évaluations. Le parcours courant est conservé. Une étape devenue inaccessible garde ses résultats selon les règles existantes, mais son titre ne permet plus d’ouvrir son contenu.
 
+### Repérer et filtrer les contenus de la bibliothèque
+
+La bibliothèque affiche par défaut **vos contenus**, copies indépendantes comprises. Dans **Origine**, votre nom est le premier enseignant proposé ; vous pouvez cocher plusieurs enseignants ou choisir **Voir tous les contenus**. Seuls les propriétaires de contenus auxquels vous avez déjà accès sont proposés. Le nom désigne le propriétaire actuel : une copie indépendante vous appartient.
+
+Le filtre **Partage** accepte plusieurs choix : **Mes contenus partagés** (sources communes déjà utilisées par des collègues), **Copies indépendantes effectuées** et **Utilisations externes autorisées**. Plusieurs choix d’un même filtre s’additionnent ; les filtres Origine, Partage, recherche, statut, tag et objectif se combinent. Les choix multiples restent disponibles sur téléphone.
+
+- **Blanc** : votre contenu, y compris une copie indépendante. Autoriser un partage ne suffit pas à colorer la fiche.
+- **Bleu pâle** : votre source commune est déjà récupérée par un collègue dans sa bibliothèque, ou utilisée dans un parcours accessible à un autre enseignant actif. Une copie indépendante faite par un collègue ne colore pas la source en bleu.
+- **Orange pâle** : le propriétaire est un autre enseignant. Son prénom et son nom apparaissent dans une étiquette orange arrondie entre le statut et la durée.
+- **Pastille crème** sur vos fiches : la copie indépendante est autorisée. **Pastille gris clair** : l’utilisation externe est autorisée. Ces autorisations doivent être actives et la page prête.
+
+Les copies issues d’un lien de partage gardent une indication d’origine et restent indépendantes, même si la source disparaît. Les anciennes copies identifiables par leur reçu de récupération sont reprises automatiquement. Les fichiers JSON importés sans information d’origine ne permettent pas de retrouver leur auteur ; aucune origine n’est inventée.
+
+Dans **Parcours**, la ligne de date, durée et mode porte une pastille **bleue** pour votre source commune utilisée par d’autres, ou **orange** pour une source appartenant à un autre enseignant. Le libellé accessible et l’infobulle précisent sa signification. Une simple copie indépendante ne porte aucune pastille de provenance dans le parcours. Désactiver un lien retire les nouvelles autorisations, mais ne retire pas les indicateurs d’une utilisation commune déjà acquise.
+
 ### Partager un contenu avec des collègues
 
 Dans le parcours, **Partager ce contenu** se trouve à côté du bouton d’export PDF dans l’aperçu enseignant, et à côté des exports dans la ligne d’étape. Il est aussi accessible dans l’éditeur de la bibliothèque. La page doit être au statut **Prêt**. Seul le propriétaire peut activer le partage et sélectionner les modes autorisés. Un seul lien est proposé : le collègue qui l’ouvre choisit son mode parmi ceux autorisés.
@@ -432,7 +451,9 @@ Une récupération directement dans un parcours crée une étape de consultation
 
 Le propriétaire peut changer les modes ou désactiver le partage à tout moment. **L’URL reste identique**, y compris après réactivation. Les réglages s’appliquent aux nouvelles utilisations ; les pages déjà récupérées et les copies restent chez les collègues. Désactiver le partage ou le mode externe ferme également les séances anonymes ouvertes. Le retour en brouillon suspend l’accès externe. Le partage ne donne aucun accès au parcours source ni à ses élèves.
 
-Le lien de contenu est destiné aux collègues : si les modes partagé ou copie sont autorisés, il permet de modifier la page ou d’en obtenir les sources, avec les réponses des QCM. Pour une séance collective, transmettre aux élèves uniquement **le lien ou le QR code de la séance**.
+Une personne non connectée voit uniquement **Utilisation anonyme**, le mode **Utilisation externe** s’il est autorisé, et le bouton **Compris**. Aucun mode de récupération ni téléchargement JSON n’est accessible sans compte enseignant actif, même par une URL directe. Si l’utilisation externe est désactivée, la page indique qu’elle n’est pas disponible anonymement. Le lien **Enseignant : se connecter** permet ensuite au collègue de retrouver les modes autorisés. Les comptes élèves restent limités à l’utilisation externe.
+
+Le lien de contenu est destiné aux collègues : après connexion enseignant, si les modes partagé ou copie sont autorisés, il permet de modifier la page ou d’en obtenir les sources, avec les réponses des QCM. Pour une séance collective, transmettre aux élèves uniquement **le lien ou le QR code de la séance**.
 
 #### Animer un QCM en classe sans inscription des élèves
 

@@ -14,6 +14,7 @@ return static function(PDO $pdo): void {
         'course_accesses'=>['user_id','course_id','last_accessed_at'],
         'pages'=>['id','reference','title','status','owner_id','revision'],
         'page_share_links'=>['page_id','token','enabled','allow_shared','allow_copy','allow_external','revision'],
+        'page_copy_origins'=>['page_id','source_page_id','source_owner_id','source_owner_name'],
         'qcm_guest_sessions'=>['id','page_id','page_block_id','room_token','source_share_token','created_by','phase','revision','expires_at'],
         'qcm_guest_participants'=>['session_id','participant_hash'],
         'qcm_guest_votes'=>['session_id','participant_hash','question_index','answers'],

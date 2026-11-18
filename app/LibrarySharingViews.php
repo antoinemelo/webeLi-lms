@@ -1,6 +1,43 @@
 <?php
 declare(strict_types=1);
 
+function render_sharing_dot(string $kind,string $label): void
+{
+    ?><span class="sharing-dot sharing-dot-<?=e($kind)?>" role="img" aria-label="<?=e($label)?>" title="<?=e($label)?>"></span><?php
+}
+
+function render_pathway_sharing(array $sharing): void
+{
+    if($sharing['incoming'])render_sharing_dot('incoming',t('Contenu partagé de :name',['name'=>$sharing['owner_name']]));
+    elseif($sharing['shared_used'])render_sharing_dot('outgoing',t('Mon contenu utilisé par d’autres enseignants'));
+}
+
+function render_library_sharing_marks(array $sharing): void
+{
+    if(!$sharing['own'])return;
+    ?><span class="library-sharing-marks"><?php
+    if($sharing['shared_used'])render_sharing_dot('outgoing',t('Mon contenu utilisé par d’autres enseignants'));
+    if($sharing['copy_allowed'])render_sharing_dot('copy',t('Copie indépendante autorisée'));
+    if($sharing['external_allowed'])render_sharing_dot('external',t('Utilisation externe autorisée'));
+    ?></span><?php
+}
+
+function render_library_origin_filters(array $pages,array $sharing,array $teacher): void
+{
+    $owners=[];
+    foreach($pages as $page){$info=$sharing[(int)$page['id']];$owners[$info['owner_id']]=$info['owner_name'];}
+    unset($owners[(int)$teacher['id']]);natcasesort($owners);$owners=[(int)$teacher['id']=>$teacher['name']]+$owners;
+    ?><div class="library-multi-filters">
+      <div class="dropdown library-multi-filter"><button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><span><?=e(t('Origine'))?></span><strong data-origin-summary><?=e($teacher['name'])?></strong></button>
+        <div class="dropdown-menu library-filter-menu"><button type="button" class="dropdown-item" data-origin-all><?=e(t('Voir tous les contenus'))?></button><div class="dropdown-divider"></div><fieldset><legend class="visually-hidden"><?=e(t('Filtrer par enseignants'))?></legend>
+        <?php foreach($owners as $id=>$name): ?><label class="library-filter-choice"><input type="checkbox" data-page-owner value="<?=$id?>" data-label="<?=e($name)?>" <?=$id===(int)$teacher['id']?'checked':''?>> <span><?=e($name)?><?php if($id===(int)$teacher['id']): ?> <small><?=e(t('(moi)'))?></small><?php endif; ?></span></label><?php endforeach; ?></fieldset></div></div>
+      <div class="dropdown library-multi-filter"><button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><span><?=e(t('Partage'))?></span><strong data-sharing-summary><?=e(t('Tous les modes'))?></strong></button>
+        <div class="dropdown-menu library-filter-menu"><button type="button" class="dropdown-item" data-sharing-all><?=e(t('Tous les modes'))?></button><div class="dropdown-divider"></div><fieldset><legend class="visually-hidden"><?=e(t('Filtrer par partage'))?></legend>
+        <?php foreach(['shared'=>'Mes contenus partagés','copy'=>'Copies indépendantes effectuées','external'=>'Utilisations externes autorisées'] as $mode=>$label): ?><label class="library-filter-choice"><input type="checkbox" data-page-sharing value="<?=$mode?>" data-label="<?=e(t($label))?>"> <span><?=e(t($label))?></span></label><?php endforeach; ?></fieldset></div></div>
+      <small class="library-origin-help"><?=e(t('Les copies indépendantes font partie de vos contenus.'))?></small>
+    </div><?php
+}
+
 function render_library_share_button(array $page,string $class='button secondary',string $label='Partager ce contenu'): void
 {
     if((int)$page['owner_id']!==(int)actor()['id'])return;
@@ -30,7 +67,7 @@ function render_library_share_modal(array $page,int $courseId=0,string $returnVi
 
 function library_share_page_start(string $title): void
 {
-    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=154"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t('Contenu partagé'))?></p><?php
+    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=156"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
 }
 
 function library_share_http(): never
@@ -44,7 +81,15 @@ function library_share_http(): never
         if($mode!=='')library_share_require_mode($share,$mode);
     }catch(InvalidArgumentException $exception){http_response_code(404);library_share_page_start(t('Contenu indisponible'));echo '<h1>'.e(t($exception->getMessage())).'</h1></main></body></html>';exit;}
     if($post)verify_csrf();
-    $user=actor();$error=null;
+    $user=actor();$error=null;$isTeacher=$user&&$user['role']==='teacher'&&$user['account_status']==='active';
+    if(!$user){$_SESSION['pending_library_share']=$token;$_SESSION['pending_library_mode']=$mode;}
+    if(!$isTeacher&&in_array($mode,['shared','copy'],true)){
+        http_response_code($user?403:401);library_share_page_start(t('Connexion enseignant nécessaire'));
+        echo '<h1>'.e(t('Connexion enseignant nécessaire')).'</h1><p>'.e(t('Connectez-vous avec un compte enseignant pour accéder à cette utilisation.')).'</p>';
+        if(!$user)echo '<a class="btn btn-dark" href="'.e(route('login')).'">'.e(t('Se connecter')).'</a>';
+        echo '</main></body></html>';exit;
+    }
+    $visibleModes=library_share_visible_modes($share,$user);
     if(!$post&&$mode==='copy'&&($_GET['download']??'')==='1')send_json_download(export_page_document(db(),(int)$share['page_id'],(int)$share['owner_id'],APR_PUBLIC_ROOT),'liike-page-'.$share['page_id'].'.json');
     if($post&&($mode!=='external'||($_POST['action']??'')==='create_guest_class')){
         try{
@@ -65,8 +110,10 @@ function library_share_http(): never
     library_share_page_start($share['title']);
     ?><h1><?=e($share['title'])?></h1><p><?=e($share['summary'])?></p><p class="text-secondary"><?=e(t('Partagé par :name',['name'=>$share['owner_name']]))?> · <?=(int)$share['estimated_minutes']?> min</p>
     <?php if($error): ?><p class="alert alert-danger"><?=e(t($error))?></p><?php endif; ?>
-    <?php if($mode===''): ?><h2><?=e(t('Comment souhaitez-vous utiliser ce contenu ?'))?></h2><div class="d-grid gap-3"><?php foreach($share['modes'] as $choice): ?><article class="border rounded p-3"><h3><?=e(t(library_share_modes()[$choice]))?></h3><p><?=e(t(library_share_description($choice)))?></p><a class="button primary btn btn-dark" href="<?=e(route('shared-content',['share'=>$token,'mode'=>$choice]))?>"><?=e(t('Choisir ce mode'))?></a></article><?php endforeach; ?></div><?php
-    else: ?><p><a href="<?=e(route('shared-content',['share'=>$token]))?>">← <?=e(t('Choisir un autre mode'))?></a></p><div class="alert alert-info"><?=e(t(library_share_description($mode)))?></div><?php
+    <?php if($mode===''): ?><h2><?=e(t($isTeacher?'Comment souhaitez-vous utiliser ce contenu ?':'Utilisation anonyme'))?></h2><div class="d-grid gap-3"><?php foreach($visibleModes as $choice): ?><article class="border rounded p-3"><h3><?=e(t(library_share_modes()[$choice]))?></h3><p><?=e(t(library_share_description($choice)))?></p><a class="button primary btn btn-dark" href="<?=e(route('shared-content',['share'=>$token,'mode'=>$choice]))?>"><?=e(t($isTeacher?'Choisir ce mode':'Compris'))?></a></article><?php endforeach; ?></div><?php
+        if(!$visibleModes): echo '<p>'.e(t('Ce contenu n’est pas disponible en utilisation anonyme.')).'</p>'; endif;
+        if(!$user): echo '<p class="mt-3"><a href="'.e(route('login')).'">'.e(t('Enseignant : se connecter')).'</a></p>'; endif;
+    else: if($isTeacher): ?><p><a href="<?=e(route('shared-content',['share'=>$token]))?>">← <?=e(t('Choisir un autre mode'))?></a></p><?php endif; ?><div class="alert alert-info"><?=e(t(library_share_description($mode)))?></div><?php
         if(!$user){$_SESSION['pending_library_share']=$token;$_SESSION['pending_library_mode']=$mode;}
         if($mode==='external'){
             if(!$user||$user['role']!=='teacher')echo '<p><a class="button secondary btn btn-outline-secondary" href="'.e(route('login')).'">'.e(t('Enseignant : se connecter pour animer une séance')).'</a></p>';

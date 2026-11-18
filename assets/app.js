@@ -22,6 +22,34 @@ const locale = document.body.dataset.language || 'fr';
 
 enhanceBootstrap();
 
+const studentProgress = document.querySelector('[data-student-progress]');
+if (studentProgress) {
+  const toggle = studentProgress.querySelector('[data-student-progress-toggle]');
+  const content = document.getElementById(toggle.getAttribute('aria-controls'));
+  const hint = studentProgress.querySelector('[data-student-progress-hint]');
+  // Remember one choice per account and installation, across all courses.
+  const storageKey = `liike:student-progress:${location.pathname}:${document.body.dataset.userId}`;
+  const setOpen = (open) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    content.hidden = !open;
+    hint.hidden = !open;
+  };
+  const restore = () => {
+    try { setOpen(localStorage.getItem(storageKey) === 'open'); }
+    catch (_) { /* Keep the current state when browser storage is unavailable. */ }
+  };
+  toggle.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    setOpen(open);
+    try { localStorage.setItem(storageKey, open ? 'open' : 'closed'); } catch (_) {}
+  });
+  restore();
+  window.addEventListener('pageshow', restore);
+  window.addEventListener('storage', (event) => {
+    if (event.key === storageKey || event.key === null) restore();
+  });
+}
+
 const installedPwa = window.matchMedia('(display-mode: standalone)').matches
   || window.matchMedia('(display-mode: fullscreen)').matches
   || window.navigator.standalone === true;
@@ -701,12 +729,26 @@ if (libraryFilters) {
     const status = libraryFilters.querySelector('[data-page-status]').value;
     const tag = libraryFilters.querySelector('[data-page-tag]').value;
     const objective = libraryFilters.querySelector('[data-page-objective]').value;
+    const owners = [...libraryFilters.querySelectorAll('[data-page-owner]:checked')];
+    const sharing = [...libraryFilters.querySelectorAll('[data-page-sharing]:checked')];
+    const originSummary = libraryFilters.querySelector('[data-origin-summary]');
+    const sharingSummary = libraryFilters.querySelector('[data-sharing-summary]');
+    if (originSummary) {
+      originSummary.textContent = owners.length ? owners.map(control => control.dataset.label).join(', ') : libraryFilters.querySelector('[data-origin-all]').textContent;
+      originSummary.title = originSummary.textContent;
+    }
+    if (sharingSummary) {
+      sharingSummary.textContent = sharing.length ? sharing.map(control => control.dataset.label).join(', ') : libraryFilters.querySelector('[data-sharing-all]').textContent;
+      sharingSummary.title = sharingSummary.textContent;
+    }
     let visible = 0;
     document.querySelectorAll('[data-page-card]').forEach((card) => {
       const matches = (!search || card.dataset.search.includes(search))
         && (!status || card.dataset.status === status)
         && (!tag || card.dataset.tags.includes(` ${tag} `))
-        && (!objective || card.dataset.objectives.includes(` ${objective} `));
+        && (!objective || card.dataset.objectives.includes(` ${objective} `))
+        && (!owners.length || owners.some(control => control.value === card.dataset.ownerId))
+        && (!sharing.length || sharing.some(control => card.dataset.sharing.includes(` ${control.value} `)));
       card.hidden = !matches;
       if (matches) visible++;
     });
@@ -714,8 +756,16 @@ if (libraryFilters) {
     document.querySelector('[data-library-empty]').hidden = visible !== 0;
   };
   libraryFilters.querySelectorAll('input,select').forEach((control) => {
-    control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', applyLibraryFilters);
+    control.addEventListener(control.tagName === 'SELECT' || control.type === 'checkbox' ? 'change' : 'input', applyLibraryFilters);
   });
+  for (const [button, controls] of [['[data-origin-all]', '[data-page-owner]'], ['[data-sharing-all]', '[data-page-sharing]']]) {
+    libraryFilters.querySelector(button)?.addEventListener('click', () => {
+      libraryFilters.querySelectorAll(controls).forEach(control => { control.checked = false; });
+      applyLibraryFilters();
+    });
+  }
+  applyLibraryFilters();
+  window.addEventListener('pageshow', applyLibraryFilters);
 }
 
 const studentFilters = document.querySelector('[data-student-filters]');

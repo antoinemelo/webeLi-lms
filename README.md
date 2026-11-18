@@ -236,6 +236,7 @@ php tests/announcement_messages.php
 php tests/student_admin_history.php
 php tests/pathway_groups.php
 php tests/library_sharing.php /tmp/liike-exports
+php tests/library_origins.php
 php tests/guest_qcm.php
 node tests/library_sharing_browser.mjs
 node tests/pathway_groups_browser.mjs

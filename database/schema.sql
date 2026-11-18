@@ -553,7 +553,7 @@ CREATE TABLE IF NOT EXISTS qcm_class_votes (
     PRIMARY KEY(session_id,student_id,question_index)
 );
 
-PRAGMA user_version = 33;
+PRAGMA user_version = 34;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -648,3 +648,11 @@ CREATE TABLE IF NOT EXISTS page_share_links (
         PRIMARY KEY(session_id,participant_hash,question_index),
         FOREIGN KEY(session_id,participant_hash) REFERENCES qcm_guest_participants(session_id,participant_hash) ON DELETE CASCADE
     );
+
+CREATE TABLE IF NOT EXISTS page_copy_origins (
+    page_id INTEGER PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE,
+    source_page_id INTEGER REFERENCES pages(id) ON DELETE SET NULL,
+    source_owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    source_owner_name TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

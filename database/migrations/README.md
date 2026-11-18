@@ -26,3 +26,5 @@ La migration 31 ajoute les liens de partage de pages, les collaborateurs de page
 La migration 32 ajoute le lien unique et ses modes autorisés, ainsi que les séances QCM anonymes et leurs votes temporaires. Les copies et droits déjà récupérés sont préservés. Aucune donnée pédagogique existante n’est modifiée. La migration est idempotente.
 
 La migration 33 distingue le jeton du lien unique des anciens liens par mode. Ces derniers restent utilisables dans leur seul mode d’origine, si le propriétaire l’autorise toujours : un ancien lien externe transmis aux élèves ne donne ainsi aucun accès aux sources ou à l’édition.
+
+La migration 34 conserve l’origine des copies indépendantes dans `page_copy_origins`, avec reprise des reçus existants et préservation du nom source en cas de suppression. Elle n’altère aucune page, copie, inscription ou note.

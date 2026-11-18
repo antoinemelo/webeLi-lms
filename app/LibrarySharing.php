@@ -66,6 +66,49 @@ function library_share_require_mode(array $share,string $mode): void
     if(!in_array($mode,$share['modes'],true))throw new InvalidArgumentException('Ce mode de partage n’est plus autorisé.');
 }
 
+/** Administrative modes and their source files are reserved to signed-in teachers. */
+function library_share_visible_modes(array $share,?array $user): array
+{
+    if($user&&$user['role']==='teacher'&&($user['account_status']??'')==='active')return $share['modes'];
+    return array_values(array_intersect($share['modes'],['external']));
+}
+
+/** Metadata for pages already authorized by the library or pathway query. */
+function library_page_sharing(PDO $pdo,array $pageIds,int $teacherId): array
+{
+    $pageIds=array_values(array_unique(array_map('intval',$pageIds)));if(!$pageIds)return [];
+    $result=[];
+    foreach(array_chunk($pageIds,400) as $ids){
+        $marks=implode(',',array_fill(0,count($ids),'?'));
+        $query=$pdo->prepare("SELECT p.id,p.owner_id,u.name AS owner_name,p.status,u.account_status,
+            COALESCE(l.enabled,0) AS enabled,COALESCE(l.allow_shared,0) AS allow_shared,
+            COALESCE(l.allow_copy,0) AS allow_copy,COALESCE(l.allow_external,0) AS allow_external,
+            o.page_id AS copied_page_id,COALESCE(source.name,o.source_owner_name,'') AS copy_source_name,
+            (EXISTS(SELECT 1 FROM page_collaborators pc JOIN users colleague ON colleague.id=pc.teacher_id
+                WHERE pc.page_id=p.id AND pc.teacher_id<>p.owner_id AND colleague.role='teacher' AND colleague.account_status='active')
+             OR EXISTS(SELECT 1 FROM pathway_items pi JOIN courses c ON c.id=pi.course_id JOIN users colleague ON colleague.id=c.teacher_id
+                WHERE pi.page_id=p.id AND c.teacher_id<>p.owner_id AND colleague.role='teacher' AND colleague.account_status='active')
+             OR EXISTS(SELECT 1 FROM pathway_items pi JOIN course_teachers ct ON ct.course_id=pi.course_id JOIN users colleague ON colleague.id=ct.teacher_id
+                WHERE pi.page_id=p.id AND ct.teacher_id<>p.owner_id AND colleague.role='teacher' AND colleague.account_status='active')) AS used_by_others
+            FROM pages p JOIN users u ON u.id=p.owner_id LEFT JOIN page_share_links l ON l.page_id=p.id
+            LEFT JOIN page_copy_origins o ON o.page_id=p.id LEFT JOIN users source ON source.id=o.source_owner_id
+            WHERE p.id IN ($marks)");$query->execute($ids);
+        foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
+            $own=(int)$row['owner_id']===$teacherId;
+            $active=(bool)$row['enabled']&&$row['status']==='ready'&&$row['account_status']==='active';
+            $used=$own&&(bool)$row['used_by_others'];$copied=$row['copied_page_id']!==null;
+            $result[(int)$row['id']]=[
+                'owner_id'=>(int)$row['owner_id'],'owner_name'=>$row['owner_name'],'own'=>$own,
+                'incoming'=>!$own,'shared_used'=>$used,'copied'=>$copied,'copy_source_name'=>$row['copy_source_name'],
+                'copy_allowed'=>$active&&(bool)$row['allow_copy'],'external_allowed'=>$active&&(bool)$row['allow_external'],
+                'card_class'=>!$own?'page-card-shared-in':($used?'page-card-shared-out':''),
+                'filters'=>array_keys(array_filter(['shared'=>$used,'copy'=>$copied,'external'=>$active&&(bool)$row['allow_external']]))
+            ];
+        }
+    }
+    return $result;
+}
+
 /** A receipt makes refresh/double submit idempotent. No enrollment or progress is copied. */
 function library_share_accept(PDO $pdo,string $token,int $teacherId,int $courseId=0,string $mode=''): int
 {
@@ -91,6 +134,8 @@ function library_share_accept(PDO $pdo,string $token,int $teacherId,int $courseI
                 $document=export_page_document($pdo,$pageId,(int)$share['owner_id']);
                 $pageId=import_page_document($pdo,$document,$teacherId,'copy');
             }
+            $pdo->prepare('INSERT OR IGNORE INTO page_copy_origins(page_id,source_page_id,source_owner_id,source_owner_name) VALUES(?,?,?,?)')
+                ->execute([$pageId,$share['page_id'],$share['owner_id'],$share['owner_name']]);
         }
         $pdo->prepare('INSERT INTO page_share_receipts(share_id,teacher_id,page_id) VALUES(?,?,?) ON CONFLICT(share_id,teacher_id) DO UPDATE SET page_id=excluded.page_id')->execute([$share['share_id'],$teacherId,$pageId]);
         if($courseId){
