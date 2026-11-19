@@ -12,7 +12,7 @@ Le lien **S’inscrire** ouvre une page distincte pour les élèves et les ensei
 
 Les identifiants sont vérifiés sans distinction de casse. Si le code proposé existe déjà, liike ajoute automatiquement un chiffre supérieur à zéro : `LIROS`, `LIROS1`, `LIROS2`, etc.
 
-Un courriel contient ensuite un lien d’activation valable **15 minutes**. Avant le clic, le compte ne peut pas se connecter. Une inscription non validée est supprimée automatiquement à expiration. Le formulaire public applique des plafonds par adresse réseau, par heure, par jour et sur le nombre de comptes publics simultanément en attente ; il impose aussi un bref délai humain et utilise un champ-piège invisible aux visiteurs. Les créations et imports effectués depuis l’espace d’un enseignant authentifié ne sont pas soumis à ces plafonds anti-robot.
+Un courriel contient ensuite un lien d’activation valable **15 minutes**. Avant le clic, le compte ne peut pas se connecter. Une inscription non validée est supprimée automatiquement à expiration. Le formulaire public applique des plafonds par adresse réseau, par heure, par jour et sur le nombre de comptes publics simultanément en attente ; il impose aussi un bref délai humain et utilise un champ-piège invisible aux visiteurs. Une classe peut effectuer 30 demandes depuis le même réseau en 15 minutes. Les plafonds sont de 50 demandes acceptées par heure pour la plateforme et de 50 comptes publics simultanément en attente de validation. Les administrateurs actifs reçoivent un courriel lorsqu’un plafond est atteint, sans répétition à chaque tentative bloquée. Les créations et imports effectués depuis l’espace d’un enseignant authentifié ne sont pas soumis à ces plafonds anti-robot.
 
 ### Enseignant
 
@@ -124,13 +124,13 @@ Pour créer un accès, l’enseignant renseigne :
 
 Le code personnel est prévisualisé pendant la saisie. Après création, il apparaît dans l’annuaire et un email de bienvenue est préparé dans la boîte de notifications.
 
-Le menu à trois points de **Élèves & inscriptions** ouvre **Nouvel accès**, **Inscription groupée**, **Invitation au parcours** et l’import/export. La recherche accepte le nom, le prénom et le courriel ; les filtres limitent l’annuaire par groupe ou parcours. Une inscription déjà existante n’est pas dupliquée.
+Le menu à trois points de **Élèves & inscriptions** ouvre **Nouvel accès**, **Inscription groupée**, **Invitation au parcours** et l’import/export. La recherche accepte le nom, le prénom et le courriel ; les filtres limitent l’annuaire par groupe ou parcours. La recherche et les filtres, seuls ou combinés, sont retrouvés au retour dans cette page. Ils sont mémorisés dans le navigateur pour le compte connecté, y compris après une déconnexion ; les comptes conservent des choix distincts. Une inscription déjà existante n’est pas dupliquée.
 
-Une adresse électronique secondaire privée peut être ajoutée à la fiche d’un élève. Seuls les enseignants autorisés et le superadmin peuvent la voir ou la modifier. Lorsqu’elle est renseignée, sa mise à jour est intégrée à la partie **Gérer** de la fiche.
+Une adresse électronique secondaire privée peut être ajoutée à la fiche d’un élève. Seuls les enseignants autorisés et le superadmin peuvent la voir ou la modifier. Lorsqu’elle est renseignée, sa mise à jour est intégrée à la partie **Admin** de la fiche.
 
 ### Archiver ou supprimer
 
-Dans l’annuaire, **Gérer** ouvre les commandes d’une participation et du compte :
+Dans l’annuaire, **Admin** ouvre les commandes d’une participation et du compte :
 
 - **Archiver** une participation la masque à l’élève mais conserve progression, validations et rewards ;
 - **Retirer définitivement** supprime la participation et tout son historique dans ce cours (progression, validations, QCM, visites, notes privées et accès ciblés), sans toucher au compte ni à ses autres cours ;
@@ -192,7 +192,9 @@ Depuis la fiche de suivi (`?view=student-detail`), le bouton immédiatement à d
 
 ### Suivi administratif
 
-Dans **Élèves**, le statut actif/inactif apparaît à côté des initiales et **Gérer**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. Le suivi pédagogique détaillé reste accessible depuis le **Tableau de bord**, en cliquant sur le logo liike puis en ouvrant **Progression des élèves**.
+Dans **Élèves**, le statut actif/inactif apparaît à côté des initiales. **Admin**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. **Progression** ouvre le suivi pédagogique de la participation ; si plusieurs parcours actifs sont disponibles, choisissez celui à consulter. Le bouton est désactivé lorsqu’aucune participation ne permet ce suivi. Le suivi reste également accessible depuis le **Tableau de bord**.
+
+Dans **Admin → Informations**, l’enseignant autorisé peut modifier le prénom, le nom, le courriel et le groupe classe. Le code de connexion reste stable. Le téléphone est consultable, mais seul l’élève le modifie depuis son profil. Une modification concurrente est signalée sans écrasement. Si le courriel d’un compte encore en attente est corrigé, un nouveau lien de validation est envoyé à cette adresse.
 
 **Ajouter un suivi** enregistre une Réunion (y compris une discussion), une Correspondance ou un Paiement pour un ou plusieurs élèves. Ces actions sont également accessibles depuis le menu Actions du tableau de bord. Le compte rendu commun comporte une date et une heure, un titre de 160 caractères maximum, un contenu Markdown de 5 000 caractères maximum et, facultativement, un parcours. Il peut reprendre un modèle. Son enregistrement n’envoie pas de courriel ; Paiement est une catégorie de compte rendu, sans transaction financière.
 
@@ -380,7 +382,7 @@ Le menu à trois points de **Gestion du parcours** propose une seule entrée **V
 
 Le bouton à trois points situé à droite du titre **Élèves & inscriptions** regroupe le nouvel accès, l’inscription groupée et l’import/export des élèves dans des fenêtres dédiées. L’import/export contient les profils et leurs inscriptions aux parcours de l’enseignant. Aucun mot de passe, jeton ou secret de session n’est exporté.
 
-Le mode **Modifier/créer** conserve les autres inscriptions existantes. Le mode **Écraser** remplace, pour chaque élève importé, ses inscriptions aux parcours de l’enseignant. Un parcours référencé mais absent bloque entièrement l’import. Un fichier peut contenir au maximum **500 élèves** et peser jusqu’à **25 Mo**.
+Un import conserve le numéro de téléphone des élèves déjà présents : sa modification reste réservée à l’élève. Le mode **Modifier/créer** conserve les autres inscriptions existantes. Le mode **Écraser** remplace, pour chaque élève importé, ses inscriptions aux parcours de l’enseignant. Un parcours référencé mais absent bloque entièrement l’import. Un fichier peut contenir au maximum **500 élèves** et peser jusqu’à **25 Mo**.
 
 L’option **Activation des nouveaux comptes** propose deux comportements :
 
@@ -426,12 +428,16 @@ Dans **Acquis → Évaluations**, cliquer sur le titre d’une évaluation ramè
 
 La bibliothèque affiche par défaut **vos contenus**, copies indépendantes comprises. Dans **Origine**, votre nom est le premier enseignant proposé ; vous pouvez cocher plusieurs enseignants ou choisir **Voir tous les contenus**. Seuls les propriétaires de contenus auxquels vous avez déjà accès sont proposés. Le nom désigne le propriétaire actuel : une copie indépendante vous appartient.
 
-Le filtre **Partage** accepte plusieurs choix : **Mes contenus partagés** (sources communes déjà utilisées par des collègues), **Copies indépendantes effectuées** et **Utilisations externes autorisées**. Plusieurs choix d’un même filtre s’additionnent ; les filtres Origine, Partage, recherche, statut, tag et objectif se combinent. Les choix multiples restent disponibles sur téléphone.
+Le filtre **Partage** accepte plusieurs choix : **Mes contenus partagés** (sources communes déjà utilisées par des collègues), **Copies indépendantes effectuées** et **Utilisations externes autorisées**. Plusieurs choix d’un même filtre s’additionnent ; les filtres Origine, Partage, recherche, statut, tag et objectif se combinent. Les choix multiples restent disponibles sur téléphone. Tous les filtres de bibliothèque (recherche, statut, tag, objectif, origine et partage) sont mémorisés par compte dans ce navigateur, puis rétablis au retour. Sans choix mémorisé, seuls vos contenus sont affichés. Un filtre dont l’option a disparu est réinitialisé.
+
+Sur une carte, cliquez sur le titre ou sur la description pour les modifier sur place, puis choisissez **Enregistrer** ou **Annuler**. Une description vide propose **Ajouter une description**. Seul le lien **Modifier →** ouvre l’éditeur complet. Les objectifs de plus de 40 caractères sont raccourcis avec `...` ; cliquez sur un objectif pour le déplier et le lire en entier, avec son explication éventuelle. Cliquez à nouveau pour le replier.
 
 - **Blanc** : votre contenu, y compris une copie indépendante. Autoriser un partage ne suffit pas à colorer la fiche.
 - **Bleu pâle** : votre source commune est déjà récupérée par un collègue dans sa bibliothèque, ou utilisée dans un parcours accessible à un autre enseignant actif. Une copie indépendante faite par un collègue ne colore pas la source en bleu.
 - **Orange pâle** : le propriétaire est un autre enseignant. Son prénom et son nom apparaissent dans une étiquette orange arrondie entre le statut et la durée.
 - **Pastille crème** sur vos fiches : la copie indépendante est autorisée. **Pastille gris clair** : l’utilisation externe est autorisée. Ces autorisations doivent être actives et la page prête.
+
+Les pastilles de vos contenus se trouvent immédiatement à droite de **Prêt** ou **Brouillon**. Les quatre légendes sont regroupées en bas de la bibliothèque : **Mes contenus partagés**, **Contenus externes partagés avec moi**, **Copie indépendante autorisée** et **Utilisation externe autorisée**.
 
 Les copies issues d’un lien de partage gardent une indication d’origine et restent indépendantes, même si la source disparaît. Les anciennes copies identifiables par leur reçu de récupération sont reprises automatiquement. Les fichiers JSON importés sans information d’origine ne permettent pas de retrouver leur auteur ; aucune origine n’est inventée.
 
@@ -451,17 +457,17 @@ Une récupération directement dans un parcours crée une étape de consultation
 
 Le propriétaire peut changer les modes ou désactiver le partage à tout moment. **L’URL reste identique**, y compris après réactivation. Les réglages s’appliquent aux nouvelles utilisations ; les pages déjà récupérées et les copies restent chez les collègues. Désactiver le partage ou le mode externe ferme également les séances anonymes ouvertes. Le retour en brouillon suspend l’accès externe. Le partage ne donne aucun accès au parcours source ni à ses élèves.
 
-Une personne non connectée voit uniquement **Utilisation anonyme**, le mode **Utilisation externe** s’il est autorisé, et le bouton **Compris**. Aucun mode de récupération ni téléchargement JSON n’est accessible sans compte enseignant actif, même par une URL directe. Si l’utilisation externe est désactivée, la page indique qu’elle n’est pas disponible anonymement. Le lien **Enseignant : se connecter** permet ensuite au collègue de retrouver les modes autorisés. Les comptes élèves restent limités à l’utilisation externe.
+Une personne non connectée voit uniquement **Utilisation anonyme**, le mode **Utilisation externe** s’il est autorisé, et le bouton **Compris**. Aucun mode de récupération ni téléchargement JSON n’est accessible sans compte enseignant actif, même par une URL directe. Si l’utilisation externe est désactivée, la page indique qu’elle n’est pas disponible anonymement. Le lien facultatif **Se connecter pour récupérer ce contenu**, présent si un mode de récupération est autorisé, permet au collègue de retrouver ces modes. Les comptes élèves restent limités à l’utilisation externe.
 
 Le lien de contenu est destiné aux collègues : après connexion enseignant, si les modes partagé ou copie sont autorisés, il permet de modifier la page ou d’en obtenir les sources, avec les réponses des QCM. Pour une séance collective, transmettre aux élèves uniquement **le lien ou le QR code de la séance**.
 
-#### Animer un QCM en classe sans inscription des élèves
+#### Animer un QCM en classe sans compte
 
-1. Le collègue ouvre le lien, choisit **Utilisation externe**, puis se connecte avec son compte enseignant.
-2. Pour chaque bloc `:::qcm_classe`, **Animer une séance anonyme** crée une séance distincte. Les séances des différents collègues sont indépendantes.
+1. Le collègue ouvre le lien, puis choisit **Utilisation externe** ou clique sur **Compris** dans la présentation anonyme. Aucune connexion n’est nécessaire pour consulter le contenu ou animer la séance.
+2. Pour chaque bloc `:::qcm_classe`, **Animer une séance anonyme** crée une séance distincte. Les séances des différents collègues sont indépendantes. Le navigateur qui crée la séance en conserve les commandes ; le lien et le QR code servent uniquement à rejoindre la participation.
 3. Il affiche le QR code, éventuellement dans **Ouvrir la projection**, ou transmet le lien de la séance. Les élèves cliquent sur **Rejoindre anonymement**, sans nom, courriel ni compte.
 4. L’enseignant ouvre les questions, ferme les votes et révèle les corrections. Les résultats sont des totaux anonymes. Un vote peut être modifié tant que la question reste ouverte ; aucune note n’est ajoutée à un parcours.
 
-Une séance est disponible 24 heures. Les identifiants aléatoires et réponses expirés sont supprimés au prochain accès à l’application. Le QR code est généré dans le navigateur, sans service externe. La participation est liée à la session du navigateur : changer de navigateur peut créer une nouvelle participation, et les résultats ne permettent pas d’identifier les élèves. Limites : 500 participations par séance et 20 séances simultanées par enseignant.
+Une séance est disponible 24 heures. Les identifiants aléatoires et réponses expirés sont supprimés au prochain accès à l’application. Le QR code est généré dans le navigateur, sans service externe. La participation est liée à la session du navigateur : changer de navigateur peut créer une nouvelle participation, et les résultats ne permettent pas d’identifier les élèves. Sans compte, le pilotage est lié à la session du navigateur créateur : il reste disponible au rechargement et dans la projection ouverte depuis ce navigateur. Une autre personne qui ouvre le lien ne reçoit pas ces commandes. Si cette session est effacée ou expire, il faut créer une nouvelle séance. Limites : 500 participations par séance et 20 séances simultanées par compte enseignant ou session d’animation anonyme.
 
 Les QCM simples et stricts restent des entraînements individuels dans le lecteur externe. Les blocs de travail sont consultables, mais la remise et la notation demandent une inscription à un parcours. Les intégrations dépendent des autorisations du site intégré. Les fichiers locaux d’images et documents de moins de 10 Mo sont embarqués dans le JSON ; les autres références doivent rester accessibles depuis l’installation de destination.

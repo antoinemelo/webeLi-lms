@@ -6,7 +6,9 @@ require_once __DIR__.'/DatabaseMigrations.php';
 
 final class Database
 {
-    public const SCHEMA_VERSION = 34;
+    public const SCHEMA_VERSION = 37;
+    // Let a class finish its short writes on shared hosting before rejecting a request.
+    private const BUSY_TIMEOUT_MS = 30000;
 
     public static function connect(string $root): PDO
     {
@@ -21,7 +23,7 @@ final class Database
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
         $pdo->exec('PRAGMA foreign_keys = ON');
-        $pdo->exec('PRAGMA busy_timeout = 5000');
+        $pdo->exec('PRAGMA busy_timeout = '.self::BUSY_TIMEOUT_MS);
         if ($fresh) {
             $pdo->exec((string) file_get_contents($root . '/database/schema.sql'));
             $pdo->exec((string) file_get_contents($root . '/database/seed.sql'));
@@ -35,7 +37,7 @@ final class Database
         $path=(string)(realpath($path)?:$path);
         if(!is_file($path))throw new RuntimeException('Base SQLite introuvable : '.$path);
         $pdo=new PDO('sqlite:'.$path,null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
-        $pdo->exec('PRAGMA foreign_keys = ON');$pdo->exec('PRAGMA busy_timeout = 5000');
+        $pdo->exec('PRAGMA foreign_keys = ON');$pdo->exec('PRAGMA busy_timeout = '.self::BUSY_TIMEOUT_MS);
         return self::runMigrations($pdo,$path,$backup);
     }
 
@@ -123,7 +125,8 @@ final class Database
             $statement=$pdo->prepare('INSERT INTO schema_migrations(version,name,checksum) VALUES(?,?,?)');
             foreach($migrations as $version=>$migration)$statement->execute([$version,$migration['name'],$migration['checksum']??hash('sha256',$version.':'.$migration['name'])]);
         }
-        $pdo->exec('PRAGMA user_version = '.self::SCHEMA_VERSION);
+        // Opening an up-to-date page must not acquire a database write lock.
+        if($userVersion!==self::SCHEMA_VERSION)$pdo->exec('PRAGMA user_version = '.self::SCHEMA_VERSION);
     }
 
     private static function migrateUsers(PDO $pdo): void

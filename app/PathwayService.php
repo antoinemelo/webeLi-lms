@@ -4,6 +4,38 @@ declare(strict_types=1);
 require_once __DIR__.'/PathwayEvent.php';
 require_once __DIR__.'/PathwayGroups.php';
 
+/** Update one library label without resubmitting the page's blocks or settings. */
+function library_update_page_field(PDO $pdo,int $pageId,int $teacherId,string $field,string $value,int $revision): array
+{
+    $value=trim($value);
+    if(!in_array($field,['title','summary'],true)||($field==='title'&&$value===''))return ['status'=>'invalid'];
+    $pdo->exec('BEGIN IMMEDIATE');
+    try{
+        $teacher=$pdo->prepare("SELECT 1 FROM users WHERE id=? AND role='teacher' AND account_status='active'");
+        $teacher->execute([$teacherId]);$allowed=(bool)$teacher->fetchColumn();$teacher->closeCursor();
+        if(!$allowed||!teacher_can_access_page($pdo,$pageId,$teacherId))$result=['status'=>'forbidden'];
+        else{
+            $query=$pdo->prepare('SELECT title,summary,revision FROM pages WHERE id=?');$query->execute([$pageId]);
+            $page=$query->fetch(PDO::FETCH_ASSOC);$query->closeCursor();
+            if((int)$page['revision']!==$revision)$result=['status'=>'conflict'];
+            elseif($page[$field]===$value)$result=['status'=>'saved','value'=>$value,'revision'=>$revision];
+            else{
+                $alreadyHeld=edit_lock_allows($pdo,'page_metadata',$pageId,$teacherId);
+                if(!edit_lock_claim_for_save($pdo,'page_metadata',$pageId,$teacherId))$result=['status'=>'conflict'];
+                else{
+                    // The column comes exclusively from the allowlist above.
+                    $update=$pdo->prepare("UPDATE pages SET $field=?,revision=revision+1,updated_by=?,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
+                    $update->execute([$value,$teacherId,$pageId,$revision]);
+                    $result=['status'=>'saved','value'=>$value,'revision'=>$revision+1];
+                    if(!$alreadyHeld)release_edit_locks($pdo,$teacherId,'page_metadata',$pageId);
+                }
+            }
+        }
+        $pdo->exec('COMMIT');
+        return $result;
+    }catch(Throwable $exception){$pdo->exec('ROLLBACK');throw $exception;}
+}
+
 function page_pathway_return_course(PDO $pdo,int $pageId,int $teacherId,int $courseId): ?int
 {
     if($pageId<1||$courseId<1||!teacher_can_access_course($pdo,$courseId,$teacherId))return null;

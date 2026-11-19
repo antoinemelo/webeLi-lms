@@ -5,6 +5,7 @@ declare(strict_types=1);
 return static function(PDO $pdo): void {
     $required=[
         'messaging_instance'=>['id','uuid'],
+        'registration_limit_alerts'=>['scope','alerted_at'],
         'pwa_logins'=>['user_id','token_hash','expires_at'],
         'schema_migrations'=>['version','name','checksum','applied_at'],
         'users'=>['messaging_uuid','id','first_name','last_name','email','secondary_email','role','login_code','account_status','is_superadmin','language','managed_by','student_first_login_at'],
@@ -15,7 +16,7 @@ return static function(PDO $pdo): void {
         'pages'=>['id','reference','title','status','owner_id','revision'],
         'page_share_links'=>['page_id','token','enabled','allow_shared','allow_copy','allow_external','revision'],
         'page_copy_origins'=>['page_id','source_page_id','source_owner_id','source_owner_name'],
-        'qcm_guest_sessions'=>['id','page_id','page_block_id','room_token','source_share_token','created_by','phase','revision','expires_at'],
+        'qcm_guest_sessions'=>['id','page_id','page_block_id','room_token','source_share_token','created_by','host_key_hash','phase','revision','expires_at'],
         'qcm_guest_participants'=>['session_id','participant_hash'],
         'qcm_guest_votes'=>['session_id','participant_hash','question_index','answers'],
         'page_shares'=>['id','page_id','mode','token','created_by','revoked_at'],

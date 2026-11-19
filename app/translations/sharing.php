@@ -499,6 +499,150 @@ return json_decode(<<<'JSON'
     "de": "Unabhängige Kopie von :name",
     "it": "Copia indipendente da :name",
     "es": "Copia independiente de :name"
+  },
+  "Vous pouvez animer cette séance sans compte. Gardez ce navigateur pour en conserver les commandes.": {
+    "en": "You can host this session without an account. Keep using this browser to retain the controls.",
+    "de": "Sie können diese Sitzung ohne Konto leiten. Verwenden Sie weiterhin diesen Browser, um die Steuerung zu behalten.",
+    "it": "Puoi condurre questa sessione senza un account. Continua a usare questo browser per mantenerne i comandi.",
+    "es": "Puedes dirigir esta sesión sin una cuenta. Sigue usando este navegador para conservar los controles."
+  },
+  "Alerte : limite d’inscription atteinte": {
+    "en": "Alert: registration limit reached",
+    "de": "Warnung: Registrierungslimit erreicht",
+    "it": "Avviso: limite di iscrizione raggiunto",
+    "es": "Aviso: límite de inscripción alcanzado"
+  },
+  ":count demandes depuis un même réseau en 15 minutes": {
+    "en": ":count requests from the same network in 15 minutes",
+    "de": ":count Anfragen aus demselben Netzwerk in 15 Minuten",
+    "it": ":count richieste dalla stessa rete in 15 minuti",
+    "es": ":count solicitudes desde la misma red en 15 minutos"
+  },
+  ":count demandes acceptées en une heure": {
+    "en": ":count accepted requests in one hour",
+    "de": ":count akzeptierte Anfragen in einer Stunde",
+    "it": ":count richieste accettate in un’ora",
+    "es": ":count solicitudes aceptadas en una hora"
+  },
+  ":count demandes acceptées en une journée": {
+    "en": ":count accepted requests in one day",
+    "de": ":count akzeptierte Anfragen an einem Tag",
+    "it": ":count richieste accettate in un giorno",
+    "es": ":count solicitudes aceptadas en un día"
+  },
+  ":count comptes publics en attente de validation": {
+    "en": ":count public accounts awaiting verification",
+    "de": ":count öffentliche Konten warten auf Bestätigung",
+    "it": ":count account pubblici in attesa di verifica",
+    "es": ":count cuentas públicas pendientes de verificación"
+  },
+  "Un plafond d’inscription a été atteint sur :site.\n\nLimite : :limit.\n\nLes nouvelles demandes concernées peuvent être temporairement refusées. Cette alerte n’est envoyée qu’une fois par plafond et par période.\n\nAdministration : :url": {
+    "en": "A registration limit has been reached on :site.\n\nLimit: :limit.\n\nAffected new requests may be temporarily refused. This alert is sent only once per limit and period.\n\nAdministration: :url",
+    "de": "Ein Registrierungslimit wurde auf :site erreicht.\n\nLimit: :limit.\n\nBetroffene neue Anfragen können vorübergehend abgelehnt werden. Diese Warnung wird nur einmal pro Limit und Zeitraum gesendet.\n\nAdministration: :url",
+    "it": "È stato raggiunto un limite di iscrizione su :site.\n\nLimite: :limit.\n\nLe nuove richieste interessate possono essere temporaneamente rifiutate. Questo avviso viene inviato una sola volta per limite e periodo.\n\nAmministrazione: :url",
+    "es": "Se ha alcanzado un límite de inscripción en :site.\n\nLímite: :limit.\n\nLas nuevas solicitudes afectadas pueden rechazarse temporalmente. Este aviso se envía una sola vez por límite y período.\n\nAdministración: :url"
+  },
+  "Contenus externes partagés avec moi": {
+    "en": "External content shared with me",
+    "de": "Mit mir geteilte externe Inhalte",
+    "it": "Contenuti esterni condivisi con me",
+    "es": "Contenidos externos compartidos conmigo"
+  },
+  "Modifier le titre": {
+    "en": "Edit title",
+    "de": "Titel bearbeiten",
+    "it": "Modifica il titolo",
+    "es": "Editar el título"
+  },
+  "Modifier la description": {
+    "en": "Edit description",
+    "de": "Beschreibung bearbeiten",
+    "it": "Modifica la descrizione",
+    "es": "Editar la descripción"
+  },
+  "Ajouter une description": {
+    "en": "Add a description",
+    "de": "Beschreibung hinzufügen",
+    "it": "Aggiungi una descrizione",
+    "es": "Añadir una descripción"
+  },
+  "Enregistrement impossible. Réessayez.": {
+    "en": "Unable to save. Please try again.",
+    "de": "Speichern nicht möglich. Bitte erneut versuchen.",
+    "it": "Impossibile salvare. Riprova.",
+    "es": "No se ha podido guardar. Inténtalo de nuevo."
+  },
+  "Ce contenu a changé ou est en cours de modification. Rechargez la bibliothèque avant de réessayer.": {
+    "en": "This content has changed or is being edited. Reload the library before trying again.",
+    "de": "Dieser Inhalt wurde geändert oder wird gerade bearbeitet. Laden Sie die Bibliothek neu, bevor Sie es erneut versuchen.",
+    "it": "Questo contenuto è cambiato o è in corso di modifica. Ricarica la biblioteca prima di riprovare.",
+    "es": "Este contenido ha cambiado o se está editando. Recarga la biblioteca antes de volver a intentarlo."
+  },
+  "Recharger": {
+    "en": "Reload",
+    "de": "Neu laden",
+    "it": "Ricarica",
+    "es": "Recargar"
+  },
+  "Enregistré": {
+    "en": "Saved",
+    "de": "Gespeichert",
+    "it": "Salvato",
+    "es": "Guardado"
+  },
+  "Admin": {
+    "en": "Admin",
+    "de": "Admin",
+    "it": "Admin",
+    "es": "Admin"
+  },
+  "Progression": {
+    "en": "Progress",
+    "de": "Fortschritt",
+    "it": "Progressi",
+    "es": "Progreso"
+  },
+  "Aucune progression disponible.": {
+    "en": "No progress available.",
+    "de": "Kein Fortschritt verfügbar.",
+    "it": "Nessun progresso disponibile.",
+    "es": "No hay progreso disponible."
+  },
+  "Les informations de l’élève sont incomplètes.": {
+    "en": "The student information is incomplete.",
+    "de": "Die Angaben zur Schülerin oder zum Schüler sind unvollständig.",
+    "it": "Le informazioni dello studente sono incomplete.",
+    "es": "La información del alumno está incompleta."
+  },
+  "Le prénom et le nom doivent contenir entre 2 et 80 caractères.": {
+    "en": "First and last names must contain between 2 and 80 characters.",
+    "de": "Vor- und Nachname müssen zwischen 2 und 80 Zeichen enthalten.",
+    "it": "Nome e cognome devono contenere da 2 a 80 caratteri.",
+    "es": "El nombre y los apellidos deben tener entre 2 y 80 caracteres."
+  },
+  "Indiquez un groupe classe de 1 à 100 caractères.": {
+    "en": "Enter a class group of 1 to 100 characters.",
+    "de": "Geben Sie eine Klassengruppe mit 1 bis 100 Zeichen ein.",
+    "it": "Indica un gruppo classe da 1 a 100 caratteri.",
+    "es": "Indica un grupo de clase de 1 a 100 caracteres."
+  },
+  "Les informations de cet élève ont changé. Rouvrez sa fiche avant de réessayer.": {
+    "en": "This student’s information has changed. Reopen their record before trying again.",
+    "de": "Die Angaben zu dieser Person haben sich geändert. Öffnen Sie ihr Profil erneut, bevor Sie es noch einmal versuchen.",
+    "it": "Le informazioni di questo studente sono cambiate. Riapri la sua scheda prima di riprovare.",
+    "es": "La información de este alumno ha cambiado. Vuelve a abrir su ficha antes de intentarlo de nuevo."
+  },
+  "Les informations de l’élève ont été enregistrées.": {
+    "en": "The student information has been saved.",
+    "de": "Die Angaben wurden gespeichert.",
+    "it": "Le informazioni dello studente sono state salvate.",
+    "es": "La información del alumno se ha guardado."
+  },
+  "Seul l’élève peut modifier son numéro de téléphone.": {
+    "en": "Only the student can change their phone number.",
+    "de": "Nur die Schülerin oder der Schüler kann die eigene Telefonnummer ändern.",
+    "it": "Solo lo studente può modificare il proprio numero di telefono.",
+    "es": "Solo el alumno puede modificar su número de teléfono."
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

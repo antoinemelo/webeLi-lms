@@ -75,6 +75,8 @@ function outbox_send_message(PDO $pdo, int $messageId, ?callable $delivery=null)
     $query=$pdo->prepare("SELECT * FROM notification_outbox WHERE id=? AND status='pending'");
     $query->execute([$messageId]);
     $message=$query->fetch(PDO::FETCH_ASSOC);
+    // Release the read lock before mail transport and competing workers update the queue.
+    $query->closeCursor();
     if(!$message)return null;
     $delivery??=static fn(string $recipient,string $subject,string $body,string $cc='',string $bcc=''):bool=>deliver_app_mail($recipient,$subject,$body,$cc,$bcc);
     try{

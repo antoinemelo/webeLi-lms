@@ -491,7 +491,7 @@ CREATE INDEX idx_edit_locks_expiry ON edit_locks(expires_at);
 CREATE TRIGGER limit_pending_registrations
 BEFORE INSERT ON users
 WHEN NEW.account_status='pending' AND NEW.managed_by IS NULL
-  AND (SELECT COUNT(*) FROM users WHERE account_status='pending' AND managed_by IS NULL)>=10
+  AND (SELECT COUNT(*) FROM users WHERE account_status='pending' AND managed_by IS NULL)>=50
 BEGIN
     SELECT RAISE(ABORT, 'pending registration limit reached');
 END;
@@ -553,7 +553,7 @@ CREATE TABLE IF NOT EXISTS qcm_class_votes (
     PRIMARY KEY(session_id,student_id,question_index)
 );
 
-PRAGMA user_version = 34;
+PRAGMA user_version = 37;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -623,7 +623,8 @@ CREATE TABLE IF NOT EXISTS page_share_links (
         page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
         page_block_id INTEGER NOT NULL REFERENCES page_blocks(id) ON DELETE CASCADE,
         qcm_key TEXT NOT NULL,
-        created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        host_key_hash TEXT,
         room_token TEXT NOT NULL UNIQUE,
         source_share_token TEXT NOT NULL DEFAULT '',
         questions TEXT NOT NULL,
@@ -632,9 +633,11 @@ CREATE TABLE IF NOT EXISTS page_share_links (
         revealed INTEGER NOT NULL DEFAULT 0 CHECK(revealed IN (0,1)),
         revision INTEGER NOT NULL DEFAULT 1,
         expires_at INTEGER NOT NULL,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CHECK ((created_by IS NOT NULL AND host_key_hash IS NULL) OR (created_by IS NULL AND host_key_hash IS NOT NULL AND length(host_key_hash)=64))
     );
     CREATE INDEX IF NOT EXISTS idx_qcm_guest_expiry ON qcm_guest_sessions(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_qcm_guest_host ON qcm_guest_sessions(host_key_hash) WHERE created_by IS NULL;
     CREATE TABLE IF NOT EXISTS qcm_guest_participants (
         session_id INTEGER NOT NULL REFERENCES qcm_guest_sessions(id) ON DELETE CASCADE,
         participant_hash TEXT NOT NULL,
@@ -655,4 +658,9 @@ CREATE TABLE IF NOT EXISTS page_copy_origins (
     source_owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     source_owner_name TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS registration_limit_alerts (
+    scope TEXT PRIMARY KEY,
+    alerted_at INTEGER NOT NULL
 );

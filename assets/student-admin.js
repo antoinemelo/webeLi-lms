@@ -83,8 +83,48 @@
     try { await request('delete_student_followup', payload({ followup_id: button.dataset.deleteFollowup, revision: button.dataset.revision })); await loadHistory(page); }
     catch (error) { button.disabled = false; alert(error.message); }
   });
-  root.addEventListener('submit', event => {
+  root.addEventListener('submit', async event => {
     const target = event.target;
+    if (target.matches('[data-student-identity]')) {
+      event.preventDefault();
+      if (target.dataset.saving || !target.reportValidity()) return;
+      const feedback = target.querySelector('[data-student-identity-feedback]'), data = new FormData(target);
+      const controls = [...target.querySelectorAll('input,button')];
+      target.dataset.saving = '1'; controls.forEach(control => { control.disabled = true; });
+      feedback.textContent = ''; feedback.classList.remove('text-danger');
+      try {
+        const result = await request('save_student_identity', data), updated = result.student;
+        if (target.isConnected) {
+          for (const key of ['first_name', 'last_name', 'email', 'class_group']) target.elements.namedItem(key).value = updated[key];
+          target.elements.namedItem('identity_revision').value = result.revision;
+          feedback.textContent = result.message;
+          content.querySelector('#student-admin-title').textContent = updated.name;
+        }
+        const card = document.getElementById(`student-${updated.id}`);
+        if (card?.matches('[data-student-card]')) {
+          card.dataset.search = `${updated.first_name} ${updated.last_name} ${updated.email}`.toLocaleLowerCase();
+          card.dataset.group = updated.class_group.toLocaleLowerCase();
+          card.querySelector('[data-student-display-name]').textContent = updated.name;
+          card.querySelector('[data-student-display-contact]').textContent = `${updated.email} · ${labels.group.replace(':group', updated.class_group)}`;
+          card.querySelector('.avatar').textContent = updated.initials;
+          const groups = document.querySelector('[data-student-group]');
+          if (groups && ![...groups.options].some(option => option.value === card.dataset.group)) {
+            const option = new Option(updated.class_group, card.dataset.group);
+            const next = [...groups.options].find(item => item.value && item.textContent.localeCompare(updated.class_group, undefined, { numeric: true, sensitivity: 'base' }) > 0);
+            groups.insertBefore(option, next || null);
+          }
+        }
+        const profile = document.querySelector('.student-profile');
+        if (profile?.querySelector(`[data-student-manage="${updated.id}"]`)) {
+          profile.querySelector('.student-profile-identity h1').textContent = updated.name;
+          profile.querySelector('.student-profile-identity p:last-child').textContent = updated.email;
+          profile.querySelector('.avatar').textContent = updated.initials;
+        }
+        document.dispatchEvent(new CustomEvent('student-identity-updated', { detail: updated }));
+      } catch (error) { feedback.textContent = error.message; feedback.classList.add('text-danger'); }
+      finally { delete target.dataset.saving; controls.forEach(control => { control.disabled = false; }); }
+      return;
+    }
     const filters = document.querySelector('[data-student-filters]');
     const values = { return_search: filters?.querySelector('[data-student-search]')?.value || '', return_group: filters?.querySelector('[data-student-group]')?.value || '', return_course: filters?.querySelector('[data-student-course]')?.value || '', return_admin_tab: tab };
     for (const [name, value] of Object.entries(values)) { let control = target.elements.namedItem(name); if (!control) { control = document.createElement('input'); control.type = 'hidden'; control.name = name; target.append(control); } control.value = value; }

@@ -34,7 +34,6 @@ function render_library_origin_filters(array $pages,array $sharing,array $teache
       <div class="dropdown library-multi-filter"><button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><span><?=e(t('Partage'))?></span><strong data-sharing-summary><?=e(t('Tous les modes'))?></strong></button>
         <div class="dropdown-menu library-filter-menu"><button type="button" class="dropdown-item" data-sharing-all><?=e(t('Tous les modes'))?></button><div class="dropdown-divider"></div><fieldset><legend class="visually-hidden"><?=e(t('Filtrer par partage'))?></legend>
         <?php foreach(['shared'=>'Mes contenus partagés','copy'=>'Copies indépendantes effectuées','external'=>'Utilisations externes autorisées'] as $mode=>$label): ?><label class="library-filter-choice"><input type="checkbox" data-page-sharing value="<?=$mode?>" data-label="<?=e(t($label))?>"> <span><?=e(t($label))?></span></label><?php endforeach; ?></fieldset></div></div>
-      <small class="library-origin-help"><?=e(t('Les copies indépendantes font partie de vos contenus.'))?></small>
     </div><?php
 }
 
@@ -67,7 +66,7 @@ function render_library_share_modal(array $page,int $courseId=0,string $returnVi
 
 function library_share_page_start(string $title): void
 {
-    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=156"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
+    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=158"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
 }
 
 function library_share_http(): never
@@ -93,11 +92,12 @@ function library_share_http(): never
     if(!$post&&$mode==='copy'&&($_GET['download']??'')==='1')send_json_download(export_page_document(db(),(int)$share['page_id'],(int)$share['owner_id'],APR_PUBLIC_ROOT),'liike-page-'.$share['page_id'].'.json');
     if($post&&($mode!=='external'||($_POST['action']??'')==='create_guest_class')){
         try{
-            if(!$user||$user['role']!=='teacher')throw new InvalidArgumentException('Un compte enseignant est nécessaire.');
             if($mode==='external'&&($_POST['action']??'')==='create_guest_class'){
-                $room=QcmGuest::create(db(),$token,(int)$user['id'],(int)($_POST['block']??0),(string)($_POST['key']??''));
+                if($user&&!$isTeacher)throw new InvalidArgumentException('Partage non autorisé.');
+                $room=QcmGuest::create(db(),$token,$isTeacher?(int)$user['id']:null,(int)($_POST['block']??0),(string)($_POST['key']??''),$isTeacher?'':qcm_guest_host_secret(true));
                 redirect('guest-class',['room'=>$room]);
             }
+            if(!$isTeacher)throw new InvalidArgumentException('Un compte enseignant est nécessaire.');
             if(($_POST['action']??'')!=='accept_library_share')throw new InvalidArgumentException('Partage non autorisé.');
             $courseId=filter_var($_POST['course_id']??0,FILTER_VALIDATE_INT);
             if($courseId===false||$courseId<0)throw new InvalidArgumentException('Parcours introuvable.');
@@ -112,11 +112,10 @@ function library_share_http(): never
     <?php if($error): ?><p class="alert alert-danger"><?=e(t($error))?></p><?php endif; ?>
     <?php if($mode===''): ?><h2><?=e(t($isTeacher?'Comment souhaitez-vous utiliser ce contenu ?':'Utilisation anonyme'))?></h2><div class="d-grid gap-3"><?php foreach($visibleModes as $choice): ?><article class="border rounded p-3"><h3><?=e(t(library_share_modes()[$choice]))?></h3><p><?=e(t(library_share_description($choice)))?></p><a class="button primary btn btn-dark" href="<?=e(route('shared-content',['share'=>$token,'mode'=>$choice]))?>"><?=e(t($isTeacher?'Choisir ce mode':'Compris'))?></a></article><?php endforeach; ?></div><?php
         if(!$visibleModes): echo '<p>'.e(t('Ce contenu n’est pas disponible en utilisation anonyme.')).'</p>'; endif;
-        if(!$user): echo '<p class="mt-3"><a href="'.e(route('login')).'">'.e(t('Enseignant : se connecter')).'</a></p>'; endif;
+        if(!$user&&array_intersect(['shared','copy'],$share['modes'])): echo '<p class="mt-3"><a href="'.e(route('login')).'">'.e(t('Se connecter pour récupérer ce contenu')).'</a></p>'; endif;
     else: if($isTeacher): ?><p><a href="<?=e(route('shared-content',['share'=>$token]))?>">← <?=e(t('Choisir un autre mode'))?></a></p><?php endif; ?><div class="alert alert-info"><?=e(t(library_share_description($mode)))?></div><?php
         if(!$user){$_SESSION['pending_library_share']=$token;$_SESSION['pending_library_mode']=$mode;}
         if($mode==='external'){
-            if(!$user||$user['role']!=='teacher')echo '<p><a class="button secondary btn btn-outline-secondary" href="'.e(route('login')).'">'.e(t('Enseignant : se connecter pour animer une séance')).'</a></p>';
             $blocks=all('SELECT * FROM page_blocks WHERE page_id=? ORDER BY position,id',[$share['page_id']]);
             foreach($blocks as $block){
                 echo '<section class="content-block type-'.e($block['type']).'">';
@@ -125,7 +124,7 @@ function library_share_http(): never
                         if($section['type']==='markdown'){echo Markdown::render($section['source']);continue;}
                         if(!empty($section['valid'])&&$section['mode']==='classe'){
                             echo '<section class="qcm-card p-3"><h2>'.e(t('QCM en classe')).'</h2>';
-                            if($user&&$user['role']==='teacher'){
+                            if(!$user||$isTeacher){
                                 $key=Qcm::key((int)$block['id'],(int)$section['index'],$section['source'],'classe');
                                 echo '<form method="post">'.csrf_field().'<input type="hidden" name="action" value="create_guest_class"><input type="hidden" name="block" value="'.(int)$block['id'].'"><input type="hidden" name="key" value="'.e($key).'"><button class="button primary btn btn-dark">'.e(t('Animer une séance anonyme')).'</button></form>';
                             }else echo '<p>'.e(t('Votre enseignant vous donnera le lien ou le QR code de la séance.')).'</p>';

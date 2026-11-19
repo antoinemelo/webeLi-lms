@@ -26,13 +26,11 @@ const studentProgress = document.querySelector('[data-student-progress]');
 if (studentProgress) {
   const toggle = studentProgress.querySelector('[data-student-progress-toggle]');
   const content = document.getElementById(toggle.getAttribute('aria-controls'));
-  const hint = studentProgress.querySelector('[data-student-progress-hint]');
   // Remember one choice per account and installation, across all courses.
   const storageKey = `liike:student-progress:${location.pathname}:${document.body.dataset.userId}`;
   const setOpen = (open) => {
     toggle.setAttribute('aria-expanded', String(open));
     content.hidden = !open;
-    hint.hidden = !open;
   };
   const restore = () => {
     try { setOpen(localStorage.getItem(storageKey) === 'open'); }
@@ -722,8 +720,32 @@ document.querySelectorAll('.reward-select').forEach((select) => select.addEventL
   if (option?.dataset.points) points.value = option.dataset.points;
 }));
 
+const filterMemory = (view) => {
+  const key = `liike:filters:${location.pathname}:${document.body.dataset.userId}:${view}`;
+  return {
+    read: () => { try { const value = JSON.parse(localStorage.getItem(key)); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; } catch (_) { return {}; } },
+    write: (value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* Filters still work without browser storage. */ } },
+  };
+};
+const restoreFilterValue = (control, value) => {
+  if (typeof value !== 'string') return;
+  control.value = control.tagName !== 'SELECT' || [...control.options].some(option => option.value === value) ? value : '';
+};
 const libraryFilters = document.querySelector('[data-library-filters]');
 if (libraryFilters) {
+  const memory = filterMemory('library');
+  const singles = { search: '[data-page-search]', status: '[data-page-status]', tag: '[data-page-tag]', objective: '[data-page-objective]' };
+  const restore = () => {
+    const saved = memory.read();
+    for (const [key, selector] of Object.entries(singles)) restoreFilterValue(libraryFilters.querySelector(selector), saved[key]);
+    for (const [key, selector] of [['owners', '[data-page-owner]'], ['sharing', '[data-page-sharing]']]) {
+      if (!Array.isArray(saved[key])) continue;
+      const controls = [...libraryFilters.querySelectorAll(selector)];
+      let values = saved[key].filter(value => typeof value === 'string' && controls.some(control => control.value === value));
+      if (key === 'owners' && saved[key].length && !values.length) values = [document.body.dataset.userId];
+      controls.forEach(control => { control.checked = values.includes(control.value); });
+    }
+  };
   const applyLibraryFilters = () => {
     const search = libraryFilters.querySelector('[data-page-search]').value.toLocaleLowerCase(locale).trim();
     const status = libraryFilters.querySelector('[data-page-status]').value;
@@ -731,6 +753,7 @@ if (libraryFilters) {
     const objective = libraryFilters.querySelector('[data-page-objective]').value;
     const owners = [...libraryFilters.querySelectorAll('[data-page-owner]:checked')];
     const sharing = [...libraryFilters.querySelectorAll('[data-page-sharing]:checked')];
+    memory.write({ ...Object.fromEntries(Object.entries(singles).map(([key, selector]) => [key, libraryFilters.querySelector(selector).value])), owners: owners.map(control => control.value), sharing: sharing.map(control => control.value) });
     const originSummary = libraryFilters.querySelector('[data-origin-summary]');
     const sharingSummary = libraryFilters.querySelector('[data-sharing-summary]');
     if (originSummary) {
@@ -764,14 +787,108 @@ if (libraryFilters) {
       applyLibraryFilters();
     });
   }
-  applyLibraryFilters();
-  window.addEventListener('pageshow', applyLibraryFilters);
+  restore(); applyLibraryFilters();
+  window.addEventListener('pageshow', (event) => { if (event.persisted) restore(); applyLibraryFilters(); });
 }
+
+document.querySelectorAll('[data-page-card]').forEach((card) => {
+  let saving = false;
+  card.querySelectorAll('[data-library-inline]').forEach((field) => {
+    const button = field.querySelector('[data-edit-library-field]');
+    const form = field.querySelector('[data-library-field-form]');
+    const input = form.elements.value;
+    const status = field.querySelector('[data-library-field-status]');
+    const reload = field.querySelector('[data-reload-library]');
+    const show = (open) => {
+      form.hidden = !open;
+      button.hidden = open;
+      button.setAttribute('aria-expanded', String(open));
+      if (open) { input.focus(); if (input.tagName === 'INPUT') input.select(); }
+      else button.focus();
+    };
+    const cancel = () => {
+      if (saving) return;
+      input.value = input.defaultValue;
+      status.textContent = '';
+      reload.hidden = true;
+      show(false);
+    };
+    button.addEventListener('click', () => { status.textContent = ''; show(true); });
+    form.querySelector('[data-cancel-library-field]').addEventListener('click', cancel);
+    reload.addEventListener('click', () => location.reload());
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); form.requestSubmit(); }
+    });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (saving || !form.reportValidity()) return;
+      const data = new FormData(form);
+      data.set('action', 'update_library_field');
+      data.set('token', document.body.dataset.csrf || '');
+      data.set('page_id', card.dataset.pageId);
+      data.set('revision', card.dataset.pageRevision);
+      data.set('field', field.dataset.field);
+      saving = true;
+      card.setAttribute('aria-busy', 'true');
+      const controls = [...card.querySelectorAll('[data-library-inline] button,[data-library-inline] input,[data-library-inline] textarea')];
+      controls.forEach(control => { control.disabled = true; });
+      status.textContent = '';
+      status.classList.remove('is-error');
+      reload.hidden = true;
+      let saved = false;
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'POST', body: data, credentials: 'same-origin', headers: { Accept: 'application/json' },
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== 'saved') {
+          reload.hidden = result.status !== 'conflict';
+          throw new Error(result.message || field.dataset.errorMessage);
+        }
+        input.value = input.defaultValue = result.value;
+        field.querySelector('[data-library-field-value]').textContent = result.value || field.dataset.emptyText;
+        button.setAttribute('aria-label', `${field.dataset.editLabel} : ${result.value || field.dataset.emptyText}`);
+        card.dataset.pageRevision = String(result.revision);
+        // Search saved values, including the complete objectives, without resetting filters.
+        const values = [...card.querySelectorAll('[data-library-field-form] [name="value"]')].map(control => control.defaultValue);
+        card.dataset.search = [...values, card.dataset.searchExtra].join(' ').toLocaleLowerCase(locale);
+        status.textContent = result.message;
+        saved = true;
+      } catch (error) {
+        status.textContent = error instanceof SyntaxError || error instanceof TypeError ? field.dataset.errorMessage : error.message;
+        status.classList.add('is-error');
+      } finally {
+        saving = false;
+        card.removeAttribute('aria-busy');
+        controls.forEach(control => { control.disabled = false; });
+        if (saved) show(false);
+      }
+    });
+  });
+});
+if (libraryFilters) window.addEventListener('beforeunload', (event) => {
+  if ([...document.querySelectorAll('[data-library-field-form] [name="value"]')].some(input => input.value !== input.defaultValue)) {
+    event.preventDefault(); event.returnValue = '';
+  }
+});
 
 const studentFilters = document.querySelector('[data-student-filters]');
 if (studentFilters) {
+  const memory = filterMemory('students');
+  const controls = { search: studentFilters.querySelector('[data-student-search]'), group: studentFilters.querySelector('[data-student-group]'), course_filter: studentFilters.querySelector('[data-student-course]') };
+  const restore = (fromUrl = false) => {
+    const saved = memory.read(), params = new URLSearchParams(location.search);
+    for (const [key, control] of Object.entries(controls)) restoreFilterValue(control, fromUrl && params.has(key) ? params.get(key) : saved[key]);
+  };
   const fold = (value) => String(value || '').toLocaleLowerCase(locale).normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
   const applyStudentFilters = () => {
+    const values = Object.fromEntries(Object.entries(controls).map(([key, control]) => [key, control.value]));
+    memory.write(values);
+    // Keep browser Back/Forward and explicit return links consistent with the last choices.
+    const url = new URL(location.href);
+    for (const [key, value] of Object.entries(values)) { if (value) url.searchParams.set(key, value); else url.searchParams.delete(key); }
+    if (url.href !== location.href) history.replaceState(history.state, '', url);
     const search = fold(studentFilters.querySelector('[data-student-search]').value);
     const group = studentFilters.querySelector('[data-student-group]').value;
     const course = studentFilters.querySelector('[data-student-course]').value;
@@ -806,7 +923,9 @@ if (studentFilters) {
       input.value = value;
     });
   }));
-  applyStudentFilters();
+  restore(true); applyStudentFilters();
+  window.addEventListener('pageshow', (event) => { if (event.persisted) restore(); applyStudentFilters(); });
+  document.addEventListener('student-identity-updated', applyStudentFilters);
   const selectedStudent = document.querySelector('[data-student-card-selected]');
   if (selectedStudent) requestAnimationFrame(() => selectedStudent.scrollIntoView({ block: 'center' }));
 }

@@ -20,17 +20,24 @@ final class QcmGuest
         throw new DomainException('Le QCM a changé. Rechargez l’étape.',409);
     }
 
-    public static function create(PDO $pdo,string $shareToken,int $teacherId,int $blockId,string $key): string
+    public static function create(PDO $pdo,string $shareToken,?int $teacherId,int $blockId,string $key,string $hostSecret=''): string
     {
         self::purge($pdo);$pdo->beginTransaction();
         try{
             $share=library_share_resolve($pdo,$shareToken);library_share_require_mode($share,'external');
-            $query=$pdo->prepare("SELECT 1 FROM users WHERE id=? AND role='teacher' AND account_status='active'");$query->execute([$teacherId]);
-            if(!$query->fetchColumn())throw new DomainException('Un compte enseignant est nécessaire.',403);
-            $query=$pdo->prepare("SELECT COUNT(*) FROM qcm_guest_sessions WHERE created_by=? AND phase<>'finished'");$query->execute([$teacherId]);
+            $hostHash=null;
+            if($teacherId!==null){
+                $query=$pdo->prepare("SELECT 1 FROM users WHERE id=? AND role='teacher' AND account_status='active'");$query->execute([$teacherId]);
+                if(!$query->fetchColumn())throw new DomainException('Un compte enseignant est nécessaire.',403);
+                $query=$pdo->prepare("SELECT COUNT(*) FROM qcm_guest_sessions WHERE created_by=? AND phase<>'finished'");$query->execute([$teacherId]);
+            }else{
+                if(!preg_match('/^[a-f0-9]{64}$/D',$hostSecret))throw new DomainException('Cette séance n’est pas accessible.',403);
+                $hostHash=hash('sha256',$hostSecret);
+                $query=$pdo->prepare("SELECT COUNT(*) FROM qcm_guest_sessions WHERE created_by IS NULL AND host_key_hash=? AND phase<>'finished'");$query->execute([$hostHash]);
+            }
             if((int)$query->fetchColumn()>=20)throw new DomainException('Terminez une séance avant d’en créer une nouvelle.',422);
             $quiz=self::quiz($pdo,(int)$share['page_id'],$blockId,$key);$token=bin2hex(random_bytes(16));
-            $pdo->prepare('INSERT INTO qcm_guest_sessions(page_id,page_block_id,qcm_key,created_by,room_token,questions,expires_at,source_share_token) VALUES(?,?,?,?,?,?,?,?)')->execute([$share['page_id'],$blockId,$key,$teacherId,$token,json_encode($quiz['questions'],JSON_THROW_ON_ERROR),time()+self::LIFETIME,$shareToken]);
+            $pdo->prepare('INSERT INTO qcm_guest_sessions(page_id,page_block_id,qcm_key,created_by,room_token,questions,expires_at,source_share_token,host_key_hash) VALUES(?,?,?,?,?,?,?,?,?)')->execute([$share['page_id'],$blockId,$key,$teacherId,$token,json_encode($quiz['questions'],JSON_THROW_ON_ERROR),time()+self::LIFETIME,$shareToken,$hostHash]);
             $pdo->commit();return $token;
         }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
     }
@@ -38,13 +45,14 @@ final class QcmGuest
     public static function context(PDO $pdo,string $room): array
     {
         if(!preg_match('/^[a-f0-9]{32}$/D',$room))throw new DomainException('Cette séance n’est pas accessible.',404);
-        $query=$pdo->prepare("SELECT s.*,p.title,s.source_share_token AS share_token FROM qcm_guest_sessions s JOIN pages p ON p.id=s.page_id JOIN page_share_links l ON l.page_id=p.id JOIN users owner ON owner.id=p.owner_id JOIN users host ON host.id=s.created_by WHERE s.room_token=? AND s.expires_at>? AND l.enabled=1 AND l.allow_external=1 AND p.status='ready' AND owner.account_status='active' AND host.account_status='active' AND owner.role='teacher' AND host.role='teacher'");$query->execute([$room,time()]);
+        $query=$pdo->prepare("SELECT s.*,p.title,s.source_share_token AS share_token FROM qcm_guest_sessions s JOIN pages p ON p.id=s.page_id JOIN page_share_links l ON l.page_id=p.id JOIN users owner ON owner.id=p.owner_id LEFT JOIN users host ON host.id=s.created_by WHERE s.room_token=? AND s.expires_at>? AND l.enabled=1 AND l.allow_external=1 AND p.status='ready' AND owner.account_status='active' AND owner.role='teacher' AND (s.created_by IS NULL OR (host.account_status='active' AND host.role='teacher'))");$query->execute([$room,time()]);
         $session=$query->fetch(PDO::FETCH_ASSOC);if(!$session)throw new DomainException('Cette séance n’est pas accessible.',404);
         self::quiz($pdo,(int)$session['page_id'],(int)$session['page_block_id'],$session['qcm_key']);return $session;
     }
 
-    public static function isHost(array $session,?array $actor): bool
+    public static function isHost(array $session,?array $actor,string $hostSecret=''): bool
     {
+        if($session['created_by']===null)return preg_match('/^[a-f0-9]{64}$/D',$hostSecret)===1&&hash_equals((string)$session['host_key_hash'],hash('sha256',$hostSecret));
         return $actor&&($actor['role']??'')==='teacher'&&($actor['account_status']??'active')==='active'&&(int)$actor['id']===(int)$session['created_by'];
     }
 
@@ -64,18 +72,18 @@ final class QcmGuest
         }catch(Throwable $exception){$pdo->exec('ROLLBACK');throw $exception;}
     }
 
-    private static function authorize(PDO $pdo,array $session,?array $actor,string $participant): bool
+    private static function authorize(PDO $pdo,array $session,?array $actor,string $participant,string $hostSecret): bool
     {
-        $host=self::isHost($session,$actor);if($host)return true;
+        $host=self::isHost($session,$actor,$hostSecret);if($host)return true;
         $query=$pdo->prepare('SELECT 1 FROM qcm_guest_participants WHERE session_id=? AND participant_hash=?');$query->execute([$session['id'],$participant]);
         if(!$query->fetchColumn())throw new DomainException('Rejoignez la séance pour continuer.',403);return false;
     }
 
-    public static function state(PDO $pdo,string $room,?array $actor,string $participant): array
+    public static function state(PDO $pdo,string $room,?array $actor,string $participant,string $hostSecret=''): array
     {
         $pdo->beginTransaction();
         try{
-            $session=self::context($pdo,$room);self::authorize($pdo,$session,$actor,$participant);
+            $session=self::context($pdo,$room);self::authorize($pdo,$session,$actor,$participant,$hostSecret);
             $questions=json_decode($session['questions'],true,512,JSON_THROW_ON_ERROR);$index=(int)$session['question_index'];$phase=$session['phase'];
             $query=$pdo->prepare('SELECT COUNT(*) FROM qcm_guest_participants WHERE session_id=?');$query->execute([$session['id']]);
             $state=['id'=>(int)$session['id'],'revision'=>(int)$session['revision'],'index'=>$index,'total'=>count($questions),'phase'=>$phase,'revealed'=>(bool)$session['revealed'],'eligible'=>(int)$query->fetchColumn(),'responded'=>0,'selected'=>[],'question'=>null];
@@ -90,11 +98,11 @@ final class QcmGuest
         }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}
     }
 
-    public static function command(PDO $pdo,string $room,?array $actor,string $participant,array $input): array
+    public static function command(PDO $pdo,string $room,?array $actor,string $participant,array $input,string $hostSecret=''): array
     {
         $pdo->exec('BEGIN IMMEDIATE');
         try{
-            $session=self::context($pdo,$room);$host=self::authorize($pdo,$session,$actor,$participant);$command=is_string($input['command']??null)?$input['command']:'';
+            $session=self::context($pdo,$room);$host=self::authorize($pdo,$session,$actor,$participant,$hostSecret);$command=is_string($input['command']??null)?$input['command']:'';
             if((int)($input['session']??0)!==(int)$session['id'])throw new DomainException('Cette séance n’est pas accessible.',409);
             if($command==='vote'){
                 if($host)throw new DomainException('Seuls les élèves peuvent répondre.',403);

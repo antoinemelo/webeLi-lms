@@ -226,6 +226,8 @@ find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
 php tests/mail_security.php
 python3 tests/mail_security_http.py
+python3 tests/class_registration_http.py
+php tests/registration_limits.php
 php tests/incremental_updates.php
 php tests/messaging_updates.php
 php tests/messaging.php
@@ -234,9 +236,13 @@ php tests/embeds.php
 php tests/content_blocks.php
 php tests/announcement_messages.php
 php tests/student_admin_history.php
+php tests/student_identity.php
+node tests/students_filters_browser.mjs
 php tests/pathway_groups.php
 php tests/library_sharing.php /tmp/liike-exports
 php tests/library_origins.php
+php tests/library_inline.php
+node tests/library_inline_browser.mjs
 php tests/guest_qcm.php
 node tests/library_sharing_browser.mjs
 node tests/pathway_groups_browser.mjs

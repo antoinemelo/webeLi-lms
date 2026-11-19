@@ -76,18 +76,27 @@ function registration_guard(string $role): void
         redirect('register', ['role'=>$role]);
     }
     $email = is_string($_POST['email'] ?? null) ? strtolower(trim($_POST['email'])) : '';
-    if (!app_public_mail_allowed($email)) {
+    $notices=[];
+    if (!app_public_mail_allowed($email,purpose:'registration',limits:$notices)) {
+        registration_notify_limits(db(),$notices);
         flash('Trop de demandes d’inscription ont été reçues. Patientez 15 minutes avant de réessayer.', 'error');
         redirect('register', ['role'=>$role]);
     }
-    $ipHash = hash('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    $ipHash = app_public_mail_ip_hash();
     $ipAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE ip_hash=? AND attempted_at>=datetime('now','-15 minutes')", [$ipHash])['n'] ?? 0);
     $globalAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 hour')")['n'] ?? 0);
     $dailyAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 day')")['n'] ?? 0);
-    $pendingAccounts = (int)(one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending'")['n'] ?? 0);
+    $pendingAccounts = (int)(one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending' AND managed_by IS NULL")['n'] ?? 0);
     // Timing and honeypot were checked with the single-use token above.
     $allowed = registration_is_allowed('',2,$ipAttempts,$globalAttempts,$dailyAttempts,$pendingAccounts);
     run('INSERT INTO registration_attempts(ip_hash,accepted) VALUES(?,?)', [$ipHash,$allowed?1:0]);
+    foreach([
+        ['registration:ip:'.$ipHash,900,REGISTRATION_IP_ATTEMPTS_15_MINUTES,$ipAttempts+1],
+        ['registration:global',3600,REGISTRATION_ACCEPTED_PER_HOUR,$globalAttempts+(int)$allowed],
+        ['registration:global',86400,REGISTRATION_ACCEPTED_PER_DAY,$dailyAttempts+(int)$allowed],
+        ['registration:pending',900,REGISTRATION_PENDING_LIMIT,$pendingAccounts],
+    ] as [$scope,$window,$limit,$count])if($count>=$limit)$notices[]=compact('scope','window','limit');
+    registration_notify_limits(db(),$notices);
     if (!$allowed) {
         flash('Trop de demandes d’inscription ont été reçues. Patientez 15 minutes avant de réessayer.', 'error');
         redirect('register', ['role'=>$role]);
@@ -379,30 +388,43 @@ function handle_action(string $action): never
         }
 
         $baseCode = $role === 'student' ? student_code($firstName, $lastName) : $requestedIdentifier;
-        $code = unique_login_code($baseCode, $role === 'student');
         $initials = mb_strtoupper(mb_substr($compactFirstName,0,1).mb_substr($compactLastName,0,1),'UTF-8');
         $colors = ['#ef6a8a','#2da58d','#e49b35','#4178d0','#7f62d9'];
-        db()->beginTransaction();
+        // Reserve the write lock before choosing a code: classmates can share its base.
+        db()->exec('BEGIN IMMEDIATE');
         try {
-            run("INSERT INTO users(name,first_name,last_name,email,role,initials,color,class_group,phone,login_code,password_hash,account_status,pending_course_title,language,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,CURRENT_TIMESTAMP)", [
-                $firstName.' '.$lastName,$firstName,$lastName,$email,$role,$initials,
-                $colors[abs(crc32($email))%count($colors)],$classGroup,$phone,$code,
-                $role === 'teacher' ? password_hash($password, PASSWORD_DEFAULT) : null,
-                $role === 'teacher' ? $courseTitle : null,$language,
-            ]);
-            $newUserId = (int)db()->lastInsertId();
-            if($joinCourse)run('INSERT INTO enrollments(course_id,student_id) VALUES(?,?)',[$joinCourse['id'],$newUserId]);
-            db()->commit();
-            if($joinCourse)unset($_SESSION['pending_join_course_code']);
+            $existing=one('SELECT * FROM users WHERE lower(email)=?',[$email]);
+            if(!$existing){
+                $code = unique_login_code($baseCode, $role === 'student');
+                run("INSERT INTO users(name,first_name,last_name,email,role,initials,color,class_group,phone,login_code,password_hash,account_status,pending_course_title,language,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,CURRENT_TIMESTAMP)", [
+                    $firstName.' '.$lastName,$firstName,$lastName,$email,$role,$initials,
+                    $colors[abs(crc32($email))%count($colors)],$classGroup,$phone,$code,
+                    $role === 'teacher' ? password_hash($password, PASSWORD_DEFAULT) : null,
+                    $role === 'teacher' ? $courseTitle : null,$language,
+                ]);
+                $newUserId = (int)db()->lastInsertId();
+                if($joinCourse)run('INSERT INTO enrollments(course_id,student_id) VALUES(?,?)',[$joinCourse['id'],$newUserId]);
+            }
+            db()->exec('COMMIT');
+            if($joinCourse&&!$existing)unset($_SESSION['pending_join_course_code']);
         } catch (Throwable $exception) {
-            db()->rollBack();
+            db()->exec('ROLLBACK');
             if (is_pending_registration_limit($exception)) {
+                registration_notify_limits(db(),[['scope'=>'registration:pending','window'=>900,'limit'=>REGISTRATION_PENDING_LIMIT]]);
                 flash('Le plafond de comptes en attente est atteint. Réessayez après leur validation ou leur expiration.', 'error');
                 redirect('register', ['role'=>$role]);
             }
             throw $exception;
         }
+        if($existing){
+            if($existing['account_status']==='pending')issue_account_verification((int)$existing['id'],$existing['email'],$existing['first_name'],$existing['login_code'],$existing['language']??$language);
+            flash('Si cette adresse peut être inscrite, un courriel de validation valable 15 minutes a été envoyé.');
+            redirect('login');
+        }
         $sent = issue_account_verification($newUserId,$email,$firstName,$code,$language);
+        if((int)one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending' AND managed_by IS NULL")['n']>=REGISTRATION_PENDING_LIMIT){
+            registration_notify_limits(db(),[['scope'=>'registration:pending','window'=>900,'limit'=>REGISTRATION_PENDING_LIMIT]]);
+        }
         flash(t($sent
             ? 'Un courriel de validation a été envoyé. Le lien reste valable 15 minutes.'
             : 'Votre demande est enregistrée pour 15 minutes. Le courriel de validation est dans la boîte d’envoi et doit être expédié par le service mail.'));
@@ -823,6 +845,26 @@ function handle_action(string $action): never
         echo json_encode(['html'=>Qcm::renderPreview($body)],JSON_THROW_ON_ERROR);exit;
     }
 
+    if($action==='update_library_field'){
+        header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store');
+        try{
+            $result=$user['role']==='teacher'&&is_string($_POST['field']??null)&&is_string($_POST['value']??null)
+                ?library_update_page_field(db(),(int)($_POST['page_id']??0),(int)$user['id'],$_POST['field'],$_POST['value'],(int)($_POST['revision']??-1))
+                :['status'=>'forbidden'];
+            http_response_code(match($result['status']){'saved'=>200,'conflict'=>409,'invalid'=>422,default=>403});
+            $result['message']=t(match($result['status']){
+                'saved'=>'Enregistré',
+                'conflict'=>'Ce contenu a changé ou est en cours de modification. Rechargez la bibliothèque avant de réessayer.',
+                'invalid'=>'Le titre est obligatoire.',
+                default=>'Page introuvable.',
+            });
+            echo json_encode($result,JSON_THROW_ON_ERROR);
+        }catch(Throwable $exception){
+            error_log('Library field update: '.get_class($exception));http_response_code(500);
+            echo json_encode(['status'=>'error','message'=>t('Enregistrement impossible. Réessayez.')]);
+        }
+        exit;
+    }
     if ($action === 'save_page' && $user['role'] === 'teacher') {
         $pageId = (int) ($_POST['page_id'] ?? 0);
         $title = trim((string)($_POST['title'] ?? ''));
@@ -1097,13 +1139,17 @@ function handle_action(string $action): never
             redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);
         }
     }
-    if(in_array($action,['load_student_admin','load_student_history','preview_student_followup','save_student_followup','delete_student_followup'],true)){
+    if(in_array($action,['load_student_admin','save_student_identity','load_student_history','preview_student_followup','save_student_followup','delete_student_followup'],true)){
         header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
         try{
             if($user['role']!=='teacher'){http_response_code(403);echo json_encode(['error'=>t('Accès interdit.')]);exit;}
             $teacherId=(int)$user['id'];
             if($action==='load_student_admin'){
                 $student=StudentAdminHistory::requireStudent(db(),(int)($_POST['student_id']??0),$teacherId);ob_start();render_student_admin_panel($student);$html=ob_get_clean();echo json_encode(['html'=>$html],JSON_THROW_ON_ERROR);
+            }elseif($action==='save_student_identity'){
+                $student=update_student_identity(db(),(int)($_POST['student_id']??0),$teacherId,$_POST);
+                if($student['email_changed']&&$student['account_status']==='pending')issue_account_verification($student['id'],$student['email'],$student['first_name'],$student['login_code'],$student['language']);
+                echo json_encode(['student'=>$student,'revision'=>student_identity_revision($student),'message'=>t('Les informations de l’élève ont été enregistrées.')],JSON_THROW_ON_ERROR);
             }elseif($action==='load_student_history'){
                 $history=StudentAdminHistory::history(db(),(int)($_POST['student_id']??0),$teacherId,(int)($_POST['page']??1));ob_start();render_student_history($history);$html=ob_get_clean();echo json_encode(['html'=>$html],JSON_THROW_ON_ERROR);
             }elseif($action==='preview_student_followup'){
@@ -1216,10 +1262,6 @@ function handle_action(string $action): never
         redirect('pathway',['course'=>(int)$rewardType['course_id']]);
     }
     if ($action === 'create_student' && $user['role'] === 'teacher') {
-        if ((int)(one("SELECT COUNT(*) AS n FROM users WHERE account_status='pending'")['n'] ?? 0) >= REGISTRATION_PENDING_LIMIT) {
-            flash('Le plafond de comptes en attente est atteint. Attendez leur validation ou leur expiration avant une nouvelle création.', 'error');
-            redirect('students');
-        }
         $firstName = trim((string)($_POST['first_name'] ?? ''));
         $lastName = mb_strtoupper(trim((string)($_POST['last_name'] ?? '')), 'UTF-8');
         $email = mb_strtolower(trim((string)($_POST['email'] ?? '')), 'UTF-8');
