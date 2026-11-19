@@ -84,25 +84,26 @@ function library_page_sharing(PDO $pdo,array $pageIds,int $teacherId): array
             COALESCE(l.enabled,0) AS enabled,COALESCE(l.allow_shared,0) AS allow_shared,
             COALESCE(l.allow_copy,0) AS allow_copy,COALESCE(l.allow_external,0) AS allow_external,
             o.page_id AS copied_page_id,COALESCE(source.name,o.source_owner_name,'') AS copy_source_name,
-            (EXISTS(SELECT 1 FROM page_collaborators pc JOIN users colleague ON colleague.id=pc.teacher_id
-                WHERE pc.page_id=p.id AND pc.teacher_id<>p.owner_id AND colleague.role='teacher' AND colleague.account_status='active')
-             OR EXISTS(SELECT 1 FROM pathway_items pi JOIN courses c ON c.id=pi.course_id JOIN users colleague ON colleague.id=c.teacher_id
-                WHERE pi.page_id=p.id AND c.teacher_id<>p.owner_id AND colleague.role='teacher' AND colleague.account_status='active')
-             OR EXISTS(SELECT 1 FROM pathway_items pi JOIN course_teachers ct ON ct.course_id=pi.course_id JOIN users colleague ON colleague.id=ct.teacher_id
-                WHERE pi.page_id=p.id AND ct.teacher_id<>p.owner_id AND colleague.role='teacher' AND colleague.account_status='active')) AS used_by_others
+            EXISTS(SELECT 1 FROM page_shares history WHERE history.page_id=p.id AND history.mode='shared') AS was_shared,
+            EXISTS(SELECT 1 FROM pathway_items pi JOIN courses c ON c.id=pi.course_id JOIN users colleague ON colleague.id=c.teacher_id
+                WHERE pi.page_id=p.id AND c.teacher_id<>p.owner_id AND c.archived=0
+                    AND colleague.role='teacher' AND colleague.account_status='active') AS used_in_colleague_pathway
             FROM pages p JOIN users u ON u.id=p.owner_id LEFT JOIN page_share_links l ON l.page_id=p.id
             LEFT JOIN page_copy_origins o ON o.page_id=p.id LEFT JOIN users source ON source.id=o.source_owner_id
             WHERE p.id IN ($marks)");$query->execute($ids);
         foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
             $own=(int)$row['owner_id']===$teacherId;
             $active=(bool)$row['enabled']&&$row['status']==='ready'&&$row['account_status']==='active';
-            $used=$own&&(bool)$row['used_by_others'];$copied=$row['copied_page_id']!==null;
+            // Dots describe permissions; blue requires actual use in a colleague's active pathway.
+            $shared=$own&&$active&&(bool)$row['allow_shared'];$copied=$row['copied_page_id']!==null;
+            $used=$shared&&(bool)$row['used_in_colleague_pathway'];
             $result[(int)$row['id']]=[
                 'owner_id'=>(int)$row['owner_id'],'owner_name'=>$row['owner_name'],'own'=>$own,
-                'incoming'=>!$own,'shared_used'=>$used,'copied'=>$copied,'copy_source_name'=>$row['copy_source_name'],
+                'incoming'=>!$own,'shared_allowed'=>$shared,'shared_used'=>$used,'copied'=>$copied,'copy_source_name'=>$row['copy_source_name'],
+                'sharing_stopped'=>!$own&&(bool)$row['was_shared']&&(!$active||!(bool)$row['allow_shared']),
                 'copy_allowed'=>$active&&(bool)$row['allow_copy'],'external_allowed'=>$active&&(bool)$row['allow_external'],
                 'card_class'=>!$own?'page-card-shared-in':($used?'page-card-shared-out':''),
-                'filters'=>array_keys(array_filter(['shared'=>$used,'copy'=>$copied,'external'=>$active&&(bool)$row['allow_external']]))
+                'filters'=>array_keys(array_filter(['shared'=>$shared,'copy'=>$copied,'external'=>$active&&(bool)$row['allow_external']]))
             ];
         }
     }

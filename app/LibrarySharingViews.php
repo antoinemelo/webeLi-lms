@@ -9,14 +9,15 @@ function render_sharing_dot(string $kind,string $label): void
 function render_pathway_sharing(array $sharing): void
 {
     if($sharing['incoming'])render_sharing_dot('incoming',t('Contenu partagé de :name',['name'=>$sharing['owner_name']]));
-    elseif($sharing['shared_used'])render_sharing_dot('outgoing',t('Mon contenu utilisé par d’autres enseignants'));
+    elseif($sharing['shared_allowed'])render_sharing_dot('outgoing',t('Contenu partagé'));
+    if($sharing['sharing_stopped']){ ?><span class="pathway-share-stopped"><?=e(t('Partage arrêté par le propriétaire'))?></span><?php }
 }
 
 function render_library_sharing_marks(array $sharing): void
 {
     if(!$sharing['own'])return;
     ?><span class="library-sharing-marks"><?php
-    if($sharing['shared_used'])render_sharing_dot('outgoing',t('Mon contenu utilisé par d’autres enseignants'));
+    if($sharing['shared_allowed'])render_sharing_dot('outgoing',t('Contenu partagé'));
     if($sharing['copy_allowed'])render_sharing_dot('copy',t('Copie indépendante autorisée'));
     if($sharing['external_allowed'])render_sharing_dot('external',t('Utilisation externe autorisée'));
     ?></span><?php
@@ -67,7 +68,7 @@ function render_library_share_modal(array $page,int $courseId=0,string $returnVi
 
 function library_share_page_start(string $title): void
 {
-    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=164"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
+    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=166"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
 }
 
 function library_share_http(): never

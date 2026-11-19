@@ -679,6 +679,12 @@ return json_decode(<<<'JSON'
     "de": "Freigabe beenden",
     "it": "Interrompi la condivisione",
     "es": "Dejar de compartir"
+  },
+  "Partage arrêté par le propriétaire": {
+    "en": "Sharing stopped by the owner",
+    "de": "Freigabe vom Eigentümer beendet",
+    "it": "Condivisione interrotta dal proprietario",
+    "es": "El propietario ha dejado de compartir"
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

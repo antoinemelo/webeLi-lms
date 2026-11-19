@@ -817,7 +817,36 @@ if (libraryFilters) {
     });
   }
   restore(); applyLibraryFilters();
-  window.addEventListener('pageshow', (event) => { if (event.persisted) restore(); applyLibraryFilters(); });
+  let sharingRefresh = 0;
+  const refreshLibrarySharing = async () => {
+    const refresh = ++sharingRefresh;
+    try {
+      const response = await fetch('?view=library', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'text/html' } });
+      if (!response.ok) return;
+      const fresh = new DOMParser().parseFromString(await response.text(), 'text/html');
+      if (refresh !== sharingRefresh || fresh.body.dataset.userId !== document.body.dataset.userId || !fresh.querySelector('[data-library-filters]')) return;
+      const cards = new Map([...fresh.querySelectorAll('[data-page-card]')].map(card => [card.dataset.pageId, card]));
+      document.querySelectorAll('[data-page-card]').forEach(card => {
+        const updated = cards.get(card.dataset.pageId);
+        if (!updated) return;
+        for (const name of ['page-card-shared-out', 'page-card-shared-in']) card.classList.toggle(name, updated.classList.contains(name));
+        card.dataset.sharing = updated.dataset.sharing;
+        const marks = card.querySelector('.library-sharing-marks');
+        const newMarks = updated.querySelector('.library-sharing-marks');
+        if (marks && newMarks) marks.replaceChildren(...newMarks.childNodes);
+      });
+      applyLibraryFilters();
+    } catch (_) { /* Keep the current cards and any inline edits when offline. */ }
+  };
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      restore();
+      // Back can restore cards from before a sharing change in the editor.
+      // Refresh only sharing metadata so open editors and their text stay intact.
+      void refreshLibrarySharing();
+    }
+    applyLibraryFilters();
+  });
 }
 
 document.querySelectorAll('[data-page-card]').forEach((card) => {
