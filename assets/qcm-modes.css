@@ -14,6 +14,11 @@
 .qcm-live{box-sizing:border-box;max-width:65rem;margin:auto;padding:clamp(1rem,3vw,2.5rem);padding-bottom:max(2rem,env(safe-area-inset-bottom))}
 .qcm-live-header,.qcm-live-tools{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
 .qcm-live-header{margin-bottom:2rem}.qcm-live .eyebrow{margin-bottom:1rem}
+.guest-activity-title{display:flex;align-items:center;gap:.75rem;min-height:2.75rem;cursor:pointer;list-style:none;font-size:1.15rem;font-weight:700;overflow-wrap:anywhere}
+.guest-activity-title::-webkit-details-marker{display:none}
+.guest-activity-title::before{content:"";flex:0 0 auto;width:.55rem;height:.55rem;margin:0 .25rem;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg)}
+.guest-invitation[open]>.guest-activity-title::before{transform:rotate(45deg)}
+.guest-activity-title:focus-visible{outline:3px solid #6757df;outline-offset:3px;border-radius:.25rem}
 .qcm-live h1,.qcm-live h2{font-size:clamp(1.5rem,3vw,2.5rem);line-height:1.25;overflow-wrap:anywhere}
 .qcm-live-progress{font-weight:700;color:#5b4be7}.qcm-live-count{font-weight:650}
 .qcm-live-options{display:grid;gap:.8rem;margin:1rem 0 1.5rem;padding:0;border:0;min-width:0}

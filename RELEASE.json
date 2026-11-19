@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "744063538599425f782737293a943fff2db9af4732dd8ceff09f8e1680d0cd9c",
-    "VERSION": "612fbf7d10a6b59d39808249943dfc765c9b3e4b05120d399aa2b4cc1a477d7a",
+    "VERSION": "d25f65bda798c23851a34092df6ccd337b7befd2899f7c5b1d5726b9a32a0721",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/AdminService.php": "359f470a95dc2ecf3466cd666f7653a6706f745a9f3f58f8aee81e096030a621",
     "app/AnnouncementMessageViews.php": "6a7a1bcef0dda63bc75696a08ae8719ceba9bd84bf71fca813655291e29e7940",
@@ -812,8 +812,8 @@
     "app/Qcm.php": "1ed11285afe1bb94aee8f43bc94bfa20957d4fc7cdf9cc13211240797a9083eb",
     "app/QcmClass.php": "1980f8f45840460a9b09620f1d739bd306bd2b25a5324ce2094484a241184a01",
     "app/QcmGuest.php": "ea732319bb46cd0d6815116cc061d8f73932a7359a693147ad1cf0ce95a555d3",
-    "app/QcmGuestViews.php": "d502d730181658c9dc1148b8cf13ec45029ad33ef7327896720dc88826219019",
-    "app/QcmViews.php": "a0364cceb69895ad328a440348e7586b35d9bf72b1ef3b00fdf46b2d2432d130",
+    "app/QcmGuestViews.php": "2da63ab11e324ec1ead0ef33f8f34b89233aa9a88980ac7f48cd29855f30edbb",
+    "app/QcmViews.php": "b369311413784372631ab37f339a92d768e17355784fce19436ca6d5f24a4753",
     "app/RegistrationPolicy.php": "51e336f4006ac71e1c05688623b17bf873b9619c017e3cf4563b768fc865240b",
     "app/SessionPolicy.php": "4d477b426d3d071deb119cb79c1410d279c7f9ffd0a418522e0820d12262af1b",
     "app/StudentAdminExport.php": "5af1b6a47168dc8a324fd366317cded92588a5fc9c220b1869042df2e5c75453",
@@ -834,7 +834,7 @@
     "app/translations/messaging.php": "fbe52ab4f071c69b364e9c8c0adc57407e420f44ce04d6ac33cdf1ccc3f2e5b3",
     "app/translations/qcm.php": "df8adfa19e1920e5a59badac3135b42134a88019ad9e18cfe67149d020527850",
     "app/translations/sharing.php": "273337f5ee6e57517e36152ef93282c429b22ca9d2037619184a283db5c40e0c",
-    "app/views.php": "d0f96bf60347f7a13ca4565015a6862eb895231b77e1b1a99362de13405ee3d3",
+    "app/views.php": "d4fa1e3fa57c29ae04bfdf4e667015cb295b737431ec0545788e4865dcca693e",
     "assets/announcement-messages.js": "cdce6aab879f74d09ff728ae6b9bec2301182fe8a8e9e469ac3477a005849f6f",
     "assets/app.css": "4cacd52bd1ce7ca42e9768ec1e16d969a48fd88d8d7c63dcb254a87bf40533ac",
     "assets/app.js": "894c63b195bda132f583d8f1213a3b0cc4dc831da10467cc30d5709a8460d6fd",
@@ -850,7 +850,7 @@
     "assets/messaging.css": "88a1d959016f7d9a3416026e7c01876c349e7873e773169353d0260ff896f9b9",
     "assets/messaging.js": "d0196307ffe97cdb9382bcb12287d0e02d2b04a200527c7567bf8940998605bb",
     "assets/progress-export.js": "2a0cf31dc6faf343fb0712b0f8294a765abc24f0f77dd32625eb5ad62fd40983",
-    "assets/qcm-modes.css": "579f8a56a1c106c48b60a4454a6adea9437a34ff60a6caa1327ad696784393e2",
+    "assets/qcm-modes.css": "cba493c4e8b84b3e5f4dfcb3907ace64004fa326b2e5fc91eb8d2abab9a50673",
     "assets/qcm-modes.js": "4d6af41c0353979cf019d013a39988a6e404ef8ea5b9612d864ec10dd0c23fba",
     "assets/student-admin.js": "8c3c0a9ad1372412aa08404b0a134fcf5bf50178cd0bef5be992c112bd86d5e3",
     "assets/vendor/README.md": "4da1e38757883d2efba69106eb24d30cf05a87367383356535ddc5f3fd175665",
@@ -910,7 +910,7 @@
     "docs/architecture.md": "872dc511d205b05563b1f0a5b6e83d4b85537779c5f22ead27a456a6256a8b24",
     "docs/discussions.md": "233577f16b60723b59608d722789898e6e4fa16cb526370ce22727d590d7aee0",
     "docs/exploitation.md": "2241597367c580f60243f4e9fca6cf80e928473a5f83023a07ff85c32ce6cee6",
-    "docs/guide-utilisateur.md": "e92dbd5f256b160edabb5532662e381b9571c7d8285bd9be5ccedc6f30bd2017",
+    "docs/guide-utilisateur.md": "6143d13adb797adb17d1cdb3ec70a9b13140d570b8159bb8878a304452a90afc",
     "docs/limitations-roadmap.md": "a904b7a92c1135bed615a97084a3d34e719132b38539011053dd5950a0dcbbde",
     "docs/modele-fonctionnel.md": "7ed5402d5e8dc7a6ff2794a66543825e78806fda3bd6345ac468f7b970232844",
     "index.php": "8ddd2efa18b3846e494a37398edccd6adeb9db6c0b84e9719ec515316bad5802",
@@ -921,12 +921,12 @@
     "scripts/purge_registrations.php": "278cf25a993c7c57cba7e4df761a54adb728814bcbeb637cc095097bcb45d646",
     "scripts/push_notifications.php": "ce507d1e9bc4e88654278c4af0d6172cede068656bbf3f6403b1f1ba672bb159",
     "storage/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
-    "sw.js": "97e6bd1f5e6de6193c32f37bc646b0a8bdc40767cd48c188b9e61e7fd013f2ee",
+    "sw.js": "09db492880e954e31db5329699f01a8849b77308fc0722e834df363eb1e1eb94",
     "uploads/.htaccess": "eea47c349b4aa72d1f2328a1640d8f6455d2c8e96ff86a8908d140b98343e74f",
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-11-19T03:15:31+00:00",
+  "generated_at": "2026-11-19T03:30:59+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -939,5 +939,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q4.9"
+  "version": "2026Q4.10"
 }
