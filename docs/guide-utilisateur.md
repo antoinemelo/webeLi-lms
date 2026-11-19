@@ -69,6 +69,8 @@ La liste « Vue d’ensemble » distingue trois états : à faire, envoyé à l�
 
 Le bouton **Prochaine étape** ouvre en priorité l’étape accessible dont l’échéance future est la plus proche, même si elle est déjà réalisée. Une échéance future correspond à un jour après aujourd’hui, selon le calendrier suisse. En cas d’égalité, l’ordre du parcours départage les étapes. Sans échéance future, le bouton ouvre la première étape non réalisée ; si tout est terminé, il permet de revoir la dernière étape. Les étapes invisibles, les groupes masqués et les restrictions d’accès restent respectés.
 
+La carte entière est cliquable. Sa zone violette occupe toute sa largeur et affiche le numéro ou le type d’étape, son titre et la durée prévue ; la description apparaît en dessous. Une étape sans échéance n’affiche aucune mention de date, dans la carte comme dans la vue d’ensemble.
+
 Lorsqu’une étape visible a été ajoutée, déplacée ou modifiée, lorsqu’un type d’acquis a changé à la suite d’une confirmation ou d’une notation enseignante, ou lorsqu’un encouragement a été attribué depuis la connexion précédente, un encadré **Depuis la dernière visite** apparaît avec des liens directs vers les éléments concernés. Les ajouts, les mises à jour, les types d’acquis concernés (compétences, objectifs ou évaluations) et les encouragements y sont distingués, sans révéler le détail des acquis modifiés. L’encadré est propre à chaque élève et à chaque parcours, et reste visible pendant toute la session. À la connexion suivante, le repère est réinitialisé : seul l’intervalle entre les deux dernières connexions est conservé, sans journal durable des changements. Aucune liste n’est affichée lors de la toute première connexion.
 
 Les parcours sont classés du plus récemment consulté au plus ancien. Les quatre premiers apparaissent côte à côte ; s’il y en a davantage, les suivants sont accessibles avec le bouton à trois points verticaux placé à droite.
@@ -367,7 +369,7 @@ Les événements et leurs horaires sont conservés dans les copies et les import
 
 #### Aperçu élève pour l’enseignant
 
-L’icône de chapeau ouvre **Aperçu élève** (`?view=teacher-preview`). Les étapes invisibles pour les élèves sont cachées dans la liste, la première étape et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. Les étapes restreintes restent visibles en gris clair : l’aperçu général ne représente pas un élève particulier. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
+L’icône de chapeau ouvre **Aperçu élève** (`?view=teacher-preview`). Les étapes invisibles pour les élèves sont cachées dans la liste, la carte **Prochaine étape** et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. La carte privilégie l’échéance future la plus proche, comme dans la vue élève. Sans date future, cet aperçu générique propose la première étape visible, car il ne représente la progression d’aucun élève particulier. Les étapes restreintes restent visibles en gris clair. Le titre, le numéro, la durée et le lien de la carte correspondent à l’étape proposée ; les étapes sans échéance n’affichent aucune mention de date. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
 
 #### Importer et exporter un parcours
 
