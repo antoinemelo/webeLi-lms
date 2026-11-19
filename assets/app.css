@@ -84,6 +84,16 @@ button,a,summary{touch-action:manipulation}
 .course-switch{display:inline-flex;max-width:100%;align-items:center;gap:.3rem;margin-bottom:2.1rem}
 .course-switch-tabs{display:flex;min-width:0;gap:.45rem}.course-tab{display:grid;width:clamp(8.5rem,22vw,16rem);min-width:0;overflow:hidden;grid-template-columns:minmax(0,1fr);align-items:stretch;border:1px solid var(--line);border-radius:1rem;background:#fff;color:var(--muted);font-size:.78rem;font-weight:750}.course-tab.has-announcement{grid-template-columns:minmax(0,1fr) 2.45rem}.course-tab:hover{border-color:#d5d2df;color:var(--ink)}.course-tab.active{border-color:var(--purple);color:var(--purple);box-shadow:0 2px 8px rgb(103 87 223 / 8%)}.course-tab-link{display:flex;min-width:0;align-items:center;gap:.45rem;padding:.62rem .75rem}.course-tab-link>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.course-tab .course-announcement-bell{width:2.45rem;height:100%;margin:0;border:0;border-left:1px solid #d8d2fb;border-radius:0;background:var(--purple-soft)}.course-tab .course-announcement-bell:hover{background:#e1dcff}
 .course-switch-more{position:relative;flex:0 0 auto}.course-switch-more>summary{display:grid;width:2rem;height:2rem;place-items:center;border-radius:.6rem;color:var(--muted);cursor:pointer;list-style:none}.course-switch-more>summary::-webkit-details-marker{display:none}.course-switch-more>summary:hover,.course-switch-more[open]>summary{background:var(--purple-soft);color:var(--purple)}.course-switch-menu{position:absolute;top:2.25rem;right:0;z-index:1050;display:grid;width:min(19rem,calc(100vw - 2rem));padding:.4rem;border:1px solid var(--line);border-radius:.85rem;background:#fff;box-shadow:var(--shadow)}.course-switch-menu a{display:flex;min-width:0;align-items:center;gap:.55rem;padding:.65rem .7rem;border-radius:.6rem;font-size:.82rem;font-weight:700}.course-switch-menu a:hover{background:var(--purple-soft);color:var(--purple)}.course-switch-menu a>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.student-hero.teacher-preview-hero{display:block}
+.teacher-preview-hero>div{width:100%;min-width:0}
+.teacher-preview-hero .course-switch{display:flex;width:100%;align-items:flex-start;gap:.5rem}
+.teacher-preview-hero .course-switch-tabs{display:grid;flex:1;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:.6rem}
+.teacher-preview-hero .course-tab{width:auto;font-size:.9rem;line-height:1.35}
+.teacher-preview-hero .course-tab-link{min-height:3rem;padding:.7rem .75rem}
+.teacher-preview-hero .course-tab-link>span:last-child,.teacher-preview-hero .course-switch-menu a>span:last-child{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.teacher-preview-hero .course-dot{flex-shrink:0}
+.teacher-preview-hero .course-switch-more>summary{height:3rem}
+@media(max-width:600px){.teacher-preview-hero .course-switch-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.teacher-preview-hero .course-tab:only-child{grid-column:1/-1}}
 .edit-lock-status{display:inline-block;color:var(--green);font-size:.7rem;font-weight:700}
 .edit-lock-status.blocked{color:var(--red)}
 .course-dot{width:.58rem;height:.58rem;border-radius:50%;background:var(--course)}
@@ -938,7 +948,8 @@ h1{font-size:2.25rem}
 .library-field-display:focus-visible,.library-objective summary:focus-visible,.library-edit-link:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
 .library-field-display i{font-size:.7rem;color:var(--muted);opacity:.65;flex-shrink:0}
 .library-field-display [data-library-field-value]{min-width:0}
-.library-field-form{margin:.5rem 0 .75rem}.library-field-form input,.library-field-form textarea{width:100%;min-width:0;font-size:.9rem}.library-field-form textarea{resize:vertical}
+/* Keep editable text at least 16px so mobile browsers do not zoom on focus. */
+.library-field-form{margin:.5rem 0 .75rem}.library-field-form input,.library-field-form textarea{width:100%;min-width:0;font-size:max(1rem,16px)}.library-field-form textarea{resize:vertical}
 .library-field-actions{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.45rem}
 .library-field-status{display:block;font-size:.75rem;color:#1e6d58;margin:.25rem 0 .5rem;overflow-wrap:anywhere}.library-field-status:empty{display:none}.library-field-status.is-error{color:#a62c36}
 .library-edit-link{font-weight:750;color:var(--purple);white-space:nowrap}.library-edit-link:hover{text-decoration:underline}

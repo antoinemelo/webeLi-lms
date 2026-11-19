@@ -643,6 +643,42 @@ return json_decode(<<<'JSON'
     "de": "Nur die Schülerin oder der Schüler kann die eigene Telefonnummer ändern.",
     "it": "Solo lo studente può modificare il proprio numero di telefono.",
     "es": "Solo el alumno puede modificar su número de teléfono."
+  },
+  "Enregistrement en cours…": {
+    "en": "Saving…",
+    "de": "Wird gespeichert…",
+    "it": "Salvataggio in corso…",
+    "es": "Guardando…"
+  },
+  "Enregistrement impossible. Rechargez la page pour vérifier le partage.": {
+    "en": "Unable to save. Reload the page to check the sharing settings.",
+    "de": "Speichern nicht möglich. Laden Sie die Seite neu, um die Freigabe zu überprüfen.",
+    "it": "Impossibile salvare. Ricarica la pagina per verificare la condivisione.",
+    "es": "No se ha podido guardar. Recarga la página para comprobar la configuración de uso compartido."
+  },
+  "Cochez un mode pour partager. Décochez les trois modes pour arrêter. Les changements sont enregistrés automatiquement.": {
+    "en": "Select a mode to share. Clear all three modes to stop sharing. Changes are saved automatically.",
+    "de": "Wählen Sie einen Modus zum Teilen. Entfernen Sie alle drei Häkchen, um die Freigabe zu beenden. Änderungen werden automatisch gespeichert.",
+    "it": "Seleziona una modalità per condividere. Deseleziona tutte e tre le modalità per interrompere la condivisione. Le modifiche vengono salvate automaticamente.",
+    "es": "Selecciona un modo para compartir. Desmarca los tres modos para dejar de compartir. Los cambios se guardan automáticamente."
+  },
+  "Partage activé.": {
+    "en": "Sharing enabled.",
+    "de": "Freigabe aktiviert.",
+    "it": "Condivisione attivata.",
+    "es": "Uso compartido activado."
+  },
+  "Partage désactivé.": {
+    "en": "Sharing disabled.",
+    "de": "Freigabe deaktiviert.",
+    "it": "Condivisione disattivata.",
+    "es": "Uso compartido desactivado."
+  },
+  "Arrêter le partage": {
+    "en": "Stop sharing",
+    "de": "Freigabe beenden",
+    "it": "Interrompi la condivisione",
+    "es": "Dejar de compartir"
   }
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

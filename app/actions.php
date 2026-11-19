@@ -435,11 +435,25 @@ function handle_action(string $action): never
     $user = require_actor();
     if($action==='save_library_share'){
         $pageId=(int)($_POST['page_id']??0);$courseId=(int)($_POST['return_course']??0);
+        $json=str_contains($_SERVER['HTTP_ACCEPT']??'','application/json');
+        $status=200;
         try{
             if($user['role']!=='teacher')throw new InvalidArgumentException('Partage non autorisé.');
-            library_share_save(db(),$pageId,(int)$user['id'],isset($_POST['enabled']),is_array($_POST['modes']??null)?$_POST['modes']:[],(int)($_POST['share_revision']??-1));
-            flash('Réglages du partage enregistrés.');
-        }catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');}
+            $modes=isset($_POST['stop_sharing'])?[]:($_POST['modes']??[]);
+            if(!is_array($modes))throw new InvalidArgumentException('Mode de partage invalide.');
+            $enabled=$modes!==[];
+            $token=library_share_save(db(),$pageId,(int)$user['id'],$enabled,$modes,(int)($_POST['share_revision']??-1));
+            $settings=library_share_settings(db(),$pageId);
+            $result=['status'=>'saved','revision'=>(int)$settings['revision'],'enabled'=>$enabled,'modes'=>array_values(array_unique($modes)),'url'=>library_share_url($token),'message'=>t($enabled?'Partage activé.':'Partage désactivé.')];
+        }catch(InvalidArgumentException $exception){
+            $status=match($exception->getMessage()){'Partage non autorisé.'=>403,'Le partage a changé. Rechargez la page avant de réessayer.'=>409,default=>422};
+            $result=['status'=>$status===409?'conflict':'error','message'=>t($exception->getMessage())];
+        }
+        if($json){
+            http_response_code($status);header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
+            echo json_encode($result,JSON_THROW_ON_ERROR);exit;
+        }
+        flash($result['message'],$status===200?'success':'error');
         $destination=route('page-edit',['id'=>$pageId]);
         if($courseId&&teacher_can_access_course(db(),$courseId,(int)$user['id'])){
             if(($_POST['return_view']??'')==='pathway')$destination=route('pathway',['course'=>$courseId]);

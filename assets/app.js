@@ -833,7 +833,7 @@ document.querySelectorAll('[data-page-card]').forEach((card) => {
       button.hidden = open;
       button.setAttribute('aria-expanded', String(open));
       if (open) { input.focus(); if (input.tagName === 'INPUT') input.select(); }
-      else button.focus();
+      else button.focus({ preventScroll: true });
     };
     const cancel = () => {
       if (saving) return;
@@ -900,6 +900,58 @@ if (libraryFilters) window.addEventListener('beforeunload', (event) => {
   if ([...document.querySelectorAll('[data-library-field-form] [name="value"]')].some(input => input.value !== input.defaultValue)) {
     event.preventDefault(); event.returnValue = '';
   }
+});
+
+document.querySelectorAll('[data-library-share-form]').forEach((form) => {
+  const panel = form.closest('.library-sharing');
+  const link = panel.querySelector('[data-library-share-link]');
+  const modes = [...form.querySelectorAll('[name="modes[]"]')];
+  const status = form.querySelector('[data-library-share-status]');
+  const save = form.querySelector('[data-library-share-save]');
+  const stop = form.elements.stop_sharing;
+  const reload = form.querySelector('[data-library-share-reload]');
+  let saving = false;
+  save.hidden = true;
+  form.querySelector('[data-library-share-hint]').hidden = false;
+  reload.addEventListener('click', () => location.reload());
+  modes.forEach(control => control.addEventListener('change', () => form.requestSubmit()));
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (saving) return;
+    const data = new FormData(form);
+    if (event.submitter === stop) data.set('stop_sharing', '1');
+    saving = true;
+    form.setAttribute('aria-busy', 'true');
+    const controls = [...modes, save, stop, reload];
+    controls.forEach(control => { control.disabled = true; });
+    status.textContent = form.dataset.savingMessage;
+    status.classList.remove('text-danger');
+    reload.hidden = true;
+    try {
+      const response = await fetch(window.location.href, {
+        method: 'POST', body: data, credentials: 'same-origin', headers: { Accept: 'application/json' },
+      });
+      const result = await response.json();
+      if (!response.ok || result.status !== 'saved') throw new Error(result.message || form.dataset.errorMessage);
+      form.elements.share_revision.value = result.revision;
+      modes.forEach(control => { control.checked = result.modes.includes(control.value); });
+      link.querySelector('input').value = result.url;
+      link.querySelector('a').href = result.url;
+      link.hidden = !result.enabled;
+      stop.hidden = !result.enabled;
+      save.hidden = true;
+      status.textContent = result.message;
+    } catch (error) {
+      status.textContent = error instanceof SyntaxError || error instanceof TypeError ? form.dataset.errorMessage : error.message;
+      status.classList.add('text-danger');
+      save.hidden = false;
+      reload.hidden = false;
+    } finally {
+      saving = false;
+      form.removeAttribute('aria-busy');
+      controls.forEach(control => { control.disabled = false; });
+    }
+  });
 });
 
 const studentFilters = document.querySelector('[data-student-filters]');
