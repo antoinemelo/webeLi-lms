@@ -127,7 +127,8 @@ button,a,summary{touch-action:manipulation}
 .teacher-preview-banner{display:flex;max-width:56rem;align-items:flex-start;gap:.85rem;margin:0 auto 1.4rem;padding:.85rem 1rem;border:1px solid #cfc9f5;border-radius:1rem;background:var(--purple-soft)}.teacher-preview-banner>i{color:var(--purple);font-size:1.35rem}.teacher-preview-banner b{display:block}.teacher-preview-banner p{margin:.15rem 0 0;color:var(--muted);font-size:.78rem}.teacher-preview-hero{max-width:56rem;margin-inline:auto}.preview-visibility-legend{display:flex;flex-wrap:wrap;gap:.5rem;margin:-.45rem 0 .75rem}.preview-visibility-legend span,.preview-visibility{padding:.18rem .45rem;border-radius:.45rem;font-size:.68rem;font-style:normal;font-weight:750}.preview-visibility-legend .restricted,.preview-access-restricted .preview-visibility{background:#dedee6;color:#575568}.preview-visibility-legend .none,.preview-access-none .preview-visibility{background:#f5ced9;color:#9b2f4b}.teacher-preview-timeline .timeline-item{padding-inline:.55rem}.teacher-preview-timeline .preview-access-restricted{background:#f1f1f5}.teacher-preview-timeline .preview-access-none{background:#fff0f4}.next-card.preview-access-restricted{background:#ededf2;color:var(--ink)}.next-card.preview-access-none{background:#fff0f4;color:var(--ink)}.next-card.preview-access-restricted p,.next-card.preview-access-none p{color:#575568}.next-card.preview-access-restricted span,.next-card.preview-access-none span{color:var(--muted)}.teacher-preview-reader.preview-access-restricted{padding-inline:1rem;border-radius:1rem;background:linear-gradient(#f1f1f5 0 8rem,transparent 8rem)}.teacher-preview-reader.preview-access-none{padding-inline:1rem;border-radius:1rem;background:linear-gradient(#fff0f4 0 8rem,transparent 8rem)}
 .reader-top{display:flex;max-width:56rem;align-items:center;justify-content:space-between;gap:1rem;margin:auto;color:var(--muted);font-size:.82rem}
 .reader-top .back{margin:0}
-.reader-pdf-download{flex:0 0 auto;padding:.48rem .72rem;font-size:.78rem}
+.reader-pdf-download{flex:0 0 auto;padding:.48rem .72rem}
+.reader-pdf-download,.reader-export-actions .share-content-button{font-size:.78rem}
 .pwa-pdf-open{overflow:hidden}
 .pwa-pdf-viewer{position:fixed;inset:0;z-index:2500;display:grid;height:100vh;height:100dvh;grid-template-rows:auto 1fr;background:#e9e8ef;color:var(--ink)}
 .pwa-pdf-toolbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.75rem;padding:calc(.65rem + env(safe-area-inset-top)) max(.75rem,env(safe-area-inset-right)) .65rem max(.75rem,env(safe-area-inset-left));border-bottom:1px solid rgb(41 39 59 / 12%);background:#fff;box-shadow:0 5px 18px rgb(41 39 59 / 10%)}
@@ -611,9 +612,10 @@ button,a,summary{touch-action:manipulation}
 .profile-name,.desktop-nav{display:none}
 .profile-pop{position:fixed;top:3.9rem;right:.75rem}
 .app-shell{padding:1.8rem 1rem calc(6.5rem + env(safe-area-inset-bottom))}
-.bottom-nav{position:fixed;z-index:1040;right:.65rem;bottom:max(.6rem,env(safe-area-inset-bottom));left:.65rem;display:grid;grid-template-columns:repeat(3,1fr);padding:.4rem;border:1px solid var(--line);border-radius:1.2rem;background:rgb(255 255 255 / 94%);box-shadow:0 12px 35px rgb(31 29 56 / 20%);backdrop-filter:blur(18px) saturate(170%)}
-.bottom-nav .nav-link{display:flex;min-height:3rem;flex-direction:column;align-items:center;justify-content:center;gap:.12rem;border-radius:.8rem;color:var(--muted);font-size:.62rem;font-weight:750}
-.bottom-nav .nav-link i{font-size:1.1rem;line-height:1}
+.bottom-nav{position:fixed;z-index:1040;right:.65rem;bottom:max(.6rem,env(safe-area-inset-bottom));left:.65rem;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:.4rem;border:1px solid var(--line);border-radius:1.2rem;background:rgb(255 255 255 / 94%);box-shadow:0 12px 35px rgb(31 29 56 / 20%);backdrop-filter:blur(18px) saturate(170%)}
+.bottom-nav .nav-link{display:flex;min-width:0;min-height:3.65rem;padding:.5rem .25rem;flex-direction:column;align-items:center;justify-content:flex-start;gap:.3rem;border-radius:.8rem;color:var(--muted);font-size:.82rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere;hyphens:auto;text-align:center}
+.bottom-nav .nav-link i{font-size:1.35rem;line-height:1}
+.bottom-nav:not(.teacher-bottom){grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(8.5rem,1.2fr)}
 .bottom-nav .nav-link.active{background:var(--purple-soft);color:var(--purple)}
 .mastery-list,.detail-grid,.editor-layout,.pathway-layout,.student-admin-layout,.transfer-grid{grid-template-columns:1fr}
 .student-directory-tools{grid-template-columns:1fr 1fr}.student-search{grid-column:1/-1}.admin-private-emails form{grid-template-columns:1fr auto}.admin-private-emails label>span{grid-column:1/-1}

@@ -36,9 +36,9 @@ Si deux élèves produisent le même code, le second reçoit automatiquement un 
 
 ### Rester connecté dans la PWA
 
-Dans l’application installée sur l’écran d’accueil, cocher **Rester connecté dans cette application (90 jours)** lors de la connexion. Les enseignants confirment ensuite leur mot de passe. Cette option n’est pas proposée dans une fenêtre de navigateur classique.
+Dans l’application installée sur l’écran d’accueil, **Rester connecté dans cette application (90 jours)** est coché par défaut lors de la connexion. Décochez cette option si vous ne souhaitez pas mémoriser votre accès sur cet appareil. Les enseignants confirment ensuite leur mot de passe ; leur choix reste conservé même après une erreur de saisie. Cette option n’est pas proposée dans une fenêtre de navigateur classique.
 
-Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifiants. Cette reconnexion automatique conserve la session laissée sur l’ordinateur, tant qu’elle est encore valide. Une connexion manuelle d’élève reste soumise à la règle habituelle sur les connexions simultanées.
+Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifiants. La reprise est également tentée à la réouverture, à la restauration d’une page et au retour du réseau, sans interrompre une connexion manuelle déjà commencée. Cette reconnexion automatique conserve la session laissée sur l’ordinateur, tant qu’elle est encore valide. Une connexion manuelle d’élève reste soumise à la règle habituelle sur les connexions simultanées.
 
 **Se déconnecter** supprime le jeton présent dans cette PWA. Après une reconnexion automatique, cette déconnexion ne ferme pas la session de l’ordinateur. Il existe un seul jeton par personne : mémoriser une nouvelle PWA remplace le précédent. Une modification du mot de passe ou du code de connexion, un changement de statut du compte ou une collision entre connexions classiques révoque le jeton. La reconnexion nécessite un accès réseau.
 
@@ -66,6 +66,8 @@ L’élève voit immédiatement :
 - son score de rewards.
 
 La liste « Vue d’ensemble » distingue trois états : à faire, envoyé à l’enseignant et confirmé.
+
+Le bouton **Prochaine étape** ouvre en priorité l’étape accessible dont l’échéance future est la plus proche, même si elle est déjà réalisée. Une échéance future correspond à un jour après aujourd’hui, selon le calendrier suisse. En cas d’égalité, l’ordre du parcours départage les étapes. Sans échéance future, le bouton ouvre la première étape non réalisée ; si tout est terminé, il permet de revoir la dernière étape. Les étapes invisibles, les groupes masqués et les restrictions d’accès restent respectés.
 
 Lorsqu’une étape visible a été ajoutée, déplacée ou modifiée, lorsqu’un type d’acquis a changé à la suite d’une confirmation ou d’une notation enseignante, ou lorsqu’un encouragement a été attribué depuis la connexion précédente, un encadré **Depuis la dernière visite** apparaît avec des liens directs vers les éléments concernés. Les ajouts, les mises à jour, les types d’acquis concernés (compétences, objectifs ou évaluations) et les encouragements y sont distingués, sans révéler le détail des acquis modifiés. L’encadré est propre à chaque élève et à chaque parcours, et reste visible pendant toute la session. À la connexion suivante, le repère est réinitialisé : seul l’intervalle entre les deux dernières connexions est conservé, sans journal durable des changements. Aucune liste n’est affichée lors de la toute première connexion.
 
@@ -318,6 +320,8 @@ Dans **Parcours**, l’enseignant sélectionne un cours. Le menu à trois points
 - archiver ou réactiver un parcours sans perdre ses données ;
 - supprimer définitivement un parcours archivé dont il est propriétaire ; les données propres au parcours sont purgées, mais ses pages restent dans la bibliothèque ;
 - dupliquer un parcours sans ses élèves ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
+
+Dans la liste de gestion du parcours, une étape sans date n’affiche aucune mention d’échéance ; sa durée et son type restent indiqués.
 
 La **Consigne propre à ce parcours** accepte le Markdown (liens, titres, listes, gras, italique…). Par exemple :
 

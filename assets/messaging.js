@@ -22,10 +22,16 @@
       if ('setAppBadge' in navigator) await (data.count ? navigator.setAppBadge(data.count) : navigator.clearAppBadge());
     } catch (_) {} finally { badgeBusy = false; }
   };
-  updateBadges();const badgeTimer=setInterval(updateBadges,30000);
+  let badgeTimer;
+  const startBadges = () => { clearInterval(badgeTimer);updateBadges();badgeTimer=setInterval(updateBadges,30000); };
+  startBadges();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) updateBadges(); });
-  window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
-  window.addEventListener('pagehide',()=>clearInterval(badgeTimer),{once:true});
+  window.addEventListener('pageshow',event=>{
+    if(!event.persisted)return;
+    if(document.querySelector('[data-chat-root]'))location.reload();
+    else startBadges(); // Let the session guard resume other pages without discarding their forms.
+  });
+  window.addEventListener('pagehide',()=>clearInterval(badgeTimer));
   const feedback = document.querySelector('[data-push-feedback]');
   document.querySelectorAll('[data-enable-push]').forEach(button => {
     let active = false, busy = false;

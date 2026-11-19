@@ -59,6 +59,24 @@ function number_pathway_items_for_display(array $items): array
     return $items;
 }
 
+/** The caller supplies only steps accessible to this pupil, in pathway order. */
+function student_next_pathway_item(array $visibleItems,?DateTimeImmutable $now=null): ?array
+{
+    $zone=new DateTimeZone('Europe/Zurich');
+    $today=($now??new DateTimeImmutable('now',$zone))->setTimezone($zone)->format('Y-m-d');
+    $upcoming=null;$upcomingDate=null;$unfinished=null;
+    foreach($visibleItems as $item){
+        if($unfinished===null&&empty($item['completed_at']))$unfinished=$item;
+        $deadline=$item['deadline']??null;
+        if(!is_string($deadline)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$deadline)||$deadline<=$today)continue;
+        $date=DateTimeImmutable::createFromFormat('!Y-m-d',$deadline,$zone);
+        if(!$date||$date->format('Y-m-d')!==$deadline)continue;
+        // Keep the first step in pathway order when several share a date.
+        if($upcomingDate===null||$deadline<$upcomingDate){$upcoming=$item;$upcomingDate=$deadline;}
+    }
+    return $upcoming??$unfinished??($visibleItems[array_key_last($visibleItems)]??null);
+}
+
 /**
  * Opens the one-session change window and advances the durable marker for the
  * next login. The previous marker remains available only in the PHP session.

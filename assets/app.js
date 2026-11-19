@@ -53,24 +53,31 @@ const installedPwa = window.matchMedia('(display-mode: standalone)').matches
   || window.navigator.standalone === true;
 
 // Only installed applications request remembered login. The cookie itself is HttpOnly.
+const sessionRequest = async (url, options = {}) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return { response, result: await response.json() };
+  } finally { window.clearTimeout(timeout); }
+};
 let pwaResumePromise = null;
 const resumePwaSession = (expectedUserId = 0, suppliedStatus = null) => {
   if (!installedPwa) return Promise.resolve(null);
   if (pwaResumePromise) return pwaResumePromise;
   pwaResumePromise = (async () => {
     try {
-      const status = suppliedStatus || await (await fetch('?view=session-status', {
+      const status = suppliedStatus || (await sessionRequest('?view=session-status', {
         credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
-      })).json();
+      })).result;
       if (status.authenticated) return !expectedUserId || status.user_id === expectedUserId ? status : null;
       if (!status.resume_csrf) return null;
-      const response = await fetch('.', {
+      const { response, result } = await sessionRequest('.', {
         method: 'POST', credentials: 'same-origin', cache: 'no-store',
         headers: { Accept: 'application/json' },
         body: new URLSearchParams({ action: 'pwa_resume', pwa_mode: '1', token: status.resume_csrf, expected_user_id: String(expectedUserId) }),
       });
       if (!response.ok) return null;
-      const result = await response.json();
       return result.authenticated === true ? result : null;
     } catch (_) { return null; }
     finally { pwaResumePromise = null; }
@@ -86,17 +93,36 @@ if (installedPwa) {
   const loginForm = document.querySelector('[data-pwa-login="identifier"]');
   if (loginForm && !new URLSearchParams(location.search).has('restart_login')) {
     // A pending teacher-password step or a person already entering credentials takes precedence.
-    let interacting = false;
+    let interacting = false, resuming = false, retryRequested = false, navigating = false;
     loginForm.addEventListener('input', () => { interacting = true; });
     loginForm.addEventListener('submit', () => { interacting = true; });
-    resumePwaSession().then((result) => {
-      if (!result) return;
-      if (result.csrf) loginForm.querySelectorAll('input[name=token]').forEach((input) => { input.value = result.csrf; });
-      if (interacting) return;
-      const view = new URLSearchParams(location.search).get('view');
-      if (view && !['login', 'session-status'].includes(view)) location.reload();
-      else location.replace(result.location || '?view=login');
+    const resumeOnArrival = async () => {
+      if (interacting || navigating) return;
+      if (resuming) { retryRequested = true; return; }
+      resuming = true;
+      try {
+        const result = await resumePwaSession();
+        if (!result) return;
+        if (result.csrf) loginForm.querySelectorAll('input[name=token]').forEach((input) => { input.value = result.csrf; });
+        if (interacting) return;
+        navigating = true;
+        const view = new URLSearchParams(location.search).get('view');
+        if (view && !['login', 'session-status'].includes(view)) location.reload();
+        else location.replace(result.location || '?view=login');
+      } finally {
+        resuming = false;
+        if (retryRequested) { retryRequested = false; void resumeOnArrival(); }
+      }
+    };
+    // A mobile app may reopen a suspended page before its network is ready.
+    // Retry when the page or connection returns, without interrupting manual login.
+    window.addEventListener('pageshow', resumeOnArrival);
+    window.addEventListener('focus', resumeOnArrival);
+    window.addEventListener('online', resumeOnArrival);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) void resumeOnArrival();
     });
+    void resumeOnArrival();
   }
 }
 
@@ -497,12 +523,13 @@ if (sessionGuardEnabled) {
     if (sessionCheckPromise) return sessionCheckPromise;
     sessionCheckPromise = (async () => {
       try {
-        const response = await fetch(SESSION_CHECK_URL, {
+        const checked = await sessionRequest(SESSION_CHECK_URL, {
           headers: { Accept: 'application/json' },
           credentials: 'same-origin',
           cache: 'no-store',
         });
-        let result = await response.json();
+        const response = checked.response;
+        let result = checked.result;
         const expectedUserId = Number(document.body.dataset.userId || 0);
         if (response.status === 401 && installedPwa) result = await resumePwaSession(expectedUserId, result) || result;
         if (result.authenticated !== true || (expectedUserId && result.user_id !== expectedUserId)) {
@@ -584,9 +611,11 @@ if (sessionGuardEnabled) {
       else form.requestSubmit();
     }
   }, true);
-  const checkVisibleSession = () => { if (document.visibilityState === 'visible') checkSession(); };
+  const checkVisibleSession = () => { if (document.visibilityState === 'visible') checkSession(installedPwa); };
   window.addEventListener('focus', checkVisibleSession);
   document.addEventListener('visibilitychange', checkVisibleSession);
+  window.addEventListener('online', checkVisibleSession);
+  window.addEventListener('pageshow', (event) => { if (event.persisted) checkSession(true); });
 }
 
 

@@ -262,6 +262,7 @@ node tests/qcm_browser.mjs
 php tests/qcm_modes.php
 php tests/pathway_groups.php
 php tests/pathway_group_visibility.php
+php tests/next_pathway_step.php
 node tests/pathway_groups_browser.mjs
 node tests/qcm_modes_browser.mjs
 node tests/embeds_browser.mjs

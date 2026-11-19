@@ -247,6 +247,7 @@ function handle_action(string $action): never
     }
 
     if ($action === 'login_continue') {
+        $_SESSION['login_remember_pwa']=(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1');
         set_login_language((string)($_POST['language'] ?? ''));
         use_language((string)($_SESSION['login_language'] ?? 'fr'));
         $identifier = trim((string)($_POST['identifier'] ?? ''));
@@ -258,13 +259,13 @@ function handle_action(string $action): never
         }
         if($user['role']==='teacher'){
             $_SESSION['login_teacher_id']=(int)$user['id'];
-            $_SESSION['login_remember_pwa']=(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1');
             redirect('login');
         }
         open_authenticated_session($user);
     }
 
     if ($action === 'login_password') {
+        $_SESSION['login_remember_pwa']=(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1');
         set_login_language((string)($_POST['language'] ?? ''));
         use_language((string)($_SESSION['login_language'] ?? 'fr'));
         $teacherId=(int)($_SESSION['login_teacher_id']??0);
