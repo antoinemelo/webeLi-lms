@@ -179,6 +179,10 @@ Pour une **Évaluation**, le crayon reste disponible pour saisir ou modifier la 
 Sous **Laissez la note vide pour annuler la validation**, l’interrupteur est vert à droite (**Utilisé dans la moyenne**) par défaut. À gauche, il devient rouge (**Non comptabilisé**). Enregistrer le choix avec **Enregistrer la note**, même sans note saisie. L’exclusion concerne uniquement cet élève et cette évaluation : elle retire la note et sa pondération des moyennes, sans effacer la note ni les résultats QCM. Elle est prise en compte dans les moyennes individuelles, de groupe, de compétences et objectifs, les moyennes QCM du groupe et les exports CSV/PDF. Réactiver l’interrupteur réintègre la note conservée. Une exclusion sans note ne crée aucune validation. La file **À confirmer** reste fondée sur les remises et validations, indépendamment de ce choix de calcul.
 
 
+### Guides de prise en main
+
+Le menu du profil propose **Guide d’utilisation**, juste sous **Modifier mon profil**. Il ouvre automatiquement le guide correspondant au compte connecté : quatre pages pour les élèves, six pour les enseignants. La lecture HTML possède un sommaire et s’adapte au téléphone ; **Télécharger le PDF** conserve la même documentation. Les deux guides sont en français.
+
 ### Exporter la progression des élèves
 
 Dans le **Tableau de bord**, accessible par le logo liike (`?view=teacher`), ouvrir le menu **⋮** en haut à droite du titre, puis **Exporter la progression**. La même fenêtre regroupe les formats **CSV** et **PDF**, les modes **Récapitulatif** et **Détaillé**, ainsi que les noms des élèves actifs du parcours sélectionné. Tous sont cochés initialement ; la recherche, les cases individuelles et la sélection globale permettent de préparer un sous-ensemble. Le bouton unique **Exporter** lance le téléchargement.
@@ -188,7 +192,7 @@ Dans le **Tableau de bord**, accessible par le logo liike (`?view=teacher`), ouv
 | Récapitulatif | Une ligne par élève : identité, progression, moyennes, encouragements et dernière activité connue. | Tableau A4 paysage reprenant les indicateurs du suivi. |
 | Détaillé | Une ligne par élève et étape ; plusieurs lignes si l’étape contient plusieurs QCM. | Fiches A4 portrait ; **chaque élève commence sur une nouvelle page**, avec continuation si nécessaire. |
 
-Le détail comprend la note de chaque évaluation sur 10, sa pondération, les autoévaluations sur 3, les confirmations et commentaires. Chaque QCM possède une colonne **Note QCM /10** : questions correctes ÷ nombre de questions × 10, arrondi à deux décimales. Seul le **dernier résultat** de chaque QCM est disponible, y compris pour l’entraînement ; les anciennes tentatives et les réponses individuelles ne sont pas exportées. Le CSV indique aussi le nombre de tentatives et la date de dernière réponse.
+Le détail conserve l’ordre et les regroupements : bandeaux de groupe dans le PDF, colonne **Regroupement** dans le CSV (vide pour une étape indépendante). Les groupes masqués sont signalés par l’accès fermé aux étapes, sans supprimer leurs résultats. Les titres sont repris sans ajouter de numéro d’étape. Le détail comprend la note de chaque évaluation sur 10, sa pondération, les autoévaluations sur 3, les confirmations et commentaires. Chaque QCM possède une colonne **Note QCM /10** : questions correctes ÷ nombre de questions × 10, arrondi à deux décimales. Seul le **dernier résultat** de chaque QCM est disponible, y compris pour l’entraînement ; les anciennes tentatives et les réponses individuelles ne sont pas exportées. Le CSV indique aussi le nombre de tentatives et la date de dernière réponse.
 
 Une cellule vide signifie qu’aucun résultat n’est disponible ; zéro reste une note. Les étapes devenues inaccessibles sont signalées afin de conserver les résultats utiles au bilan. Le CSV utilise UTF-8 avec BOM, le point-virgule et les horaires **Europe/Zurich**. Les indicateurs de l’élève et les notes d’étape sont répétés sur les lignes QCM : ne pas les additionner.
 
@@ -451,7 +455,7 @@ Dans **Parcours**, la ligne de date, durée et mode porte une pastille **bleue**
 
 ### Partager un contenu avec des collègues
 
-Dans le parcours, **Partager ce contenu** se trouve à côté du bouton d’export PDF dans l’aperçu enseignant, et à côté des exports dans la ligne d’étape. Il est aussi accessible dans l’éditeur de la bibliothèque. La page doit être au statut **Prêt**. Seul le propriétaire peut activer le partage et sélectionner les modes autorisés. Un seul lien est proposé : le collègue qui l’ouvre choisit son mode parmi ceux autorisés.
+Dans le parcours, **Partager ce contenu** se trouve à côté du bouton d’export PDF dans l’aperçu enseignant, et à côté des exports dans la ligne d’étape. Il est aussi accessible dans l’éditeur de la bibliothèque. Sur téléphone, ce bouton de l’éditeur affiche uniquement l’icône de partage. La page doit être au statut **Prêt**. Seul le propriétaire peut activer le partage et sélectionner les modes autorisés. Un seul lien est proposé : le collègue qui l’ouvre choisit son mode parmi ceux autorisés.
 
 | Mode | Utilisation | Effet des modifications |
 |---|---|---|

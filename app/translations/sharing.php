@@ -685,6 +685,19 @@ return json_decode(<<<'JSON'
     "de": "Freigabe vom Eigentümer beendet",
     "it": "Condivisione interrotta dal proprietario",
     "es": "El propietario ha dejado de compartir"
-  }
+  },
+  "Consultez le contenu sans inscription ou animez un QCM où les élèves rejoignent la séance par lien ou QR code, librement, sans nom ni compte.": {
+    "en": "View the content without registering, or run a quiz that students can freely join by link or QR code, without a name or account.",
+    "de": "Sehen Sie sich den Inhalt ohne Registrierung an oder führen Sie ein Quiz durch, an dem die Lernenden frei per Link oder QR-Code teilnehmen, ohne Namen oder Konto.",
+    "it": "Consulta il contenuto senza registrarti o conduci un quiz a cui gli alunni possono partecipare liberamente tramite link o codice QR, senza nome né account.",
+    "es": "Consulta el contenido sin registrarte o dirige un cuestionario al que el alumnado pueda unirse libremente mediante un enlace o código QR, sin nombre ni cuenta."
+  },
+  "Les réponses sont temporaires, restent anonymes et ne deviennent pas des notes.": {
+    "en": "Answers are temporary, remain anonymous and do not become grades.",
+    "de": "Die Antworten sind vorübergehend, bleiben anonym und werden nicht benotet.",
+    "it": "Le risposte sono temporanee, restano anonime e non diventano voti.",
+    "es": "Las respuestas son temporales, permanecen anónimas y no se convierten en calificaciones."
+  },
+  "Guide d’utilisation": {"en":"User guide","de":"Benutzerhandbuch","it":"Guida utente","es":"Guía de uso"}
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

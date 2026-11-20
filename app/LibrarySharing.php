@@ -11,7 +11,7 @@ function library_share_description(string $mode): string
     return match($mode){
         'shared'=>'Les collègues connectés à cette plateforme utilisent la même page. Les modifications du contenu sont communes à tous les parcours qui l’utilisent.',
         'copy'=>'Chaque collègue récupère sa propre copie. Les modifications ultérieures restent indépendantes. Un fichier JSON permet aussi de la transférer vers une autre installation liike.',
-        default=>'Consultez le contenu sans inscription ou animez un QCM en classe. Les élèves rejoignent la séance par lien ou QR code, sans nom ni compte. Les réponses anonymes sont temporaires et ne deviennent pas des notes.',
+        default=>'Consultez le contenu sans inscription ou animez un QCM où les élèves rejoignent la séance par lien ou QR code, librement, sans nom ni compte.',
     };
 }
 

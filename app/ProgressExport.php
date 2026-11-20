@@ -21,10 +21,23 @@ function course_progress_export_data(PDO $pdo,int $courseId,int $teacherId,array
         $students=array_values(array_filter(course_progress_students($pdo,$courseId),static fn(array $student):bool=>isset($wanted[(int)$student['id']])));
         if(count($students)!==count($wanted))throw new InvalidArgumentException('Élève introuvable ou accès non autorisé.');
         usort($students,static fn(array $a,array $b):int=>pathway_natural_compare($a['last_name'],$b['last_name'])?:pathway_natural_compare($a['first_name'],$b['first_name'])?:((int)$a['id']<=>(int)$b['id']));
-        $data=['course'=>$course,'students'=>$students,'mode'=>$mode,'exported_at'=>gmdate('Y-m-d H:i:s'),'items'=>[],'progress'=>[],'access'=>[],'quizzes'=>[],'attempts'=>[]];
+        $data=['course'=>$course,'students'=>$students,'mode'=>$mode,'exported_at'=>gmdate('Y-m-d H:i:s'),'items'=>[],'sections'=>[],'progress'=>[],'access'=>[],'quizzes'=>[],'attempts'=>[]];
         if($mode==='detailed'){
             $query=$pdo->prepare('SELECT pi.*,p.title FROM pathway_items pi JOIN pages p ON p.id=pi.page_id WHERE pi.course_id=? ORDER BY pi.position,pi.id');$query->execute([$courseId]);
             $data['items']=$query->fetchAll(PDO::FETCH_ASSOC);
+            $groups=pathway_groups($pdo,$courseId);$groupsById=array_column($groups,null,'id');
+            foreach($data['items'] as &$item){
+                $group=$groupsById[(int)($item['group_id']??0)]??null;
+                $item['group_title']=$group['title']??'';
+                $item['group_visible']=$group===null||(bool)$group['is_visible'];
+            }
+            unset($item);
+            // Merge consecutive ungrouped steps; fetch the structure only once for all students.
+            foreach(pathway_group_sections($data['items'],$groups,true) as $section){
+                $last=array_key_last($data['sections']);
+                if(!$section['group']&&$last!==null&&!$data['sections'][$last]['group'])$data['sections'][$last]['items']=array_merge($data['sections'][$last]['items'],$section['items']);
+                else $data['sections'][]=$section;
+            }
             $query=$pdo->prepare('SELECT pr.*,e.student_id FROM progress pr JOIN enrollments e ON e.id=pr.enrollment_id JOIN pathway_items pi ON pi.id=pr.pathway_item_id AND pi.course_id=e.course_id WHERE e.course_id=?');$query->execute([$courseId]);
             foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row)if(isset($wanted[(int)$row['student_id']]))$data['progress'][(int)$row['student_id']][(int)$row['pathway_item_id']]=$row;
             $query=$pdo->prepare('SELECT a.* FROM pathway_item_students a JOIN pathway_items pi ON pi.id=a.pathway_item_id WHERE pi.course_id=?');$query->execute([$courseId]);
@@ -60,7 +73,7 @@ function progress_export_date(?string $value): string
 function progress_export_headers(bool $detailed): array
 {
     $headers=['Code du parcours','Parcours','Identifiant élève','Nom','Prénom','Courriel','Groupe classe','Étapes réalisées','Étapes accessibles','Progression (%)','Étapes confirmées','À confirmer','Moyenne pondérée des évaluations /10','Moyenne des autoévaluations /3','Encouragements','Dernière activité','Date de l’export'];
-    if($detailed)$headers=array_merge($headers,['Identifiant de l’étape','Étape','Titre de la page','Accessible à l’élève','Inclus dans les moyennes','Échéance','Réalisée le','Évaluation','Note sur 10','Pondération','Autoévaluation','Niveau élève /3','Autoévaluation validée le','Commentaire élève','Niveau enseignant /3','Confirmation enseignante le','Commentaire enseignant','QCM','Libellé du QCM','Questions correctes','Nombre de questions','Résultat QCM (%)','Note QCM /10','Nombre de tentatives','Dernière réponse au QCM']);
+    if($detailed)$headers=array_merge($headers,['Identifiant de l’étape','Étape','Titre de la page','Regroupement','Accessible à l’élève','Inclus dans les moyennes','Échéance','Réalisée le','Évaluation','Note sur 10','Pondération','Autoévaluation','Niveau élève /3','Autoévaluation validée le','Commentaire élève','Niveau enseignant /3','Confirmation enseignante le','Commentaire enseignant','QCM','Libellé du QCM','Questions correctes','Nombre de questions','Résultat QCM (%)','Note QCM /10','Nombre de tentatives','Dernière réponse au QCM']);
     return array_map(static function(string $label):string{
         $dateLabels=['Dernière activité','Date de l’export','Réalisée le','Autoévaluation validée le','Confirmation enseignante le','Dernière réponse au QCM'];
         return t($label).(in_array($label,$dateLabels,true)?' (Europe/Zurich)':'');
@@ -74,15 +87,15 @@ function course_progress_export_rows(array $data): Generator
         $studentId=(int)$student['id'];
         $base=[$data['course']['code'],$data['course']['title'],$studentId,$student['last_name'],$student['first_name'],$student['email'],$student['class_group'],(int)$student['done'],(int)$student['total'],$student['total']?(int)round($student['done']/$student['total']*100):0,(int)$student['confirmed'],(int)$student['waiting'],progress_export_number($student['evaluation_average']),progress_export_number($student['self_average']),(int)$student['points'],progress_export_date($student['last_activity_at']),progress_export_date($data['exported_at'])];
         if($data['mode']==='summary'){yield $base;continue;}
-        if(!$data['items']){yield array_merge($base,array_fill(0,25,''));continue;}
+        if(!$data['items']){yield array_merge($base,array_fill(0,26,''));continue;}
         $displayPosition=0;
         foreach($data['items'] as $item){
             $itemId=(int)$item['id'];$progress=$data['progress'][$studentId][$itemId]??[];
-            $accessible=$item['access_mode']==='all'||($item['access_mode']==='restricted'&&!empty($data['access'][$studentId][$itemId]));
+            $accessible=($item['group_visible']??true)&&($item['access_mode']==='all'||($item['access_mode']==='restricted'&&!empty($data['access'][$studentId][$itemId])));
             if($accessible)$displayPosition++;
             $evaluation=(bool)$item['is_evaluation'];$self=(bool)$item['self_evaluation_enabled'];
             $selfSubmitted=$self&&!empty($progress['student_validated_at']);$teacherValidated=!empty($progress['teacher_validated_at']);
-            $step=[$itemId,$accessible?$displayPosition:'',$item['title'],t($accessible?'Oui':'Non'),t($item['framework_tracking_enabled']&&(!$evaluation||($progress['evaluation_included']??1))?'Oui':'Non'),$item['deadline']??'',progress_export_date($progress['completed_at']??null),t($evaluation?'Oui':'Non'),$evaluation?progress_export_number($progress['evaluation_score']??null):'',$evaluation?progress_export_number($item['evaluation_weight']):'',t($self?'Oui':'Non'),$selfSubmitted?($progress['student_level']??''):'',$selfSubmitted?progress_export_date($progress['student_validated_at']):'',$selfSubmitted?($progress['student_note']??''):'',$self&&$teacherValidated?($progress['teacher_level']??''):'',progress_export_date($progress['teacher_validated_at']??null),$progress['teacher_note']??''];
+            $step=[$itemId,$accessible?$displayPosition:'',$item['title'],$item['group_title']??'',t($accessible?'Oui':'Non'),t($item['framework_tracking_enabled']&&(!$evaluation||($progress['evaluation_included']??1))?'Oui':'Non'),$item['deadline']??'',progress_export_date($progress['completed_at']??null),t($evaluation?'Oui':'Non'),$evaluation?progress_export_number($progress['evaluation_score']??null):'',$evaluation?progress_export_number($item['evaluation_weight']):'',t($self?'Oui':'Non'),$selfSubmitted?($progress['student_level']??''):'',$selfSubmitted?progress_export_date($progress['student_validated_at']):'',$selfSubmitted?($progress['student_note']??''):'',$self&&$teacherValidated?($progress['teacher_level']??''):'',progress_export_date($progress['teacher_validated_at']??null),$progress['teacher_note']??''];
             $quizzes=$data['quizzes'][$itemId]??[];
             if(!$quizzes){yield array_merge($base,$step,array_fill(0,8,''));continue;}
             foreach($quizzes as $index=>$quiz){

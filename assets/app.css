@@ -931,6 +931,7 @@ h1{font-size:2.25rem}
 .timeline-entry:not(:last-child){border-bottom:1px solid var(--line)}.timeline-entry>.timeline-item{border:0}.library-sharing{margin-top:2rem}.library-sharing input[readonly]{width:100%;min-width:0}
 
 .share-content-button,.reader-pdf-download{display:inline-flex;align-items:center;gap:.6rem}.reader-export-actions{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}.library-sharing{margin-top:1rem}.guest-invite{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;margin:1rem 0;padding:1rem;background:white;border:1px solid #dcd9e5;border-radius:1rem}.guest-qr{padding:16px;background:white}.guest-qr img,.guest-qr canvas{display:block;max-width:100%;height:auto}.guest-invite-copy{flex:1;min-width:12rem}.guest-invite-copy input{width:100%;box-sizing:border-box;padding:.65rem;font:inherit}.guest-invite a{overflow-wrap:anywhere}
+@media(max-width:600px){.editor-context-nav .share-content-button{flex-shrink:0;justify-content:center;gap:0;min-width:2.75rem;min-height:2.75rem;padding:.6rem}.editor-context-nav .share-content-button>span{display:none}.editor-context-nav .share-content-button>i{font-size:1.1rem}}
 
 /* Library provenance and sharing permissions: colour always has a text equivalent. */
 .page-card[hidden]{display:none!important}.page-card.page-card-shared-in{background:#fff0e2;border-color:#efd4b8}.page-card.page-card-shared-out{background:#edf5ff;border-color:#cbdff3}
@@ -969,3 +970,5 @@ h1{font-size:2.25rem}
 .student-identity-actions{display:flex;gap:.75rem;align-items:center;margin-top:.85rem}.student-identity-actions [role=status]{font-size:.85rem;color:#1e6d58;overflow-wrap:anywhere}.student-phone-help{font-size:.8rem;margin-bottom:1.3rem}
 .student-progression-menu{max-width:min(28rem,calc(100vw - 2rem))}.student-progression-menu .dropdown-item{white-space:normal;overflow-wrap:anywhere}
 @media(max-width:600px){.student-identity-grid{grid-template-columns:1fr}.student-directory-actions{flex-wrap:wrap}.student-management-trigger{flex-wrap:wrap;gap:.5rem}.student-identity-actions{align-items:flex-start;flex-wrap:wrap}}
+
+@media(pointer:coarse){.row-actions{flex-wrap:wrap}.row-actions .pathway-row-action,.row-actions .remove-item{width:2.75rem;min-width:2.75rem;height:2.75rem;min-height:2.75rem}.row-actions .pathway-row-action{font-size:1rem}}

@@ -17,9 +17,13 @@ require_once $applicationRoot . '/app/actions.php';
 require_once $applicationRoot . '/app/views.php';
 
 register_shutdown_function(static function()use($applicationRoot):void{
-    try{if(!is_file($applicationRoot.'/storage/maintenance.flag')&&messaging_push_config()&&(!is_file($applicationRoot.'/storage/push-cron.heartbeat')||filemtime($applicationRoot.'/storage/push-cron.heartbeat')<time()-120)){if(session_status()===PHP_SESSION_ACTIVE)session_write_close();if(function_exists('fastcgi_finish_request'))fastcgi_finish_request();messaging_push_batch(5);}}catch(Throwable $e){error_log('liike push: '.$e->getMessage());}
+    // Slow notification transports must not hold this browser's session lock.
+    if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
+    if(function_exists('fastcgi_finish_request'))fastcgi_finish_request();
+    if(request_is_background_poll())return;
+    try{if(!is_file($applicationRoot.'/storage/maintenance.flag')&&messaging_push_config()&&(!is_file($applicationRoot.'/storage/push-cron.heartbeat')||filemtime($applicationRoot.'/storage/push-cron.heartbeat')<time()-120)){messaging_push_batch(5);}}catch(Throwable $e){error_log('liike push: '.$e->getMessage());}
     if(mail_cron_is_active($applicationRoot))return;
-    try{outbox_send_pending_batch(db(),500);}catch(Throwable){}
+    try{outbox_send_pending_batch(db(),MAIL_OUTBOX_BATCH_SIZE);}catch(Throwable){}
 });
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['restart_login'])) {
@@ -75,6 +79,10 @@ $user = require_actor();
 if(($_GET['view']??'')==='qcm-class'){render_qcm_class_page($user);exit;}
 if((int)($_GET['announcement']??0)>0)mark_announcement_read_for_user(db(),(int)$_GET['announcement'],(int)$user['id']);
 $view = (string) ($_GET['view'] ?? ($user['role'] === 'teacher' ? 'teacher' : 'student'));
+if($view==='user-guide'&&isset($_GET['format'])){
+    if($_GET['format']!=='pdf'){http_response_code(404);exit;}
+    send_user_guide_pdf($user['role']);
+}
 if($view==='event-download'){
     header('Cache-Control: private, no-store');
     try{
@@ -171,8 +179,8 @@ if($view==='document-download'){
     }
 }
 $allowed = $user['role'] === 'teacher'
-    ? ['discussions','teacher','student-detail','students','library','page-edit','pathway','teacher-preview','teacher-preview-page','pdf-preview','outbox','profile']
-    : ['discussions','student','learn','competencies','announcements','rewards','profile','join'];
+    ? ['discussions','teacher','student-detail','students','library','page-edit','pathway','teacher-preview','teacher-preview-page','pdf-preview','outbox','profile','user-guide']
+    : ['discussions','student','learn','competencies','announcements','rewards','profile','join','user-guide'];
 if ($user['role'] === 'teacher' && (int)($user['is_superadmin'] ?? 0) === 1) $allowed[] = 'admin';
 if (!in_array($view, $allowed, true)) {
     $view = $user['role'] === 'teacher' ? 'teacher' : 'student';

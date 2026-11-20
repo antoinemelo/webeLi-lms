@@ -279,7 +279,19 @@ function render_level_picker(string $name, ?int $selected = null): string
     return $html . '</div>';
 }
 
-purge_expired_registrations();
-purge_learning_activity(db());
+/** Polling and heartbeats must not compete for housekeeping write locks. */
+function request_is_background_poll(): bool
+{
+    if(($_SERVER['REQUEST_METHOD']??'GET')==='GET')return in_array($_GET['view']??'',[
+        'session-status','notification-status','discussion-data','qcm-class-state','guest-class-state',
+    ],true);
+    return in_array($_POST['action']??'',[
+        'acquire_edit_lock','release_edit_lock','track_learning_activity',
+    ],true);
+}
 
-QcmGuest::purge(db());
+if(!request_is_background_poll()){
+    purge_expired_registrations();
+    purge_learning_activity(db());
+    QcmGuest::purge(db());
+}

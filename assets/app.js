@@ -468,6 +468,9 @@ if (sessionGuardEnabled) {
   let sessionCheckPromise = null;
   const approvedForms = new WeakSet();
   const approvedActions = new WeakSet();
+  const pendingForms = new WeakSet();
+  const pendingActions = new WeakSet();
+  const sessionIsFresh = () => sessionState === 'valid' && Date.now() - sessionCheckedAt < SESSION_CHECK_FRESHNESS;
 
   const overlay = document.createElement('div');
   overlay.className = 'session-guard-overlay';
@@ -519,8 +522,8 @@ if (sessionGuardEnabled) {
     status.textContent = '';
   };
   const checkSession = async (force = false) => {
-    if (!force && sessionState === 'valid' && Date.now() - sessionCheckedAt < SESSION_CHECK_FRESHNESS) return true;
     if (sessionCheckPromise) return sessionCheckPromise;
+    if (!force && sessionIsFresh()) return true;
     sessionCheckPromise = (async () => {
       try {
         const checked = await sessionRequest(SESSION_CHECK_URL, {
@@ -587,13 +590,20 @@ if (sessionGuardEnabled) {
       approvedActions.delete(action);
       return;
     }
+    // Opening a local dialog or following a link needs no extra round trip
+    // while this page's session is fresh. The destination still checks access.
+    if (!sessionCheckPromise && sessionIsFresh()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (await checkSession(true)) {
-      if (action.matches('[data-bs-toggle="modal"]') && openApprovedModal(action)) return;
-      approvedActions.add(action);
-      action.click();
-    }
+    if (pendingActions.has(action)) return;
+    pendingActions.add(action);
+    try {
+      if (await checkSession()) {
+        if (action.matches('[data-bs-toggle="modal"]') && openApprovedModal(action)) return;
+        approvedActions.add(action);
+        action.click();
+      }
+    } finally { pendingActions.delete(action); }
   }, true);
   document.addEventListener('submit', async (event) => {
     const form = event.target;
@@ -604,14 +614,20 @@ if (sessionGuardEnabled) {
     }
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (pendingForms.has(form)) return;
+    pendingForms.add(form);
     const submitter = event.submitter;
-    if (await checkSession(true)) {
-      approvedForms.add(form);
-      if (submitter && !submitter.disabled) form.requestSubmit(submitter);
-      else form.requestSubmit();
-    }
+    try {
+      if (await checkSession(true)) {
+        approvedForms.add(form);
+        if (submitter && !submitter.disabled) form.requestSubmit(submitter);
+        else form.requestSubmit();
+      }
+    } finally { pendingForms.delete(form); }
   }, true);
-  const checkVisibleSession = () => { if (document.visibilityState === 'visible') checkSession(installedPwa); };
+  const checkVisibleSession = () => {
+    if (document.visibilityState === 'visible') checkSession(installedPwa && Date.now() - sessionCheckedAt >= 5000);
+  };
   window.addEventListener('focus', checkVisibleSession);
   document.addEventListener('visibilitychange', checkVisibleSession);
   window.addEventListener('online', checkVisibleSession);
@@ -697,22 +713,31 @@ const setLockState = (key, state, owner = '') => {
     });
   });
 };
-const editLockRequest = async (scope) => {
+const pendingEditLocks = new Map();
+const editLockRetries = new Map();
+const editLockRequest = (scope) => {
   const key = lockKey(scope);
-  const data = new FormData();
-  data.set('token', document.body.dataset.csrf || '');
-  data.set('action', 'acquire_edit_lock');
-  data.set('entity_type', scope.dataset.lockType);
-  data.set('entity_id', scope.dataset.lockId);
-  try {
-    const response = await fetch(window.location.href, { method: 'POST', body: data, credentials: 'same-origin' });
-    const result = await response.json();
-    if (response.ok && result.ok) { heldEditLocks.set(key, scope); setLockState(key, 'held'); return; }
-    setLockState(key, 'blocked', result.owner);
-    window.setTimeout(() => editLockRequest(scope), 15000);
-  } catch (_) {
-    lockScopes(key).forEach((part) => part.querySelectorAll('[data-lock-status]').forEach((status) => { status.textContent = ui('lock_error', 'Impossible de réserver cette zone'); }));
-  }
+  if (pendingEditLocks.has(key)) return pendingEditLocks.get(key);
+  clearTimeout(editLockRetries.get(key));
+  editLockRetries.delete(key);
+  const request = (async () => {
+    const data = new FormData();
+    data.set('token', document.body.dataset.csrf || '');
+    data.set('action', 'acquire_edit_lock');
+    data.set('entity_type', scope.dataset.lockType);
+    data.set('entity_id', scope.dataset.lockId);
+    try {
+      const response = await fetch(window.location.href, { method: 'POST', body: data, credentials: 'same-origin' });
+      const result = await response.json();
+      if (response.ok && result.ok) { heldEditLocks.set(key, scope); setLockState(key, 'held'); return; }
+      setLockState(key, 'blocked', result.owner);
+      editLockRetries.set(key, window.setTimeout(() => editLockRequest(scope), 15000));
+    } catch (_) {
+      lockScopes(key).forEach((part) => part.querySelectorAll('[data-lock-status]').forEach((status) => { status.textContent = ui('lock_error', 'Impossible de réserver cette zone'); }));
+    } finally { pendingEditLocks.delete(key); }
+  })();
+  pendingEditLocks.set(key, request);
+  return request;
 };
 document.querySelectorAll('[data-edit-lock]').forEach((scope) => scope.addEventListener('focusin', (event) => {
   if (event.target.closest('[data-no-edit-lock]')) return;

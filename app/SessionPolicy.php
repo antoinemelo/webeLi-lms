@@ -29,10 +29,13 @@ function start_student_session(PDO $pdo, int $studentId): ?string
 function student_session_is_valid(PDO $pdo, int $studentId, string $token): bool
 {
     if(!preg_match('/^[a-f0-9]{64}$/',$token))return false;
-    $query=$pdo->prepare("SELECT 1 FROM users WHERE id=? AND role='student' AND account_status='active' AND student_session_token_hash=?");
+    $query=$pdo->prepare("SELECT student_session_seen_at FROM users WHERE id=? AND role='student' AND account_status='active' AND student_session_token_hash=?");
     $query->execute([$studentId,hash('sha256',$token)]);
-    if(!$query->fetchColumn())return false;
-    $pdo->prepare('UPDATE users SET student_session_seen_at=? WHERE id=? AND student_session_token_hash=?')->execute([time(),$studentId,hash('sha256',$token)]);
+    $seen=$query->fetchColumn();
+    if($seen===false)return false;
+    // Validate every request, but write the presence heartbeat at most once a minute.
+    $now=time();
+    if((int)$seen<$now-60)$pdo->prepare('UPDATE users SET student_session_seen_at=? WHERE id=? AND student_session_token_hash=? AND COALESCE(student_session_seen_at,0)<?')->execute([$now,$studentId,hash('sha256',$token),$now-60]);
     return true;
 }
 
