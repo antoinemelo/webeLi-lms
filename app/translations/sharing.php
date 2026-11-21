@@ -698,6 +698,8 @@ return json_decode(<<<'JSON'
     "it": "Le risposte sono temporanee, restano anonime e non diventano voti.",
     "es": "Las respuestas son temporales, permanecen anónimas y no se convierten en calificaciones."
   },
-  "Guide d’utilisation": {"en":"User guide","de":"Benutzerhandbuch","it":"Guida utente","es":"Guía de uso"}
+  "Guide d’utilisation": {"en":"User guide","de":"Benutzerhandbuch","it":"Guida utente","es":"Guía de uso"},
+  "Afficher davantage de contenus": {"en":"Show more content","de":"Weitere Inhalte anzeigen","it":"Mostra altri contenuti","es":"Mostrar más contenidos"},
+  "Chargement impossible. Réessayez.": {"en":"Unable to load. Please try again.","de":"Laden fehlgeschlagen. Bitte erneut versuchen.","it":"Caricamento non riuscito. Riprova.","es":"No se pudo cargar. Inténtalo de nuevo."}
 }
 JSON, true, 512, JSON_THROW_ON_ERROR);

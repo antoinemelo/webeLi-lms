@@ -6,9 +6,11 @@ final class QcmGuest
 {
     public const LIFETIME=86400;
 
-    public static function purge(PDO $pdo): void
+    public static function purge(PDO $pdo): int
     {
-        $pdo->prepare('DELETE FROM qcm_guest_sessions WHERE expires_at<=?')->execute([time()]);
+        $delete=$pdo->prepare('DELETE FROM qcm_guest_sessions WHERE expires_at<=?');
+        $delete->execute([time()]);
+        return $delete->rowCount();
     }
 
     private static function quiz(PDO $pdo,int $pageId,int $blockId,string $key): array

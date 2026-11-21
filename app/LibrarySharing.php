@@ -85,8 +85,9 @@ function library_page_sharing(PDO $pdo,array $pageIds,int $teacherId): array
             COALESCE(l.allow_copy,0) AS allow_copy,COALESCE(l.allow_external,0) AS allow_external,
             o.page_id AS copied_page_id,COALESCE(source.name,o.source_owner_name,'') AS copy_source_name,
             EXISTS(SELECT 1 FROM page_shares history WHERE history.page_id=p.id AND history.mode='shared') AS was_shared,
-            EXISTS(SELECT 1 FROM pathway_items pi JOIN courses c ON c.id=pi.course_id JOIN users colleague ON colleague.id=c.teacher_id
-                WHERE pi.page_id=p.id AND c.teacher_id<>p.owner_id AND c.archived=0
+            p.id IN (SELECT pi.page_id FROM pathway_items pi JOIN pages source_page ON source_page.id=pi.page_id
+                JOIN courses c ON c.id=pi.course_id JOIN users colleague ON colleague.id=c.teacher_id
+                WHERE c.teacher_id<>source_page.owner_id AND c.archived=0
                     AND colleague.role='teacher' AND colleague.account_status='active') AS used_in_colleague_pathway
             FROM pages p JOIN users u ON u.id=p.owner_id LEFT JOIN page_share_links l ON l.page_id=p.id
             LEFT JOIN page_copy_origins o ON o.page_id=p.id LEFT JOIN users source ON source.id=o.source_owner_id

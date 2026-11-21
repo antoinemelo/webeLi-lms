@@ -2,6 +2,17 @@
 
 declare(strict_types=1);
 
+/** Cheap request-time check; full contracts and checksums belong to migration/install. */
+function database_schema_is_current(PDO $pdo, int $expected): bool
+{
+    $version=(int)$pdo->query('PRAGMA user_version')->fetchColumn();
+    if($version>$expected)throw new RuntimeException('La base est plus récente que cette version de l’application.');
+    if($version!==$expected)return false;
+    if(!$pdo->query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'")->fetchColumn())return false;
+    $ledger=$pdo->query('SELECT COUNT(*) AS n,MIN(version) AS first,MAX(version) AS last FROM schema_migrations')->fetch(PDO::FETCH_ASSOC);
+    return (int)$ledger['n']===$expected && (int)$ledger['first']===1 && (int)$ledger['last']===$expected;
+}
+
 function database_packaged_migrations(string $directory): array
 {
     if(!is_dir($directory))return [];

@@ -21,6 +21,7 @@ register_shutdown_function(static function()use($applicationRoot):void{
     if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
     if(function_exists('fastcgi_finish_request'))fastcgi_finish_request();
     if(request_is_background_poll())return;
+    run_housekeeping(db(),$applicationRoot);
     try{if(!is_file($applicationRoot.'/storage/maintenance.flag')&&messaging_push_config()&&(!is_file($applicationRoot.'/storage/push-cron.heartbeat')||filemtime($applicationRoot.'/storage/push-cron.heartbeat')<time()-120)){messaging_push_batch(5);}}catch(Throwable $e){error_log('liike push: '.$e->getMessage());}
     if(mail_cron_is_active($applicationRoot))return;
     try{outbox_send_pending_batch(db(),MAIL_OUTBOX_BATCH_SIZE);}catch(Throwable){}
@@ -38,6 +39,38 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='session-status'){
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: no-store, private');
     echo json_encode(['authenticated'=>(bool)$sessionUser,'checked_at'=>time(),'csrf'=>$sessionUser?csrf_token():null,'resume_csrf'=>csrf_token(),'user_id'=>$sessionUser?(int)$sessionUser['id']:null],JSON_THROW_ON_ERROR);
+    exit;
+}
+
+if($_SERVER['REQUEST_METHOD']==='GET'&&in_array($_GET['view']??'',['library-cards','library-index'],true)){
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Cache-Control: no-store, private');
+    $user=actor();
+    if(!$user || $user['role']!=='teacher'){http_response_code($user?403:401);echo json_encode(['error'=>t('Accès interdit.')]);exit;}
+    csrf_token();
+    session_write_close();
+    $bufferLevel=ob_get_level();
+    try{
+        $ids=null;
+        if($_GET['view']==='library-cards'){
+            $raw=$_GET['ids']??'';
+            if(!is_string($raw)||strlen($raw)>512||!preg_match('/^\d+(?:,\d+)*$/D',$raw))throw new InvalidArgumentException('Requête invalide.');
+            $ids=explode(',',$raw);
+        }
+        $catalog=library_catalog(db(),(int)$user['id'],$ids);
+        $payload=['user_id'=>(int)$user['id'],'entries'=>library_search_index($catalog)];
+        if($ids!==null){
+            ob_start();
+            foreach($catalog['pages'] as $page)render_library_card($page,$catalog);
+            $payload['html']=ob_get_clean();
+        }
+        echo json_encode($payload,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
+    }catch(InvalidArgumentException $exception){http_response_code(400);echo json_encode(['error'=>t($exception->getMessage())]);}
+    catch(Throwable $exception){
+        while(ob_get_level()>$bufferLevel)ob_end_clean();
+        error_log('liike library: '.get_class($exception));
+        http_response_code(503);echo json_encode(['error'=>t('Chargement impossible. Réessayez.')]);
+    }
     exit;
 }
 

@@ -8,6 +8,11 @@ final class Database
     public static function connect(string $root): \PDO
     {
         $path=rtrim($root,'/').'/storage/messaging.sqlite';
+        if(is_file($path)){
+            $pdo=self::open($path);
+            if(\database_schema_is_current($pdo,self::VERSION))return $pdo;
+            $pdo=null;
+        }
         self::migrate($path,dirname(__DIR__,2).'/database/messaging/migrations');
         return self::open($path);
     }

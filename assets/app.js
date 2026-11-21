@@ -53,11 +53,12 @@ const installedPwa = window.matchMedia('(display-mode: standalone)').matches
   || window.navigator.standalone === true;
 
 // Only installed applications request remembered login. The cookie itself is HttpOnly.
-const sessionRequest = async (url, options = {}) => {
+const sessionRequest = async (url, options = {}, allowCsrfRefresh = false) => {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 10000);
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
+    if (allowCsrfRefresh && response.status === 403) return { response, result: null };
     return { response, result: await response.json() };
   } finally { window.clearTimeout(timeout); }
 };
@@ -67,18 +68,25 @@ const resumePwaSession = (expectedUserId = 0, suppliedStatus = null) => {
   if (pwaResumePromise) return pwaResumePromise;
   pwaResumePromise = (async () => {
     try {
-      const status = suppliedStatus || (await sessionRequest('?view=session-status', {
-        credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
-      })).result;
-      if (status.authenticated) return !expectedUserId || status.user_id === expectedUserId ? status : null;
-      if (!status.resume_csrf) return null;
-      const { response, result } = await sessionRequest('.', {
-        method: 'POST', credentials: 'same-origin', cache: 'no-store',
-        headers: { Accept: 'application/json' },
-        body: new URLSearchParams({ action: 'pwa_resume', pwa_mode: '1', token: status.resume_csrf, expected_user_id: String(expectedUserId) }),
-      });
-      if (!response.ok) return null;
-      return result.authenticated === true ? result : null;
+      let status = suppliedStatus;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        status ||= (await sessionRequest('?view=session-status', {
+          credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+        })).result;
+        if (status.authenticated) return !expectedUserId || status.user_id === expectedUserId ? status : null;
+        if (!status.resume_csrf) return null;
+        const { response, result } = await sessionRequest('.', {
+          method: 'POST', credentials: 'same-origin', cache: 'no-store',
+          headers: { Accept: 'application/json' },
+          body: new URLSearchParams({ action: 'pwa_resume', pwa_mode: '1', token: status.resume_csrf, expected_user_id: String(expectedUserId) }),
+        }, true);
+        // Concurrent polls can create a newer PHP session while an expired one is resumed.
+        // Obtain its CSRF token once, retaining the expected person and every server check.
+        if (response.status === 403 && attempt === 0) { status = null;continue; }
+        if (!response.ok) return null;
+        return result.authenticated === true ? result : null;
+      }
+      return null;
     } catch (_) { return null; }
     finally { pwaResumePromise = null; }
   })();
@@ -471,6 +479,29 @@ if (sessionGuardEnabled) {
   const pendingForms = new WeakSet();
   const pendingActions = new WeakSet();
   const sessionIsFresh = () => sessionState === 'valid' && Date.now() - sessionCheckedAt < SESSION_CHECK_FRESHNESS;
+  const pendingStatus = document.createElement('div');
+  pendingStatus.className = 'session-check-status';
+  pendingStatus.hidden = true;
+  pendingStatus.setAttribute('role', 'status');
+  pendingStatus.textContent = ui('session_checking', 'Vérification de la session…');
+  document.body.append(pendingStatus);
+  let waitingActions = 0;
+  const markPending = (element) => {
+    const previous = element.getAttribute('aria-busy');
+    element.setAttribute('aria-busy', 'true');
+    element.dataset.sessionPending = '1';
+    waitingActions++;
+    pendingStatus.hidden = false;
+    let cleared = false;
+    return () => {
+      if (cleared) return;
+      cleared = true;
+      delete element.dataset.sessionPending;
+      if (previous === null) element.removeAttribute('aria-busy');
+      else element.setAttribute('aria-busy', previous);
+      pendingStatus.hidden = --waitingActions === 0;
+    };
+  };
 
   const overlay = document.createElement('div');
   overlay.className = 'session-guard-overlay';
@@ -597,13 +628,15 @@ if (sessionGuardEnabled) {
     event.stopImmediatePropagation();
     if (pendingActions.has(action)) return;
     pendingActions.add(action);
+    const clearPending = markPending(action);
     try {
       if (await checkSession()) {
+        clearPending();
         if (action.matches('[data-bs-toggle="modal"]') && openApprovedModal(action)) return;
         approvedActions.add(action);
         action.click();
       }
-    } finally { pendingActions.delete(action); }
+    } finally { clearPending(); pendingActions.delete(action); }
   }, true);
   document.addEventListener('submit', async (event) => {
     const form = event.target;
@@ -612,18 +645,22 @@ if (sessionGuardEnabled) {
       approvedForms.delete(form);
       return;
     }
+    // The server still checks authentication, CSRF and permissions for every POST.
+    if (!sessionCheckPromise && sessionIsFresh()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     if (pendingForms.has(form)) return;
     pendingForms.add(form);
+    const clearPending = markPending(form);
     const submitter = event.submitter;
     try {
-      if (await checkSession(true)) {
+      if (await checkSession()) {
+        clearPending();
         approvedForms.add(form);
         if (submitter && !submitter.disabled) form.requestSubmit(submitter);
         else form.requestSubmit();
       }
-    } finally { pendingForms.delete(form); }
+    } finally { clearPending(); pendingForms.delete(form); }
   }, true);
   const checkVisibleSession = () => {
     if (document.visibilityState === 'visible') checkSession(installedPwa && Date.now() - sessionCheckedAt >= 5000);
@@ -789,6 +826,14 @@ const libraryFilters = document.querySelector('[data-library-filters]');
 if (libraryFilters) {
   const memory = filterMemory('library');
   const singles = { search: '[data-page-search]', status: '[data-page-status]', tag: '[data-page-tag]', objective: '[data-page-objective]' };
+  const grid = document.querySelector('[data-library-grid]');
+  const pagination = document.querySelector('[data-library-pagination]');
+  const more = pagination.querySelector('[data-library-more]');
+  const loadStatus = pagination.querySelector('[data-library-load-status]');
+  const batchSize = Number(libraryFilters.dataset.batchSize) || 24;
+  let entries = new Map(JSON.parse(document.querySelector('[data-library-index]').textContent).map(entry => [entry.id, entry]));
+  const cards = new Map([...grid.querySelectorAll('[data-page-card]')].map(card => [card.dataset.pageId, card]));
+  let visibleLimit = batchSize, generation = 0, controller = null, failed = false;
   const restore = () => {
     const saved = memory.read();
     for (const [key, selector] of Object.entries(singles)) restoreFilterValue(libraryFilters.querySelector(selector), saved[key]);
@@ -800,81 +845,125 @@ if (libraryFilters) {
       controls.forEach(control => { control.checked = values.includes(control.value); });
     }
   };
-  const applyLibraryFilters = () => {
-    const search = libraryFilters.querySelector('[data-page-search]').value.toLocaleLowerCase(locale).trim();
-    const status = libraryFilters.querySelector('[data-page-status]').value;
-    const tag = libraryFilters.querySelector('[data-page-tag]').value;
-    const objective = libraryFilters.querySelector('[data-page-objective]').value;
+  const updateSharing = (card, entry) => {
+    for (const name of ['page-card-shared-out', 'page-card-shared-in']) card.classList.toggle(name, entry.cardClass === name);
+    card.dataset.sharing = ` ${entry.sharing.join(' ')} `;
+    const marks = card.querySelector('.library-sharing-marks');
+    if (marks) marks.replaceChildren(...entry.marks.map(mark => {
+      const dot = document.createElement('span');
+      dot.className = `sharing-dot sharing-dot-${mark.kind}`;
+      dot.setAttribute('role', 'img');dot.setAttribute('aria-label', mark.label);dot.title = mark.label;
+      return dot;
+    }));
+  };
+  const applyLibraryFilters = (reset = true) => {
+    if (reset) visibleLimit = batchSize;
+    const ownGeneration = ++generation;
+    controller?.abort();controller = null;failed = false;
+    const values = Object.fromEntries(Object.entries(singles).map(([key, selector]) => [key, libraryFilters.querySelector(selector).value]));
+    const search = values.search.toLocaleLowerCase(locale).trim();
     const owners = [...libraryFilters.querySelectorAll('[data-page-owner]:checked')];
     const sharing = [...libraryFilters.querySelectorAll('[data-page-sharing]:checked')];
-    memory.write({ ...Object.fromEntries(Object.entries(singles).map(([key, selector]) => [key, libraryFilters.querySelector(selector).value])), owners: owners.map(control => control.value), sharing: sharing.map(control => control.value) });
-    const originSummary = libraryFilters.querySelector('[data-origin-summary]');
-    const sharingSummary = libraryFilters.querySelector('[data-sharing-summary]');
-    if (originSummary) {
-      originSummary.textContent = owners.length ? owners.map(control => control.dataset.label).join(', ') : libraryFilters.querySelector('[data-origin-all]').textContent;
-      originSummary.title = originSummary.textContent;
+    memory.write({ ...values, owners: owners.map(control => control.value), sharing: sharing.map(control => control.value) });
+    for (const [selected, selector, all] of [[owners, '[data-origin-summary]', '[data-origin-all]'], [sharing, '[data-sharing-summary]', '[data-sharing-all]']]) {
+      const summary = libraryFilters.querySelector(selector);
+      if (summary) { summary.textContent = selected.length ? selected.map(control => control.dataset.label).join(', ') : libraryFilters.querySelector(all).textContent;summary.title = summary.textContent; }
     }
-    if (sharingSummary) {
-      sharingSummary.textContent = sharing.length ? sharing.map(control => control.dataset.label).join(', ') : libraryFilters.querySelector('[data-sharing-all]').textContent;
-      sharingSummary.title = sharingSummary.textContent;
-    }
-    let visible = 0;
-    document.querySelectorAll('[data-page-card]').forEach((card) => {
-      const matches = (!search || card.dataset.search.includes(search))
-        && (!status || card.dataset.status === status)
-        && (!tag || card.dataset.tags.includes(` ${tag} `))
-        && (!objective || card.dataset.objectives.includes(` ${objective} `))
-        && (!owners.length || owners.some(control => control.value === card.dataset.ownerId))
-        && (!sharing.length || sharing.some(control => card.dataset.sharing.includes(` ${control.value} `)));
-      card.hidden = !matches;
-      if (matches) visible++;
-    });
-    libraryFilters.querySelector('[data-page-count]').textContent = ui('pages', ':count page(s)').replace(':count', String(visible));
-    document.querySelector('[data-library-empty]').hidden = visible !== 0;
+    const matches = [...entries.values()].filter(entry => (!search || entry.search.includes(search))
+      && (!values.status || entry.status === values.status)
+      && (!values.tag || entry.tags.includes(values.tag))
+      && (!values.objective || entry.objectives.includes(values.objective))
+      && (!owners.length || owners.some(control => control.value === entry.ownerId))
+      && (!sharing.length || sharing.some(control => entry.sharing.includes(control.value))));
+    const shown = matches.slice(0, visibleLimit).map(entry => entry.id);
+    const visible = new Set(shown);
+    cards.forEach((card, id) => { card.hidden = !visible.has(id); });
+    libraryFilters.querySelector('[data-page-count]').textContent = ui('pages', ':count page(s)').replace(':count', String(matches.length));
+    document.querySelector('[data-library-empty]').hidden = matches.length !== 0;
+    more.hidden = matches.length <= visibleLimit;
+    more.disabled = false;more.textContent = pagination.dataset.more;loadStatus.textContent = '';
+    const missing = shown.filter(id => !cards.has(id));
+    if (!missing.length) { grid.removeAttribute('aria-busy');return; }
+    controller = new AbortController();const activeController = controller;const signal = controller.signal;
+    const timeout = window.setTimeout(() => activeController.abort(), 15000);
+    grid.setAttribute('aria-busy', 'true');more.disabled = true;loadStatus.textContent = pagination.dataset.loading;
+    void (async () => {
+      try {
+        // Typing several characters quickly should request only the latest matching batch.
+        await new Promise(resolve => window.setTimeout(resolve, 120));
+        if (ownGeneration !== generation) return;
+        for (let offset = 0; offset < missing.length; offset += batchSize) {
+          const requested = missing.slice(offset, offset + batchSize);
+          const response = await fetch(`?view=library-cards&ids=${requested.join(',')}`, { credentials: 'same-origin', cache: 'no-store', signal, headers: { Accept: 'application/json' } });
+          const result = await response.json();
+          if (!response.ok || result.user_id !== Number(document.body.dataset.userId) || !Array.isArray(result.entries) || typeof result.html !== 'string') throw new Error('Library unavailable');
+          if (ownGeneration !== generation) return;
+          const received = new Set(result.entries.map(entry => entry.id));
+          requested.forEach(id => { if (!received.has(id)) entries.delete(id); });
+          result.entries.forEach(entry => entries.set(entry.id, entry));
+          const template = document.createElement('template');template.innerHTML = result.html;
+          initializeLibraryCards(template.content);
+          const order = new Map([...entries.keys()].map((id, rank) => [id, rank]));
+          template.content.querySelectorAll('[data-page-card]').forEach(card => {
+            const id = card.dataset.pageId;
+            if (!received.has(id) || cards.has(id)) return;
+            card.hidden = !visible.has(id);
+            const position = order.get(id);
+            const next = [...grid.children].find(existing => order.get(existing.dataset.pageId) > position);
+            grid.insertBefore(card, next || null);cards.set(id, card);
+          });
+        }
+        if (ownGeneration === generation) applyLibraryFilters(false);
+      } catch (error) {
+        if (ownGeneration !== generation) return;
+        failed = true;loadStatus.textContent = pagination.dataset.error;
+        more.textContent = pagination.dataset.retry;more.hidden = false;more.disabled = false;
+      } finally { window.clearTimeout(timeout);if (ownGeneration === generation) grid.removeAttribute('aria-busy'); }
+    })();
   };
-  libraryFilters.querySelectorAll('input,select').forEach((control) => {
-    control.addEventListener(control.tagName === 'SELECT' || control.type === 'checkbox' ? 'change' : 'input', applyLibraryFilters);
+  libraryFilters.querySelectorAll('input,select').forEach(control => {
+    control.addEventListener(control.tagName === 'SELECT' || control.type === 'checkbox' ? 'change' : 'input', () => applyLibraryFilters());
   });
   for (const [button, controls] of [['[data-origin-all]', '[data-page-owner]'], ['[data-sharing-all]', '[data-page-sharing]']]) {
     libraryFilters.querySelector(button)?.addEventListener('click', () => {
-      libraryFilters.querySelectorAll(controls).forEach(control => { control.checked = false; });
-      applyLibraryFilters();
+      libraryFilters.querySelectorAll(controls).forEach(control => { control.checked = false; });applyLibraryFilters();
     });
   }
-  restore(); applyLibraryFilters();
+  more.addEventListener('click', () => { if (!failed) visibleLimit += batchSize;applyLibraryFilters(false); });
+  document.addEventListener('library:field-saved', event => {
+    const card = event.target.closest('[data-page-card]');
+    if (card && entries.has(card.dataset.pageId)) entries.get(card.dataset.pageId).search = card.dataset.search;
+  });
+  restore();applyLibraryFilters();
   let sharingRefresh = 0;
   const refreshLibrarySharing = async () => {
     const refresh = ++sharingRefresh;
     try {
-      const response = await fetch('?view=library', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'text/html' } });
+      const response = await fetch('?view=library-index', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!response.ok) return;
-      const fresh = new DOMParser().parseFromString(await response.text(), 'text/html');
-      if (refresh !== sharingRefresh || fresh.body.dataset.userId !== document.body.dataset.userId || !fresh.querySelector('[data-library-filters]')) return;
-      const cards = new Map([...fresh.querySelectorAll('[data-page-card]')].map(card => [card.dataset.pageId, card]));
-      document.querySelectorAll('[data-page-card]').forEach(card => {
-        const updated = cards.get(card.dataset.pageId);
-        if (!updated) return;
-        for (const name of ['page-card-shared-out', 'page-card-shared-in']) card.classList.toggle(name, updated.classList.contains(name));
-        card.dataset.sharing = updated.dataset.sharing;
-        const marks = card.querySelector('.library-sharing-marks');
-        const newMarks = updated.querySelector('.library-sharing-marks');
-        if (marks && newMarks) marks.replaceChildren(...newMarks.childNodes);
+      const result = await response.json();
+      if (refresh !== sharingRefresh || result.user_id !== Number(document.body.dataset.userId) || !Array.isArray(result.entries)) return;
+      entries = new Map(result.entries.map(entry => [entry.id, entry]));
+      cards.forEach((card, id) => {
+        const entry = entries.get(id);
+        if (!entry) return;
+        updateSharing(card, entry);
+        // Keep the search in sync with an open editor, without discarding its input.
+        if ([...card.querySelectorAll('[data-library-field-form]')].some(form => !form.hidden)) entry.search = card.dataset.search;
       });
-      applyLibraryFilters();
-    } catch (_) { /* Keep the current cards and any inline edits when offline. */ }
+      applyLibraryFilters(false);
+    } catch (_) { /* Keep current cards and inline edits while offline. */ }
   };
-  window.addEventListener('pageshow', (event) => {
-    if (event.persisted) {
-      restore();
-      // Back can restore cards from before a sharing change in the editor.
-      // Refresh only sharing metadata so open editors and their text stay intact.
-      void refreshLibrarySharing();
-    }
-    applyLibraryFilters();
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) { restore();void refreshLibrarySharing(); }
+    applyLibraryFilters(false);
   });
 }
 
-document.querySelectorAll('[data-page-card]').forEach((card) => {
+function initializeLibraryCards(root = document) {
+root.querySelectorAll('[data-page-card]').forEach((card) => {
+  if (card.dataset.inlineInitialized) return;
+  card.dataset.inlineInitialized = '1';
   let saving = false;
   card.querySelectorAll('[data-library-inline]').forEach((field) => {
     const button = field.querySelector('[data-edit-library-field]');
@@ -936,6 +1025,7 @@ document.querySelectorAll('[data-page-card]').forEach((card) => {
         // Search saved values, including the complete objectives, without resetting filters.
         const values = [...card.querySelectorAll('[data-library-field-form] [name="value"]')].map(control => control.defaultValue);
         card.dataset.search = [...values, card.dataset.searchExtra].join(' ').toLocaleLowerCase(locale);
+        card.dispatchEvent(new CustomEvent('library:field-saved', { bubbles: true }));
         status.textContent = result.message;
         saved = true;
       } catch (error) {
@@ -950,6 +1040,9 @@ document.querySelectorAll('[data-page-card]').forEach((card) => {
     });
   });
 });
+}
+initializeLibraryCards();
+
 if (libraryFilters) window.addEventListener('beforeunload', (event) => {
   if ([...document.querySelectorAll('[data-library-field-form] [name="value"]')].some(input => input.value !== input.defaultValue)) {
     event.preventDefault(); event.returnValue = '';

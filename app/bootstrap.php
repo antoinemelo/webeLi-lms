@@ -40,6 +40,7 @@ require_once __DIR__ . '/StudentAdminExport.php';
 require_once __DIR__ . '/UpdateService.php';
 require_once __DIR__ . '/PdfExport.php';
 require_once __DIR__ . '/DocumentExport.php';
+require_once __DIR__ . '/Housekeeping.php';
 
 session_start();
 
@@ -283,15 +284,10 @@ function render_level_picker(string $name, ?int $selected = null): string
 function request_is_background_poll(): bool
 {
     if(($_SERVER['REQUEST_METHOD']??'GET')==='GET')return in_array($_GET['view']??'',[
-        'session-status','notification-status','discussion-data','qcm-class-state','guest-class-state',
+        'session-status','notification-status','discussion-data','qcm-class-state','guest-class-state','library-cards','library-index',
     ],true);
     return in_array($_POST['action']??'',[
         'acquire_edit_lock','release_edit_lock','track_learning_activity',
     ],true);
 }
 
-if(!request_is_background_poll()){
-    purge_expired_registrations();
-    purge_learning_activity(db());
-    QcmGuest::purge(db());
-}

@@ -51,8 +51,9 @@ function registration_is_allowed(
         && $pendingAccounts < REGISTRATION_PENDING_LIMIT;
 }
 
-function purge_expired_registrations_in(PDO $pdo): int
+function purge_expired_registrations_in(PDO $pdo, ?array &$details=null): int
 {
+    $details=['registrations'=>0,'verification_tokens'=>0,'registration_attempts'=>0];
     $pending=$pdo->query("SELECT id,email,verification_expires_at FROM users WHERE account_status='pending' AND verification_expires_at IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
     $active=$pdo->query("SELECT id,verification_expires_at FROM users WHERE account_status='active' AND verification_token_hash IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
     $now=time();
@@ -65,27 +66,33 @@ function purge_expired_registrations_in(PDO $pdo): int
         return $expires===null || $expires<=$now;
     }));
     if (!$expired && !$expiredActive) {
-        $pdo->exec("DELETE FROM registration_attempts WHERE attempted_at<datetime('now','-2 days')");
+        $details['registration_attempts']=$pdo->exec("DELETE FROM registration_attempts WHERE attempted_at<datetime('now','-2 days')");
         return 0;
     }
 
-    $pdo->beginTransaction();
+    $ownTransaction=!$pdo->inTransaction();
+    if($ownTransaction)$pdo->beginTransaction();
     try {
         $deleteMessages = $pdo->prepare("DELETE FROM notification_outbox WHERE event='account.verification' AND recipient=?");
         $deleteUser = $pdo->prepare("DELETE FROM users WHERE id=? AND account_status='pending'");
         foreach ($expired as $user) {
             $deleteMessages->execute([$user['email']]);
             $deleteUser->execute([$user['id']]);
+            $details['registrations']+=$deleteUser->rowCount();
         }
         $clearActiveToken = $pdo->prepare("UPDATE users SET verification_token_hash=NULL,verification_expires_at=NULL WHERE id=? AND account_status='active'");
-        foreach ($expiredActive as $user) $clearActiveToken->execute([$user['id']]);
-        $pdo->exec("DELETE FROM registration_attempts WHERE attempted_at<datetime('now','-2 days')");
-        $pdo->commit();
+        foreach ($expiredActive as $user){
+            $clearActiveToken->execute([$user['id']]);
+            $details['verification_tokens']+=$clearActiveToken->rowCount();
+        }
+        $details['registration_attempts']=$pdo->exec("DELETE FROM registration_attempts WHERE attempted_at<datetime('now','-2 days')");
+        if($ownTransaction)$pdo->commit();
     } catch (Throwable $exception) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
+        $details=['registrations'=>0,'verification_tokens'=>0,'registration_attempts'=>0];
+        if ($ownTransaction && $pdo->inTransaction()) $pdo->rollBack();
         throw $exception;
     }
-    return count($expired);
+    return $details['registrations'];
 }
 
 function is_pending_registration_limit(Throwable $exception): bool

@@ -83,6 +83,8 @@ function registration_guard(string $role): void
         redirect('register', ['role'=>$role]);
     }
     $ipHash = app_public_mail_ip_hash();
+    // Expired accounts must release their places before enforcing registration quotas.
+    purge_expired_registrations();
     $ipAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE ip_hash=? AND attempted_at>=datetime('now','-15 minutes')", [$ipHash])['n'] ?? 0);
     $globalAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 hour')")['n'] ?? 0);
     $dailyAttempts = (int)(one("SELECT COUNT(*) AS n FROM registration_attempts WHERE accepted=1 AND attempted_at>=datetime('now','-1 day')")['n'] ?? 0);
@@ -612,6 +614,24 @@ function handle_action(string $action): never
             ? ':count copie(s) technique(s) effacée(s). Les métadonnées sont conservées.'
             : 'Aucune copie technique à effacer.', ['count'=>$deleted]));
         redirect('outbox');
+    }
+    if ($action === 'superadmin_run_housekeeping') {
+        if($user['role']!=='teacher' || (int)($user['is_superadmin']??0)!==1){
+            http_response_code(403);exit(t('Accès superadmin refusé.'));
+        }
+        unset($_SESSION['housekeeping_report']);
+        try{
+            $report=superadmin_housekeeping(db(),dirname(__DIR__),$user);
+            if($report===null)flash('Une maintenance ou une purge est déjà en cours. Réessayez dans quelques instants.','warning');
+            else{
+                $_SESSION['housekeeping_report']=$report+['by'=>(int)$user['id']];
+                flash(array_sum($report['counts'])>0?'Purges terminées. Le bilan est affiché ci-dessous.':'Aucune donnée arrivée à échéance. La purge est terminée.');
+            }
+        }catch(Throwable $exception){
+            error_log('liike manual housekeeping: '.get_class($exception));
+            flash('La purge n’a pas pu être effectuée. Réessayez dans quelques instants.','error');
+        }
+        header('Location: '.route('admin').'#housekeeping');exit;
     }
     if ($action === 'superadmin_delete' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
         $entity=(string)($_POST['entity']??'');$id=(int)($_POST['id']??0);$deleted=false;

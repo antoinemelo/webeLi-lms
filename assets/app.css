@@ -972,3 +972,8 @@ h1{font-size:2.25rem}
 @media(max-width:600px){.student-identity-grid{grid-template-columns:1fr}.student-directory-actions{flex-wrap:wrap}.student-management-trigger{flex-wrap:wrap;gap:.5rem}.student-identity-actions{align-items:flex-start;flex-wrap:wrap}}
 
 @media(pointer:coarse){.row-actions{flex-wrap:wrap}.row-actions .pathway-row-action,.row-actions .remove-item{width:2.75rem;min-width:2.75rem;height:2.75rem;min-height:2.75rem}.row-actions .pathway-row-action{font-size:1rem}}
+
+.session-check-status{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:2100;padding:.65rem 1rem;border-radius:.75rem;background:#242137;color:#fff;box-shadow:0 3px 18px #0002;font-size:.9rem;max-width:calc(100% - 2rem)}
+[data-session-pending]{cursor:progress}
+
+.library-pagination{display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;margin:1rem 0}.library-pagination [role=status]{font-size:.9rem;color:var(--muted,#666)}

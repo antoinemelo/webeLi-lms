@@ -28,7 +28,7 @@ final class Database
             $pdo->exec((string) file_get_contents($root . '/database/schema.sql'));
             $pdo->exec((string) file_get_contents($root . '/database/seed.sql'));
         }
-        self::runMigrations($pdo,$path,!$fresh);
+        if($fresh || !database_schema_is_current($pdo,self::SCHEMA_VERSION))self::runMigrations($pdo,$path,!$fresh);
         return $pdo;
     }
 
