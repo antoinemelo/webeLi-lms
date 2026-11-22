@@ -1129,7 +1129,7 @@ if (studentFilters) {
       if (matches) visible++;
     });
     const count = document.querySelector('[data-student-count]');
-    if (count) count.textContent = ui('students', ':count élève(s) sur la plateforme').replace(':count', String(visible));
+    if (count) count.textContent = ui('students', ':count apprenant(s) sur la plateforme').replace(':count', String(visible));
     const empty = document.querySelector('[data-student-empty]');
     if (empty) empty.hidden = visible !== 0;
   };
@@ -1530,7 +1530,7 @@ document.querySelectorAll('form[method="post"]').forEach((form) => form.addEvent
   const messages = {
     import_page: ui('confirm_page', 'Écraser cette page et remplacer tous ses blocs et tags ?'),
     import_course: ui('confirm_course', 'Écraser ce parcours ? Ses anciennes étapes, progressions et encouragements liés seront supprimés.'),
-    import_students: ui('confirm_students', 'Écraser, pour les élèves importés, leurs inscriptions à vos parcours ?'),
+    import_students: ui('confirm_students', 'Écraser, pour les apprenants importés, leurs inscriptions à vos parcours ?'),
   };
   if (!window.confirm(messages[action])) event.preventDefault();
 }));

@@ -15,7 +15,7 @@ function content_block_editor_config(): array
         'file'=>['body'=>'Adresse du document','caption'=>'Intitulé du téléchargement','rows'=>2],
         'media'=>['body'=>'Lien du média ou code du lecteur','caption'=>'Titre du média (facultatif)','rows'=>3],
         'iframe'=>['body'=>'Adresse ou code iframe','caption'=>'Titre de l’intégration','rows'=>4],
-        'submission'=>['body'=>'Consigne en Markdown (texte élève limité à 512 caractères)','caption'=>'Titre du travail','rows'=>6],
+        'submission'=>['body'=>'Consigne en Markdown (texte apprenant limité à 512 caractères)','caption'=>'Titre du travail','rows'=>6],
     ];
     foreach($labels as &$config)foreach(['body','caption'] as $key)$config[$key]=t($config[$key]);unset($config);
     return ['types'=>$labels,'importImage'=>t('Importer une image'),'importFile'=>t('Importer un document'),

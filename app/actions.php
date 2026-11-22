@@ -181,7 +181,7 @@ function send_student_code_reminder(array $user): bool
 {
     $language=normalize_language((string)($user['language']??''))??current_language();
     $messageId=enqueue('credentials.reminder',(string)$user['email'],t('Votre code personnel liike',[],$language),
-        t("Bonjour :name,\n\nVotre code personnel est :code.\n\nUtilisez l’onglet Élève pour vous connecter.",['name'=>$user['first_name'],'code'=>$user['login_code']],$language));
+        t("Bonjour :name,\n\nVotre code personnel est :code.\n\nUtilisez l’onglet Apprenant pour vous connecter.",['name'=>$user['first_name'],'code'=>$user['login_code']],$language));
     return try_send_outbox($messageId);
 }
 
@@ -368,7 +368,7 @@ function handle_action(string $action): never
         $courseTitle = trim((string)($_POST['course_title'] ?? ''));
         $joinCourse=$requestedCourseCode!==''?find_joinable_course(db(),$requestedCourseCode):null;
         if ($role === 'student' && $classGroup === '') {
-            flash('Le groupe classe est requis pour un compte élève.', 'error');
+            flash('Le groupe classe est requis pour un compte apprenant.', 'error');
             redirect('register', ['role'=>'student']);
         }
         if($role==='student'&&$requestedCourseCode!==''&&!$joinCourse){
@@ -502,7 +502,7 @@ function handle_action(string $action): never
         if($result['status']==='joined'){
             unset($_SESSION['pending_join_course_code']);
             $teacherLanguage=normalize_language((string)($course['teacher_language']??''))??'fr';
-            enqueue('student.self_enrolled',(string)$course['teacher_email'],t('Nouvel élève dans votre cours liike',[],$teacherLanguage),
+            enqueue('student.self_enrolled',(string)$course['teacher_email'],t('Nouvel apprenant dans votre cours liike',[],$teacherLanguage),
                 t(':student a rejoint le cours « :course » avec son code d’invitation.',['student'=>$user['name'],'course'=>$course['title']],$teacherLanguage));
             $_SESSION['flash']['message']=t('Vous avez rejoint le cours « :course ».',['course'=>$course['title']]);
             $_SESSION['flash']['kind']='success';
@@ -601,7 +601,7 @@ function handle_action(string $action): never
         catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('pathway');}
     }
     if ($action === 'export_students' && $user['role'] === 'teacher') {
-        try{send_json_download(export_students_document(db(),(int)$user['id']),'liike-eleves.json');}
+        try{send_json_download(export_students_document(db(),(int)$user['id']),'liike-apprenants.json');}
         catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('students');}
     }
     if ($action === 'import_students' && $user['role'] === 'teacher') {
@@ -609,8 +609,8 @@ function handle_action(string $action): never
             $document=uploaded_json('import_file');
             $requireEmailVerification=($_POST['account_activation']??'email')!=='immediate';
             $result=import_students_document(db(),$document,(int)$user['id'],($_POST['mode']??'update')==='overwrite'?'overwrite':'update',$requireEmailVerification);
-            if($requireEmailVerification){foreach($result['created'] as $created)issue_account_verification((int)$created['id'],$created['email'],$created['first_name'],$created['code'],$created['language']??current_language());flash(t(':processed élève(s) importé(s), dont :created nouveau(x) compte(s) à valider par courriel.',['processed'=>$result['processed'],'created'=>count($result['created'])]));}
-            else flash(t(':processed élève(s) importé(s), dont :activated compte(s) activé(s) immédiatement.',['processed'=>$result['processed'],'activated'=>$result['activated']]));
+            if($requireEmailVerification){foreach($result['created'] as $created)issue_account_verification((int)$created['id'],$created['email'],$created['first_name'],$created['code'],$created['language']??current_language());flash(t(':processed apprenant(s) importé(s), dont :created nouveau(x) compte(s) à valider par courriel.',['processed'=>$result['processed'],'created'=>count($result['created'])]));}
+            else flash(t(':processed apprenant(s) importé(s), dont :activated compte(s) activé(s) immédiatement.',['processed'=>$result['processed'],'activated'=>$result['activated']]));
             redirect('students');
         }catch(Throwable $exception){flash(import_failure_message($exception),'error');redirect('students');}
     }
@@ -1082,7 +1082,7 @@ function handle_action(string $action): never
         if (!$course) { flash('Parcours introuvable.', 'error'); redirect('pathway'); }
         if ($operation === 'archive') {
             run('UPDATE courses SET archived=1 WHERE id=?', [$courseId]);
-            flash('Parcours archivé. Il est masqué aux élèves, sans perte de données.');
+            flash('Parcours archivé. Il est masqué aux apprenants, sans perte de données.');
         } elseif ($operation === 'reactivate') {
             run('UPDATE courses SET archived=0 WHERE id=?', [$courseId]);
             flash('Parcours réactivé.');
@@ -1107,7 +1107,7 @@ function handle_action(string $action): never
         $sourceId = (int)($_POST['course_id'] ?? 0);
         $newCourseId = copy_course(db(),$sourceId,(int)$user['id'],trim((string)($_POST['title'] ?? '')),isset($_POST['reset_deadlines']));
         if (!$newCourseId) { flash('Copie impossible : parcours ou titre invalide.', 'error'); redirect('pathway'); }
-        flash(t(isset($_POST['reset_deadlines']) ? 'Parcours copié sans élèves ni progressions, avec toutes les échéances remises à zéro.' : 'Parcours copié sans élèves ni progressions.'));
+        flash(t(isset($_POST['reset_deadlines']) ? 'Parcours copié sans apprenants ni progressions, avec toutes les échéances remises à zéro.' : 'Parcours copié sans apprenants ni progressions.'));
         redirect('pathway', ['course'=>$newCourseId]);
     }
 
@@ -1157,11 +1157,11 @@ function handle_action(string $action): never
                 foreach(array_unique(array_map('intval',(array)($_POST['allowed_students']??[]))) as $studentId){
                     if(one("SELECT 1 FROM enrollments e JOIN users u ON u.id=e.student_id WHERE e.course_id=? AND e.student_id=? AND e.status='active' AND u.account_status='active'",[$item['course_id'],$studentId]))$allowedStudents[]=$studentId;
                 }
-                if(!$allowedStudents){flash('Sélectionnez au moins un élève pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+                if(!$allowedStudents){flash('Sélectionnez au moins un apprenant pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
             try{[$isEvaluation,$selfEvaluation,$eventData]=pathway_type_settings($_POST,$item);}catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             if(!$isEvaluation&&(bool)$item['is_evaluation']&&one('SELECT 1 FROM progress WHERE pathway_item_id=? AND evaluation_score IS NOT NULL LIMIT 1',[$id])){
-                flash(t('Cette évaluation contient des notes. Modifiez-les dans le suivi des élèves. Pour changer le type, retirez d’abord les notes depuis ce suivi.'),'error');
+                flash(t('Cette évaluation contient des notes. Modifiez-les dans le suivi des apprenants. Pour changer le type, retirez d’abord les notes depuis ce suivi.'),'error');
                 redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);
             }
             $weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
@@ -1194,7 +1194,7 @@ function handle_action(string $action): never
             }elseif($action==='save_student_identity'){
                 $student=update_student_identity(db(),(int)($_POST['student_id']??0),$teacherId,$_POST);
                 if($student['email_changed']&&$student['account_status']==='pending')issue_account_verification($student['id'],$student['email'],$student['first_name'],$student['login_code'],$student['language']);
-                echo json_encode(['student'=>$student,'revision'=>student_identity_revision($student),'message'=>t('Les informations de l’élève ont été enregistrées.')],JSON_THROW_ON_ERROR);
+                echo json_encode(['student'=>$student,'revision'=>student_identity_revision($student),'message'=>t('Les informations de l’apprenant ont été enregistrées.')],JSON_THROW_ON_ERROR);
             }elseif($action==='load_student_history'){
                 $history=StudentAdminHistory::history(db(),(int)($_POST['student_id']??0),$teacherId,(int)($_POST['page']??1));ob_start();render_student_history($history);$html=ob_get_clean();echo json_encode(['html'=>$html],JSON_THROW_ON_ERROR);
             }elseif($action==='preview_student_followup'){
@@ -1325,7 +1325,7 @@ function handle_action(string $action): never
         }
         $courseIds = array_values(array_unique(array_map('intval', (array)($_POST['courses'] ?? []))));
         if (!$courseIds) {
-            flash('Sélectionnez au moins un cours pour inscrire cet élève.', 'error');
+            flash('Sélectionnez au moins un cours pour inscrire cet apprenant.', 'error');
             redirect('students');
         }
         $owned = all('SELECT id FROM courses WHERE teacher_id=? AND id IN (' . implode(',', array_fill(0,count($courseIds),'?')) . ')', array_merge([$user['id']],$courseIds));
@@ -1344,8 +1344,8 @@ function handle_action(string $action): never
         } catch(Throwable $e) {db()->rollBack();throw $e;}
         $sent=issue_account_verification($studentId,$email,$firstName,$code,current_language());
         flash(t($sent
-            ? 'Élève préinscrit à :count cours. Validation du courriel requise sous 15 minutes ; message envoyé.'
-            : 'Élève préinscrit à :count cours. Validation du courriel requise sous 15 minutes ; message placé dans la boîte d’envoi.', ['count'=>count($courseIds)]));
+            ? 'Apprenant préinscrit à :count cours. Validation du courriel requise sous 15 minutes ; message envoyé.'
+            : 'Apprenant préinscrit à :count cours. Validation du courriel requise sous 15 minutes ; message placé dans la boîte d’envoi.', ['count'=>count($courseIds)]));
         redirect('students');
     }
     if ($action === 'update_student_secondary_email' && $user['role'] === 'teacher') {
@@ -1361,7 +1361,7 @@ function handle_action(string $action): never
         $courseId=(int)($_POST['course_id']??0);
         $course=one('SELECT * FROM courses WHERE id=? AND teacher_id=?',[$courseId,$user['id']]);
         $studentIds=array_values(array_unique(array_map('intval',(array)($_POST['students']??[]))));
-        if(!$course || !$studentIds){ flash('Choisissez un cours et au moins un élève.','error'); redirect('students'); }
+        if(!$course || !$studentIds){ flash('Choisissez un cours et au moins un apprenant.','error'); redirect('students'); }
         $added=0;
         foreach($studentIds as $studentId){
             $student=one("SELECT * FROM users WHERE id=? AND role='student' AND account_status='active'",[$studentId]);
@@ -1377,7 +1377,7 @@ function handle_action(string $action): never
                 $added++;
             }
         }
-        flash($added ? "$added inscription(s) ajoutée(s) au cours." : 'Les élèves sélectionnés étaient déjà inscrits.');
+        flash($added ? "$added inscription(s) ajoutée(s) au cours." : 'Les apprenants sélectionnés étaient déjà inscrits.');
         redirect('students',['course'=>$courseId]);
     }
     if ($action === 'manage_enrollment' && $user['role'] === 'teacher') {
@@ -1389,7 +1389,7 @@ function handle_action(string $action): never
             run("UPDATE enrollments SET status='archived',archived_at=CURRENT_TIMESTAMP WHERE id=?",[$enrollmentId]);
             flash('La participation est archivée ; son historique est conservé.');
         } elseif($operation==='reactivate'){
-            if($enrollment['account_status']!=='active'){ flash('Réactivez d’abord le compte de l’élève.','error'); redirect('students',student_directory_return_params((int)$enrollment['student_id'])); }
+            if($enrollment['account_status']!=='active'){ flash('Réactivez d’abord le compte de l’apprenant.','error'); redirect('students',student_directory_return_params((int)$enrollment['student_id'])); }
             run("UPDATE enrollments SET status='active',archived_at=NULL WHERE id=?",[$enrollmentId]);
             flash('La participation est réactivée.');
         } elseif($operation==='delete'){
@@ -1410,14 +1410,14 @@ function handle_action(string $action): never
         if($operation==='archive'){
             run("UPDATE users SET account_status='archived',student_session_token_hash=NULL,student_session_seen_at=NULL WHERE id=?",[$studentId]);
             run("UPDATE enrollments SET status='archived',archived_at=CURRENT_TIMESTAMP WHERE student_id=?",[$studentId]);
-            flash('Le compte élève et ses participations sont archivés.');
+            flash('Le compte apprenant et ses participations sont archivés.');
         } elseif($operation==='reactivate'){
             run("UPDATE users SET account_status='active' WHERE id=?",[$studentId]);
-            flash('Le compte élève est réactivé. Les participations restent archivées jusqu’à leur réactivation explicite.');
+            flash('Le compte apprenant est réactivé. Les participations restent archivées jusqu’à leur réactivation explicite.');
         } elseif($operation==='delete'){
             run('DELETE FROM notification_outbox WHERE recipient=?',[$student['email']]);
             run('DELETE FROM users WHERE id=?',[$studentId]);
-            flash('Le compte élève et toutes ses données ont été supprimés définitivement.');
+            flash('Le compte apprenant et toutes ses données ont été supprimés définitivement.');
         }
         redirect('students',student_directory_return_params($operation==='delete'?null:$studentId));
     }
@@ -1428,7 +1428,7 @@ function handle_action(string $action): never
         $owned=(int)(one('SELECT COUNT(*) AS n FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.student_id=? AND c.teacher_id=?',[$studentId,$user['id']])['n']??0);
         $isManager=$student&&(int)($student['managed_by']??0)===(int)$user['id'];
         if(!$student||(!$isManager&&$owned===0)){
-            flash('Vous ne pouvez valider que le courriel d’un élève dont vous êtes responsable ou inscrit à l’un de vos cours.','error');
+            flash('Vous ne pouvez valider que le courriel d’un apprenant dont vous êtes responsable ou inscrit à l’un de vos cours.','error');
             redirect('students',student_directory_return_params($studentId));
         }
         run("UPDATE users SET account_status='active',email_verified_at=CURRENT_TIMESTAMP,verification_token_hash=NULL,verification_expires_at=NULL WHERE id=? AND account_status='pending'",[$studentId]);
@@ -1437,7 +1437,7 @@ function handle_action(string $action): never
         $messageId=enqueue('account.teacher_validated',$student['email'],t('Votre compte liike a été validé',[],$studentLanguage),
             t("Bonjour :name,\n\nVotre enseignant a validé votre compte. Vous pouvez vous connecter avec le code :code.",['name'=>$student['first_name'],'code'=>$student['login_code']],$studentLanguage));
         try_send_outbox($messageId);
-        flash('Le courriel de l’élève a été validé et son compte est maintenant actif.');
+        flash('Le courriel de l’apprenant a été validé et son compte est maintenant actif.');
         redirect('students',student_directory_return_params($studentId));
     }
     flash('Action non disponible.', 'error');

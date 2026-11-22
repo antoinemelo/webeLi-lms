@@ -23,9 +23,9 @@ Identifiant : nora
 Mot de passe : Elan-Nora-2026!
 ```
 
-Élèves, sans mot de passe : `LIROS`, `SADIA` ou `NOMAR`.
+Apprenants, sans mot de passe : `LIROS`, `SADIA` ou `NOMAR`.
 
-Les codes élèves sont calculés à partir des deux premières lettres du prénom et des trois premiers caractères non blancs du nom. Par exemple, Maya **DA COSTA** reçoit `MADAC`.
+Les codes apprenants sont calculés à partir des deux premières lettres du prénom et des trois premiers caractères non blancs du nom. Par exemple, Maya **DA COSTA** reçoit `MADAC`.
 
 Pour retrouver la démo initiale :
 
@@ -96,43 +96,43 @@ python3 scripts/apr.py \
 - bibliothèque de pages indépendantes, prêtes ou en brouillon ;
 - lien unique de partage des contenus avec modes modifiables : contenu commun, copie indépendante et lecture externe avec QCM collectif anonyme par QR code ;
 - recherche de pages par texte, statut, tags et objectifs ;
-- import/export JSON des pages, parcours et élèves ;
+- import/export JSON des pages, parcours et apprenants ;
 - six blocs : texte Markdown avec aperçu, image avec description alternative et légende, document téléchargeable, vidéo/audio, intégration externe (iframe) et travail à rendre ;
 - champs adaptés au type : import ou adresse pour les images et documents, hauteur réglable pour les intégrations, lecture native des fichiers audio/vidéo ;
 - QCM intégrés au Markdown, avec choix simple ou multiple, réponses mélangées, sauvegarde et reprise des brouillons, score agrégé et remise unique lorsque l’étape est une évaluation ;
 - modes QCM strict et collectif, avec aide Markdown, réponses neutres `[-]`, projection et votes synchronisés ;
-- aperçu élève non destructif d’un parcours et de ses pages pour l’équipe enseignante, masquant les étapes invisibles et signalant les accès restreints en gris clair ;
+- aperçu apprenant non destructif d’un parcours et de ses pages pour l’équipe enseignante, masquant les étapes invisibles et signalant les accès restreints en gris clair ;
 - catégories par tags ;
-- connexion enseignante protégée et codes personnels élèves ;
-- inscription publique des élèves et enseignants, avec suffixe numérique en cas d’identifiant déjà utilisé ;
+- connexion enseignante protégée et codes personnels apprenants ;
+- inscription publique des apprenants et enseignants, avec suffixe numérique en cas d’identifiant déjà utilisé ;
 - profil enseignant modifiable : prénom, NOM, identifiant et mot de passe ;
 - annuaire avec prénom, nom, courriel, groupe classe et téléphone facultatif ;
-- inscription autonome à un cours par code ou lien d’invitation, avec validation du compte pour les nouveaux élèves ;
-- inscription unitaire ou groupée des élèves à un ou plusieurs cours ;
+- inscription autonome à un cours par code ou lien d’invitation, avec validation du compte pour les nouveaux apprenants ;
+- inscription unitaire ou groupée des apprenants à un ou plusieurs cours ;
 - ordre, consigne, échéance et type exclusif par étape : évaluation, autoévaluation, événement ou consultation simple ;
 - événements datés avec horaires suisses ou journées entières, lieu, téléchargement .ics et ajout à Google Calendar ;
 - retrait de pages, archivage et duplication de parcours avec échéances conservées ou remises à zéro ;
 - superadministration globale des utilisateurs, pages et parcours ;
 - exports PDF et DOCX du tableau d’un parcours avec ses regroupements, ainsi que PDF, Markdown, DOCX et LaTeX du détail de chaque étape ;
 - objectifs et compétences définis au niveau du cours, puis liés aux étapes ;
-- auto-positionnement élève 0–3 et confirmation enseignante 0–3 ;
+- auto-positionnement apprenant 0–3 et confirmation enseignante 0–3 ;
 - vues de progression par étape, compétence et objectif ;
-- export CSV ou PDF récapitulatif ou détaillé de la progression, pour tous les élèves actifs du parcours ou une sélection ;
+- export CSV ou PDF récapitulatif ou détaillé de la progression, pour tous les apprenants actifs du parcours ou une sélection ;
 - historique enseignant des pages consultées, du temps actif et de la dernière visite, avec rétention d’un mois ;
 - rewards configurables par cours, attribués à la confirmation et score cumulatif ;
 - boîte de notifications alimentée lors d’une mise à jour annoncée volontairement ou d’une validation ;
 - courriels/annonces ciblés avec modèles personnels et récapitulatif enseignant ;
-- suivi administratif collectif et exports complets PDF/Markdown par élève ;
-- discussions privées par parcours entre élèves et enseignants ou entre enseignants autorisés, gestion et exports, notifications push et reconnexion PWA de 90 jours ;
+- suivi administratif collectif et exports complets PDF/Markdown par apprenant ;
+- discussions privées par parcours entre apprenants et enseignants ou entre enseignants autorisés, gestion et exports, notifications push et reconnexion PWA de 90 jours ;
 - interface responsive, mobile-first et PWA installable (Bootstrap local, manifest, cache des assets, navigation basse et safe areas).
 
 Une page reste neutre et réutilisable. Les objectifs et compétences sont liés à son **étape dans un cours**, car la même ressource peut servir des intentions différentes selon le cours.
 
 ## Visibilité des regroupements
 
-Dans la vue enseignante d’un parcours, le bouton **œil** de chaque regroupement permet de le masquer ou de l’afficher pour les élèves. Un regroupement masqué reste visible et modifiable par les enseignants, avec un œil barré. Le nombre d’étapes figure directement à côté du titre du regroupement. Le chevron sert toujours uniquement à replier le groupe dans votre propre vue.
+Dans la vue enseignante d’un parcours, le bouton **œil** de chaque regroupement permet de le masquer ou de l’afficher pour les apprenants. Un regroupement masqué reste visible et modifiable par les enseignants, avec un œil barré. Le nombre d’étapes figure directement à côté du titre du regroupement. Le chevron sert toujours uniquement à replier le groupe dans votre propre vue.
 
-Le masquage concerne toutes ses étapes et le contenu de leurs pages. Elles disparaissent du parcours élève et de sa navigation précédent/suivant ; les anciens liens vers les étapes, leurs PDF et leurs événements sont refusés. Les nouvelles remises, sauvegardes de QCM et participations aux QCM collectifs sont également bloquées tant que le regroupement est masqué. Les enseignants conservent l’accès à la préparation et aux résultats.
+Le masquage concerne toutes ses étapes et le contenu de leurs pages. Elles disparaissent du parcours apprenant et de sa navigation précédent/suivant ; les anciens liens vers les étapes, leurs PDF et leurs événements sont refusés. Les nouvelles remises, sauvegardes de QCM et participations aux QCM collectifs sont également bloquées tant que le regroupement est masqué. Les enseignants conservent l’accès à la préparation et aux résultats.
 
 Cette commande ne modifie jamais la visibilité individuelle des étapes, les restrictions nominatives, le suivi des objectifs, les brouillons, les tentatives ou les notes. Les résultats continuent à contribuer aux moyennes et aux acquis selon leurs règles habituelles. Lors du réaffichage, une étape déjà invisible reste invisible et une étape restreinte conserve ses destinataires. Les copies et exports/imports du parcours conservent ce réglage. Les regroupements actuels sont sur un seul niveau.
 
@@ -151,34 +151,34 @@ Les trois modes utilisent le même contenu :
 
 - `:::qcm` conserve le fonctionnement classique : mélange des propositions, brouillons, notation et remise unique en évaluation.
 - `:::qcm_strict` ouvre une interface modale occupant la fenêtre après « Commencer le QCM ». La navigation du cours reste inaccessible jusqu’à la remise. La sauvegarde et la notation restent celles du QCM individuel. Le plein écran est demandé après le clic, avec repli dans la fenêtre s’il n’est pas disponible ; le navigateur et le système restent libres de quitter le plein écran ou l’application. Le clavier reste utilisable.
-- `:::qcm_classe` ouvre une séance formative pour les élèves autorisés de l’étape. Dans **Parcours → aperçu de l’étape → Piloter le QCM en classe**, l’enseignant crée une séance, ouvre chaque question, ferme les réponses, affiche leur répartition, révèle éventuellement la correction, puis avance. **Ouvrir la projection** fournit une vue séparée sans commandes de pilotage. Les élèves ouvrent la même étape et choisissent **Rejoindre la séance** ; aucun compte invité ou QR code n’est nécessaire.
+- `:::qcm_classe` ouvre une séance formative pour les apprenants autorisés de l’étape. Dans **Parcours → aperçu de l’étape → Piloter le QCM en classe**, l’enseignant crée une séance, ouvre chaque question, ferme les réponses, affiche leur répartition, révèle éventuellement la correction, puis avance. **Ouvrir la projection** fournit une vue séparée sans commandes de pilotage. Les apprenants ouvrent la même étape et choisissent **Rejoindre la séance** ; aucun compte invité ou QR code n’est nécessaire.
 
-Le mode classe conserve l’ordre des propositions identique sur les trois écrans. Une réponse peut être modifiée tant que la question est ouverte. Après fermeture, la répartition devient visible ; pour les choix multiples, le total des sélections peut dépasser le nombre d’élèves. Le compteur porte sur les élèves actuellement autorisés, et non sur les seuls appareils connectés. La synchronisation interroge le serveur toutes les 1,5 seconde ; après une coupure, les commandes sont désactivées jusqu’à la reconnexion et l’écran reprend la question courante. Les votes collectifs sont distincts des notes individuelles : ils ne modifient ni les moyennes ni les remises attendues d’une évaluation.
+Le mode classe conserve l’ordre des propositions identique sur les trois écrans. Une réponse peut être modifiée tant que la question est ouverte. Après fermeture, la répartition devient visible ; pour les choix multiples, le total des sélections peut dépasser le nombre d’apprenants. Le compteur porte sur les apprenants actuellement autorisés, et non sur les seuls appareils connectés. La synchronisation interroge le serveur toutes les 1,5 seconde ; après une coupure, les commandes sont désactivées jusqu’à la reconnexion et l’écran reprend la question courante. Les votes collectifs sont distincts des notes individuelles : ils ne modifient ni les moyennes ni les remises attendues d’une évaluation.
 
 `[v]` désigne une réponse obligatoire, `[x]` une réponse à ne pas choisir et `[-]` une réponse neutre facultative. Une question est réussie lorsque toutes les réponses `[v]` sont sélectionnées et aucune réponse `[x]` ne l’est. Une seule `[v]` produit des boutons radio ; plusieurs produisent des cases à cocher. L’aide **Créer un QCM en Markdown** permet de choisir un mode et de copier un exemple.
 
-La migration 29 ajoute `qcm_class_sessions` et `qcm_class_votes` sans modifier les résultats ni les brouillons existants. Les séances sont rattachées à une étape, un bloc et une version de son questionnaire. Modifier le questionnaire impose de revenir à l’étape et de démarrer une nouvelle séance ; les votes de l’ancienne version ne sont pas réutilisés. Les commandes concurrentes sont contrôlées par la version de séance ; fermeture et vote sont sérialisés dans une transaction SQLite. Les bonnes réponses et les questions futures ne sont pas transmises aux élèves pendant le vote.
+La migration 29 ajoute `qcm_class_sessions` et `qcm_class_votes` sans modifier les résultats ni les brouillons existants. Les séances sont rattachées à une étape, un bloc et une version de son questionnaire. Modifier le questionnaire impose de revenir à l’étape et de démarrer une nouvelle séance ; les votes de l’ancienne version ne sont pas réutilisés. Les commandes concurrentes sont contrôlées par la version de séance ; fermeture et vote sont sérialisés dans une transaction SQLite. Les bonnes réponses et les questions futures ne sont pas transmises aux apprenants pendant le vote.
 
 ## Types d’étapes et aperçu
 
-Dans les réglages du parcours, **Type d’étape** propose **Évaluation**, **Autoévaluation**, **Événement** et **Consultation simple**. Un seul type est actif. Un événement reprend le titre de sa page et possède un début, une fin et un lieu facultatif. Ses liens calendrier sont disponibles dans le lecteur élève et l’aperçu enseignant ; les ajouts à un agenda ne synchronisent pas les modifications ultérieures. Les étapes invisibles sont cachées dans l’aperçu et ses liens de navigation. Voir le [guide des événements](docs/guide-utilisateur.md#types-détapes-et-événements).
+Dans les réglages du parcours, **Type d’étape** propose **Évaluation**, **Autoévaluation**, **Événement** et **Consultation simple**. Un seul type est actif. Un événement reprend le titre de sa page et possède un début, une fin et un lieu facultatif. Ses liens calendrier sont disponibles dans le lecteur apprenant et l’aperçu enseignant ; les ajouts à un agenda ne synchronisent pas les modifications ultérieures. Les étapes invisibles sont cachées dans l’aperçu et ses liens de navigation. Voir le [guide des événements](docs/guide-utilisateur.md#types-détapes-et-événements).
 
 ## Export de la progression
 
-Dans **Suivi**, le menu à trois points propose **Exporter la progression**. La fenêtre permet de choisir un récapitulatif ou un export détaillé, le format **CSV** ou **PDF**, et de cocher les élèves du parcours courant ; tous sont sélectionnés par défaut. Un seul bouton **Exporter** déclenche le téléchargement. Le CSV utilise UTF-8 avec BOM et le point-virgule comme séparateur.
+Dans **Suivi**, le menu à trois points propose **Exporter la progression**. La fenêtre permet de choisir un récapitulatif ou un export détaillé, le format **CSV** ou **PDF**, et de cocher les apprenants du parcours courant ; tous sont sélectionnés par défaut. Un seul bouton **Exporter** déclenche le téléchargement. Le CSV utilise UTF-8 avec BOM et le point-virgule comme séparateur.
 
-Le récapitulatif contient une ligne par élève et reprend les calculs du tableau de bord : étapes réalisées/accessibles/confirmées, pourcentage, éléments à confirmer, moyennes, encouragements et dernière activité connue (sur le dernier mois). Les moyennes ne prennent en compte que les étapes suivies dans les acquis, conformément au tableau de bord.
+Le récapitulatif contient une ligne par apprenant et reprend les calculs du tableau de bord : étapes réalisées/accessibles/confirmées, pourcentage, éléments à confirmer, moyennes, encouragements et dernière activité connue (sur le dernier mois). Les moyennes ne prennent en compte que les étapes suivies dans les acquis, conformément au tableau de bord.
 
-Le détail contient une ligne par élève et étape, ou par QCM lorsqu’une étape en contient plusieurs. Les indicateurs récapitulatifs et les notes d’étape sont alors répétés : ne pas les additionner entre les lignes QCM. Il comprend notes, pondérations, autoévaluations soumises, confirmations et commentaires. Les étapes actuellement inaccessibles sont explicitement indiquées pour conserver les résultats qui contribuent encore aux moyennes. Un parcours vide conserve une ligne d’identité par élève. Chaque évaluation conserve sa note dans **Note sur 10**. Chaque QCM exporte son dernier résultat en pourcentage et dans **Note QCM /10** (questions correctes ÷ nombre de questions × 10, arrondi à deux décimales), le nombre de questions correctes, le nombre de tentatives et la date ; les réponses individuelles et les anciennes tentatives ne sont pas conservées par l’application. Les cellules de résultat vides correspondent à une absence de résultat, et non à une note de zéro. Les horodatages sont en heure Europe/Zurich.
+Le détail contient une ligne par apprenant et étape, ou par QCM lorsqu’une étape en contient plusieurs. Les indicateurs récapitulatifs et les notes d’étape sont alors répétés : ne pas les additionner entre les lignes QCM. Il comprend notes, pondérations, autoévaluations soumises, confirmations et commentaires. Les étapes actuellement inaccessibles sont explicitement indiquées pour conserver les résultats qui contribuent encore aux moyennes. Un parcours vide conserve une ligne d’identité par apprenant. Chaque évaluation conserve sa note dans **Note sur 10**. Chaque QCM exporte son dernier résultat en pourcentage et dans **Note QCM /10** (questions correctes ÷ nombre de questions × 10, arrondi à deux décimales), le nombre de questions correctes, le nombre de tentatives et la date ; les réponses individuelles et les anciennes tentatives ne sont pas conservées par l’application. Les cellules de résultat vides correspondent à une absence de résultat, et non à une note de zéro. Les horodatages sont en heure Europe/Zurich.
 
-Le PDF récapitulatif utilise un tableau A4 paysage. Le PDF détaillé utilise une fiche A4 portrait par élève : chaque élève commence sur une nouvelle page, avec ses indicateurs, ses résultats par étape et ses commentaires. Une fiche peut se poursuivre sur plusieurs pages ; les en-têtes des tableaux sont répétés et les pages sont numérotées. Les QCM présentent uniquement leur dernier résultat sur 10.
+Le PDF récapitulatif utilise un tableau A4 paysage. Le PDF détaillé utilise une fiche A4 portrait par apprenant : chaque apprenant commence sur une nouvelle page, avec ses indicateurs, ses résultats par étape et ses commentaires. Une fiche peut se poursuivre sur plusieurs pages ; les en-têtes des tableaux sont répétés et les pages sont numérotées. Les QCM présentent uniquement leur dernier résultat sur 10.
 
-Depuis la fiche de suivi d’un élève, le bouton à droite des points ouvre la même fenêtre de gestion que dans **Élèves & inscriptions**.
+Depuis la fiche de suivi d’un apprenant, le bouton à droite des points ouvre la même fenêtre de gestion que dans **Apprenants & inscriptions**.
 
 
 ## Emails
 
-Dans l’éditeur de contenu, **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton d’enregistrement, sauvegarde puis prépare un courriel par élève actif ayant accès à la page, y compris lorsque les modifications ont déjà été enregistrées silencieusement. Aucun courriel n’est préparé si la sauvegarde échoue ou rencontre un conflit. Les changements restent signalés dans **Depuis la dernière visite** côté élève.
+Dans l’éditeur de contenu, **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton d’enregistrement, sauvegarde puis prépare un courriel par apprenant actif ayant accès à la page, y compris lorsque les modifications ont déjà été enregistrées silencieusement. Aucun courriel n’est préparé si la sauvegarde échoue ou rencontre un conflit. Les changements restent signalés dans **Depuis la dernière visite** côté apprenant.
 
 
 Les envois et formulaires publics sont protégés sans CAPTCHA : jetons à usage unique, champ piège, quotas persistants et contrôles anti-injection. Voir la [configuration de sécurité des emails](docs/exploitation.md#protection-contre-les-abus-sans-captcha), notamment `APP_PUBLIC_URL` pour l’adresse publique de l’installation et `APP_MAIL_ENABLED=0` pour couper les envois.
@@ -211,13 +211,13 @@ Page réutilisable ── blocs + tags
         └── Étape d’un cours ── ordre + échéance + type
                     │           événement daté, objectifs + compétences du cours
                     │
-                    └── Progression de l’élève
+                    └── Progression de l’apprenant
                          ├── auto-positionnement 0–3
                          ├── confirmation 0–3
                          └── rewards et points cumulés
 ```
 
-Les élèves ne reçoivent jamais les vues `students`, `pathway`, `library` ou `teacher` : les routes et commandes vérifient la session, le rôle et un jeton CSRF. Les codes élèves restent volontairement sans mot de passe et ne doivent donc pas protéger des données sensibles.
+Les apprenants ne reçoivent jamais les vues `students`, `pathway`, `library` ou `teacher` : les routes et commandes vérifient la session, le rôle et un jeton CSRF. Les codes apprenants restent volontairement sans mot de passe et ne doivent donc pas protéger des données sensibles.
 
 ## Vérifier
 
@@ -281,7 +281,7 @@ Le scénario QCM utilise Chromium (`/usr/bin/chromium`, ou `CHROMIUM_BINARY`), N
 
 Les tests `qcm_modes.php` et `qcm_modes_browser.mjs` couvrent les trois marqueurs, la conservation des notes, les contrôles d’accès, les votes tardifs et les onglets périmés, les réponses neutres, le mode strict mobile, la projection et la reprise des séances collectives. Ils utilisent uniquement des données temporaires.
 
-Le scénario iframe / vidéo utilise le même environnement temporaire. Il vérifie les liens YouTube, le code iframe RTS, les vues enseignant et élève sur bureau et mobile, les exports et une iframe locale interactive. Les contrôles de chargement externe sont informatifs, car ils dépendent du fournisseur et du réseau.
+Le scénario iframe / vidéo utilise le même environnement temporaire. Il vérifie les liens YouTube, le code iframe RTS, les vues enseignant et apprenant sur bureau et mobile, les exports et une iframe locale interactive. Les contrôles de chargement externe sont informatifs, car ils dépendent du fournisseur et du réseau.
 
 Le scénario de remise vérifie la création du bloc, les trois formats, la limite de 512 caractères, les brouillons et la reprise hors ligne, la remise explicite, la notation et la réouverture avec historique. Le test PHP couvre aussi la migration v18, la conservation des QCM existants et les contrôles d’accès et de concurrence.
 
@@ -291,22 +291,22 @@ Le scénario des blocs vérifie dans Chromium les champs contextuels, l’aperç
 
 Depuis le suivi enseignant, le menu Actions à trois points verticaux, en haut à droite, regroupe Courriel / Annonce, la gestion des modèles personnels, Correspondance, Réunion, Paiement et Notifications. Les entrées sont accompagnées d’icônes et triées selon la langue affichée. Les modèles sont utilisables dans tous les parcours de leur auteur et acceptent `{prenom}`, `{nom}` et `{cours}` dans le titre et le corps Markdown. Le texte peut être adapté pour un envoi sans modifier le modèle ; aucun prénom ni signature n’est ajouté automatiquement.
 
-La fenêtre d’envoi permet de sélectionner les élèves du parcours et d’inclure leur deuxième adresse en CC. Chaque élève reçoit un seul courriel, avec l’adresse principale en destinataire, la deuxième adresse cochée en CC. L’enseignant reçoit un seul courriel récapitulatif par envoi, avec le titre et le contenu originaux (variables entre accolades conservées), puis les noms et adresses des destinataires, y compris les CC sélectionnées. Ce récapitulatif suit le même délai et la même annulation que les courriels élèves ; il ne confirme pas leur livraison. Un aperçu personnalisé précède l’envoi. Les versions envoyées sont conservées dans une seule annonce, visible uniquement des destinataires sélectionnés et de l’équipe enseignante. L’envoi à toute la classe concerne les inscriptions actives au moment de l’envoi. Les annonces globales existantes gardent leur visibilité habituelle.
+La fenêtre d’envoi permet de sélectionner les apprenants du parcours et d’inclure leur deuxième adresse en CC. Chaque apprenant reçoit un seul courriel, avec l’adresse principale en destinataire, la deuxième adresse cochée en CC. L’enseignant reçoit un seul courriel récapitulatif par envoi, avec le titre et le contenu originaux (variables entre accolades conservées), puis les noms et adresses des destinataires, y compris les CC sélectionnées. Ce récapitulatif suit le même délai et la même annulation que les courriels apprenants ; il ne confirme pas leur livraison. Un aperçu personnalisé précède l’envoi. Les versions envoyées sont conservées dans une seule annonce, visible uniquement des destinataires sélectionnés et de l’équipe enseignante. L’envoi à toute la classe concerne les inscriptions actives au moment de l’envoi. Les annonces globales existantes gardent leur visibilité habituelle.
 
 Les envois partiels apparaissent en gris dans la liste des annonces du parcours, avec leurs destinataires et états de lecture dans l’application. La corbeille supprime l’annonce et les courriels encore en attente ; elle ne rappelle pas les courriels déjà envoyés. La migration v20 conserve les anciennes annonces et étend la file des courriels aux copies CC/CCI. Les scénarios PHP et Chromium vérifient ces comportements sur des données temporaires ; le test navigateur neutralise la livraison réelle des courriels.
 
 
-Sous `?view=students`, **Gérer** ouvre une fenêtre avec les onglets Informations, Inscriptions et Historique. Les actions existantes sur les comptes, les participations et la deuxième adresse restent disponibles ; après enregistrement, l’élève, l’onglet et les filtres sont conservés. Le suivi pédagogique reste sous `?view=student-detail`.
+Sous `?view=students`, **Gérer** ouvre une fenêtre avec les onglets Informations, Inscriptions et Historique. Les actions existantes sur les comptes, les participations et la deuxième adresse restent disponibles ; après enregistrement, l’apprenant, l’onglet et les filtres sont conservés. Le suivi pédagogique reste sous `?view=student-detail`.
 
-**Ajouter un suivi**, depuis l’historique ou le menu Actions du tableau de bord, enregistre une réunion, une correspondance ou un paiement pour un ou plusieurs élèves. Le compte rendu est commun aux participants et stocké une seule fois. Il comprend la date et l’heure, l’auteur, un titre (160 caractères), un texte Markdown (5 000 caractères) et éventuellement un parcours. Les modèles personnels d’envoi sont réutilisables ; dans un compte rendu collectif, `{prenom}` et `{nom}` donnent la liste des participants. `{cours}` nécessite de choisir un parcours auquel les participants sont inscrits. Enregistrer ce suivi ne déclenche aucun courriel. Aucune pièce jointe n’est proposée.
+**Ajouter un suivi**, depuis l’historique ou le menu Actions du tableau de bord, enregistre une réunion, une correspondance ou un paiement pour un ou plusieurs apprenants. Le compte rendu est commun aux participants et stocké une seule fois. Il comprend la date et l’heure, l’auteur, un titre (160 caractères), un texte Markdown (5 000 caractères) et éventuellement un parcours. Les modèles personnels d’envoi sont réutilisables ; dans un compte rendu collectif, `{prenom}` et `{nom}` donnent la liste des participants. `{cours}` nécessite de choisir un parcours auquel les participants sont inscrits. Enregistrer ce suivi ne déclenche aucun courriel. Aucune pièce jointe n’est proposée.
 
-L’historique charge 50 éléments par page et rassemble ces comptes rendus et les annonces ciblées déjà adressées à l’élève, avec leur contenu personnalisé, leurs copies CC/CCI et leurs états d’envoi et de lecture. Les annonces restent les données de référence : leur suppression habituelle les retire aussi de cet historique. L’auteur peut modifier ou supprimer son compte rendu pour tous ses participants, avec contrôle de révision pour éviter d’écraser une modification concurrente. Les suivis généraux sont consultables par les enseignants autorisés à gérer l’élève ; ceux liés à un parcours sont réservés à son équipe enseignante, à l’auteur ou au superadministrateur. Les élèves n’accèdent pas au suivi administratif.
+L’historique charge 50 éléments par page et rassemble ces comptes rendus et les annonces ciblées déjà adressées à l’apprenant, avec leur contenu personnalisé, leurs copies CC/CCI et leurs états d’envoi et de lecture. Les annonces restent les données de référence : leur suppression habituelle les retire aussi de cet historique. L’auteur peut modifier ou supprimer son compte rendu pour tous ses participants, avec contrôle de révision pour éviter d’écraser une modification concurrente. Les suivis généraux sont consultables par les enseignants autorisés à gérer l’apprenant ; ceux liés à un parcours sont réservés à son équipe enseignante, à l’auteur ou au superadministrateur. Les apprenants n’accèdent pas au suivi administratif.
 
-La migration v21 ajoute les deux tables de suivi sans modifier les progressions et efface les corps des copies techniques de courriels déjà envoyées. Des déclencheurs SQLite appliquent ensuite cette règle à chaque envoi réussi, quel que soit le transport. La file conserve les métadonnées (date, destinataire, objet, copies, état), ainsi que les corps des messages en attente ou en échec pour permettre une nouvelle tentative. Le contenu utile reste dans l’annonce d’origine ou le compte rendu. L’ancienne action de nettoyage ne supprime plus les métadonnées. Les tests PHP vérifient les accès, la migration, les liens collectifs, les révisions et la pagination ; Chromium vérifie les fenêtres sur ordinateur et mobile, les formulaires existants et les refus d’accès élèves sur une instance temporaire sans livraison réelle de courriels.
+La migration v21 ajoute les deux tables de suivi sans modifier les progressions et efface les corps des copies techniques de courriels déjà envoyées. Des déclencheurs SQLite appliquent ensuite cette règle à chaque envoi réussi, quel que soit le transport. La file conserve les métadonnées (date, destinataire, objet, copies, état), ainsi que les corps des messages en attente ou en échec pour permettre une nouvelle tentative. Le contenu utile reste dans l’annonce d’origine ou le compte rendu. L’ancienne action de nettoyage ne supprime plus les métadonnées. Les tests PHP vérifient les accès, la migration, les liens collectifs, les révisions et la pagination ; Chromium vérifie les fenêtres sur ordinateur et mobile, les formulaires existants et les refus d’accès apprenants sur une instance temporaire sans livraison réelle de courriels.
 
 Sous `?view=teacher`, le menu Actions propose aussi **Réunion**, **Correspondance** et **Paiement**. Il ouvre le même suivi administratif avec la catégorie et le parcours sélectionnés ; les participants proposés appartiennent au parcours choisi. Les modèles créés ou modifiés dans cette page sont immédiatement disponibles dans le suivi. La migration v22 regroupe les anciennes discussions sous Réunion, en conservant leurs identifiants, textes, dates et participants. Paiement est une catégorie de compte rendu, sans transaction financière.
 
 
-La fiche administrative présente chaque activité avec son type, son auteur et sa date de création, puis les autres participants actifs (sans l’élève consulté) et « Concerne : … ». Le chevron déplie le contenu et les détails ; les textes de l’historique utilisent une taille de police uniforme. Le menu à trois points de la fiche regroupe **Exporter en PDF**, **Exporter en Markdown** et **Fermer**. Chaque export contient les informations, les inscriptions affichables et toutes les pages de l’historique autorisé, avec le texte complet des activités et messages, indépendamment de leur état replié. Ces exports sont réservés aux enseignants autorisés ; ils ne contiennent pas les données techniques d’authentification. Les images Markdown sont représentées par leur description et leur adresse dans le PDF, sans chargement de ressource externe.
+La fiche administrative présente chaque activité avec son type, son auteur et sa date de création, puis les autres participants actifs (sans l’apprenant consulté) et « Concerne : … ». Le chevron déplie le contenu et les détails ; les textes de l’historique utilisent une taille de police uniforme. Le menu à trois points de la fiche regroupe **Exporter en PDF**, **Exporter en Markdown** et **Fermer**. Chaque export contient les informations, les inscriptions affichables et toutes les pages de l’historique autorisé, avec le texte complet des activités et messages, indépendamment de leur état replié. Ces exports sont réservés aux enseignants autorisés ; ils ne contiennent pas les données techniques d’authentification. Les images Markdown sont représentées par leur description et leur adresse dans le PDF, sans chargement de ressource externe.
 
 - [Discussions privées, gestion par parcours et superadmin, notifications PWA](docs/discussions.md)

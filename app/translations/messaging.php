@@ -331,7 +331,7 @@ return json_decode(<<<'JSON'
     "it": "Consenti le conversazioni in questo percorso",
     "es": "Permitir conversaciones en este itinerario"
   },
-  "Échanges entre élèves et enseignants, ainsi qu’entre enseignants du parcours.": {
+  "Échanges entre apprenants et enseignants, ainsi qu’entre enseignants du parcours.": {
     "en": "Exchanges between students and teachers, and between teachers in this pathway.",
     "de": "Austausch zwischen Lernenden und Lehrpersonen sowie zwischen den Lehrpersonen dieses Lernpfads.",
     "it": "Scambi tra studenti e docenti e tra i docenti di questo percorso.",

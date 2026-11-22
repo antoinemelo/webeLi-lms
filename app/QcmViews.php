@@ -88,9 +88,9 @@ function qcm_class_labels(): array
         'reveal'=>'Révéler la correction','next'=>'Question suivante','finish'=>'Terminer la séance','restart'=>'Nouvelle séance',
         'send'=>'Envoyer ma réponse','saved'=>'Réponse enregistrée. Vous pouvez la modifier tant que la question est ouverte.',
         'closed'=>'Réponses closes','finished'=>'Séance terminée','question'=>'Question :number sur :total',
-        'count'=>'Réponses : :count / :total élèves','multiple'=>'Plusieurs choix possibles. Les nombres indiquent les élèves ayant choisi chaque proposition.',
+        'count'=>'Réponses : :count / :total apprenants','multiple'=>'Plusieurs choix possibles. Les nombres indiquent les apprenants ayant choisi chaque proposition.',
         'single'=>'Une seule réponse possible.','pending'=>'Envoi en cours…','error'=>'Connexion interrompue. Les réponses sont désactivées jusqu’à la reconnexion.',
         'right'=>'Réponse juste','wrong'=>'Réponse fausse','neutral'=>'Réponse neutre','login'=>'Session expirée. Reconnectez-vous puis revenez à cette séance.',
-        'join'=>'Élèves : ouvrez cette étape dans votre parcours et choisissez « Rejoindre la séance ».'] as $name=>$label)$strings[$name]=t($label);
+        'join'=>'Apprenants : ouvrez cette étape dans votre parcours et choisissez « Rejoindre la séance ».'] as $name=>$label)$strings[$name]=t($label);
     return $strings;
 }

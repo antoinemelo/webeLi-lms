@@ -7,7 +7,7 @@
 ### Identité et sécurité
 
 - l’enseignant dispose d’un mot de passe hashé, de sessions, d’une protection CSRF et d’une récupération par lien temporaire, mais il n’existe pas encore d’authentification multifacteur ;
-- les codes élèves sans mot de passe sont volontairement simples et prévisibles : ils ne conviennent pas à des données sensibles ;
+- les codes apprenants sans mot de passe sont volontairement simples et prévisibles : ils ne conviennent pas à des données sensibles ;
 - l’application ne propose pas encore de journal complet des connexions ni de protection anti-bruteforce dédiée à toutes les formes de connexion ;
 - les inscriptions et récupérations publiques sont protégées sans CAPTCHA par des jetons à usage unique, un champ piège et des quotas persistants ; les seuils et le domaine canonique des liens sont à configurer selon l’instance (voir [exploitation](exploitation.md#protection-contre-les-abus-sans-captcha)) ;
 - les imports de blocs contrôlent la taille, les extensions des documents et le format réel des images ; aucune analyse antivirus n’est intégrée. Les iframes sont reconstruites à partir d’une URL HTTP(S), mais il n’existe pas de liste de domaines autorisés configurable ni de sandbox iframe ;
@@ -15,7 +15,7 @@
 
 ### Administration
 
-- les comptes, élèves, inscriptions et parcours se gèrent dans l’interface, mais certains référentiels globaux et opérations administratives restent partiels ;
+- les comptes, apprenants, inscriptions et parcours se gèrent dans l’interface, mais certains référentiels globaux et opérations administratives restent partiels ;
 - les compétences peuvent être modifiées et retirées ; les types d’encouragements peuvent être modifiés et désactivés sans effacer les attributions passées ;
 - l’éditeur conserve les blocs inchangés et contrôle les révisions concurrentes, mais ne propose pas d’historique complet des versions de contenu ;
 - les formats JSON sont versionnés mais ne disposent pas encore de signature cryptographique ; n’importer que des fichiers provenant d’une source de confiance ;
@@ -24,15 +24,15 @@
 
 - les synthèses pondèrent les activités confirmées à `0,5` et les évaluations selon leur pondération configurée ; cette règle reste une convention interne, pas une grille institutionnelle paramétrable ;
 - aucun niveau cible n’est défini par compétence ou par objectif ;
-- les élèves peuvent remettre un lien ou un texte de 512 caractères, avec brouillon et nouvelle remise autorisée ; il n’existe pas de dépôt de fichier élève, de grille critériée ou de commentaire par compétence. Le contenu d’un document externe peut changer après remise ;
+- les apprenants peuvent remettre un lien ou un texte de 512 caractères, avec brouillon et nouvelle remise autorisée ; il n’existe pas de dépôt de fichier apprenant, de grille critériée ou de commentaire par compétence. Le contenu d’un document externe peut changer après remise ;
 - une confirmation répétée avec reward peut attribuer plusieurs rewards, ce qui est autorisé mais devrait être rendu plus explicite.
 
 ### Calendriers et bilans
 
 - les événements sont ponctuels, en heure Europe/Zurich ou sur des journées entières ; aucune récurrence, inscription ou confirmation de présence n’est gérée ;
 - le fichier `.ics` et le lien Google Calendar créent des copies dans les agendas : les modifications ultérieures ne sont pas synchronisées automatiquement ;
-- l’aperçu enseignant cache les étapes invisibles mais conserve toutes les étapes restreintes ; il ne simule pas les droits d’un élève sélectionné ;
-- les bilans de progression sont disponibles en CSV et PDF, sans export XLSX ; les fiches détaillées peuvent occuper plusieurs pages par élève ;
+- l’aperçu enseignant cache les étapes invisibles mais conserve toutes les étapes restreintes ; il ne simule pas les droits d’un apprenant sélectionné ;
+- les bilans de progression sont disponibles en CSV et PDF, sans export XLSX ; les fiches détaillées peuvent occuper plusieurs pages par apprenant ;
 - seul le dernier résultat de chaque QCM et son nombre de tentatives sont disponibles, sans anciennes réponses ni historique des scores ;
 - la sauvegarde silencieuse évite les courriels à chaque correction ; chaque usage volontaire du lien de notification prépare un nouvel envoi, sans regroupement automatique.
 

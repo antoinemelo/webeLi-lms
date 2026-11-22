@@ -8,7 +8,7 @@ Tous les champs de date proposent une saisie manuelle au format **jj/mm/aaaa** (
 
 ### Créer un compte
 
-Le lien **S’inscrire** ouvre une page distincte pour les élèves et les enseignants. Un élève renseigne ses coordonnées et son groupe classe ; il peut saisir immédiatement le code transmis par son enseignant ou rejoindre un cours plus tard. Un enseignant choisit son identifiant, son mot de passe et le nom de son premier cours.
+Le lien **S’inscrire** ouvre une page distincte pour les apprenants et les enseignants. Un apprenant renseigne ses coordonnées et son groupe classe ; il peut saisir immédiatement le code transmis par son enseignant ou rejoindre un cours plus tard. Un enseignant choisit son identifiant, son mot de passe et le nom de son premier cours.
 
 Les identifiants sont vérifiés sans distinction de casse. Si le code proposé existe déjà, liike ajoute automatiquement un chiffre supérieur à zéro : `LIROS`, `LIROS1`, `LIROS2`, etc.
 
@@ -23,40 +23,40 @@ Identifiant : nora
 Mot de passe : Elan-Nora-2026!
 ```
 
-### Élève
+### Apprenant
 
-L’élève saisit son code personnel sans mot de passe. La démonstration fournit `LIROS`, `SADIA` et `NOMAR`.
+L’apprenant saisit son code personnel sans mot de passe. La démonstration fournit `LIROS`, `SADIA` et `NOMAR`.
 
 Le code contient les deux premières lettres du prénom et les trois premiers caractères du nom après suppression des espaces. Il est affiché en majuscules :
 
 - Lina ROSSI → `LIROS` ;
 - Maya DA COSTA → `MADAC`.
 
-Si deux élèves produisent le même code, le second reçoit automatiquement un suffixe numérique.
+Si deux apprenants produisent le même code, le second reçoit automatiquement un suffixe numérique.
 
 ### Rester connecté dans la PWA
 
 Dans l’application installée sur l’écran d’accueil, **Rester connecté dans cette application (90 jours)** est coché par défaut lors de la connexion. Décochez cette option si vous ne souhaitez pas mémoriser votre accès sur cet appareil. Les enseignants confirment ensuite leur mot de passe ; leur choix reste conservé même après une erreur de saisie. Cette option n’est pas proposée dans une fenêtre de navigateur classique.
 
-Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifiants. La reprise est également tentée à la réouverture, à la restauration d’une page et au retour du réseau, sans interrompre une connexion manuelle déjà commencée. Cette reconnexion automatique conserve la session laissée sur l’ordinateur, tant qu’elle est encore valide. Une connexion manuelle d’élève reste soumise à la règle habituelle sur les connexions simultanées.
+Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifiants. La reprise est également tentée à la réouverture, à la restauration d’une page et au retour du réseau, sans interrompre une connexion manuelle déjà commencée. Cette reconnexion automatique conserve la session laissée sur l’ordinateur, tant qu’elle est encore valide. Une connexion manuelle d’apprenant reste soumise à la règle habituelle sur les connexions simultanées.
 
 **Se déconnecter** supprime le jeton présent dans cette PWA. Après une reconnexion automatique, cette déconnexion ne ferme pas la session de l’ordinateur. Il existe un seul jeton par personne : mémoriser une nouvelle PWA remplace le précédent. Une modification du mot de passe ou du code de connexion, un changement de statut du compte ou une collision entre connexions classiques révoque le jeton. La reconnexion nécessite un accès réseau.
 
 ### Rejoindre un cours avec une invitation
 
-Chaque parcours actif possède un code unique et un lien d’invitation. L’enseignant les trouve dans **Élèves**, depuis le menu à trois points de **Élèves & inscriptions**, puis **Invitation au parcours**, et peut les copier en un clic.
+Chaque parcours actif possède un code unique et un lien d’invitation. L’enseignant les trouve dans **Apprenants**, depuis le menu à trois points de **Apprenants & inscriptions**, puis **Invitation au parcours**, et peut les copier en un clic.
 
-- un élève déjà connecté confirme le cours puis le rejoint immédiatement ;
-- un élève qui ouvre le lien sans compte peut créer son compte, saisir ses informations et valider son courriel ; son inscription au cours est alors déjà préparée ;
+- un apprenant déjà connecté confirme le cours puis le rejoint immédiatement ;
+- un apprenant qui ouvre le lien sans compte peut créer son compte, saisir ses informations et valider son courriel ; son inscription au cours est alors déjà préparée ;
 - le code peut aussi être saisi depuis le menu **Connecté·e comme**, avec **Rejoindre un cours** sous **Modifier mon profil**.
 
-Les codes sont comparés sans distinction de casse. Un cours archivé ne peut pas être rejoint. Si l’enseignant a archivé une participation, l’élève doit lui demander de la réactiver : le code d’invitation ne contourne pas cette décision.
+Les codes sont comparés sans distinction de casse. Un cours archivé ne peut pas être rejoint. Si l’enseignant a archivé une participation, l’apprenant doit lui demander de la réactiver : le code d’invitation ne contourne pas cette décision.
 
-## Parcours élève
+## Parcours apprenant
 
 ### Onglet « Parcours »
 
-L’élève voit immédiatement :
+L’apprenant voit immédiatement :
 
 - le cours sélectionné ;
 - sa progression globale ;
@@ -71,7 +71,7 @@ Le bouton **Prochaine étape** ouvre en priorité l’étape accessible dont l�
 
 La carte entière est cliquable. Sa zone violette occupe toute sa largeur et affiche le numéro ou le type d’étape, son titre et la durée prévue ; la description apparaît en dessous. Une étape sans échéance n’affiche aucune mention de date, dans la carte comme dans la vue d’ensemble.
 
-Lorsqu’une étape visible a été ajoutée, déplacée ou modifiée, lorsqu’un type d’acquis a changé à la suite d’une confirmation ou d’une notation enseignante, ou lorsqu’un encouragement a été attribué depuis la connexion précédente, un encadré **Depuis la dernière visite** apparaît avec des liens directs vers les éléments concernés. Les ajouts, les mises à jour, les types d’acquis concernés (compétences, objectifs ou évaluations) et les encouragements y sont distingués, sans révéler le détail des acquis modifiés. L’encadré est propre à chaque élève et à chaque parcours, et reste visible pendant toute la session. À la connexion suivante, le repère est réinitialisé : seul l’intervalle entre les deux dernières connexions est conservé, sans journal durable des changements. Aucune liste n’est affichée lors de la toute première connexion.
+Lorsqu’une étape visible a été ajoutée, déplacée ou modifiée, lorsqu’un type d’acquis a changé à la suite d’une confirmation ou d’une notation enseignante, ou lorsqu’un encouragement a été attribué depuis la connexion précédente, un encadré **Depuis la dernière visite** apparaît avec des liens directs vers les éléments concernés. Les ajouts, les mises à jour, les types d’acquis concernés (compétences, objectifs ou évaluations) et les encouragements y sont distingués, sans révéler le détail des acquis modifiés. L’encadré est propre à chaque apprenant et à chaque parcours, et reste visible pendant toute la session. À la connexion suivante, le repère est réinitialisé : seul l’intervalle entre les deux dernières connexions est conservé, sans journal durable des changements. Aucune liste n’est affichée lors de la toute première connexion.
 
 Les parcours sont classés du plus récemment consulté au plus ancien. Les quatre premiers apparaissent côte à côte ; s’il y en a davantage, les suivants sont accessibles avec le bouton à trois points verticaux placé à droite.
 
@@ -79,7 +79,7 @@ Les parcours sont classés du plus récemment consulté au plus ancien. Les quat
 
 Une page peut contenir du texte Markdown, une image, un document, une vidéo ou un lecteur audio, une intégration externe et un travail à rendre sous forme de lien ou de texte court. Les objectifs et compétences mobilisés sont affichés en tête de page.
 
-À la fin, l’élève choisit son niveau :
+À la fin, l’apprenant choisit son niveau :
 
 | Niveau | Signification |
 |---:|---|
@@ -101,7 +101,7 @@ Chaque carte compare le niveau moyen auto-évalué au niveau moyen confirmé. Le
 
 ### Consulter ses rewards
 
-Les rewards sont des encouragements séparés de l’évaluation des compétences. L’élève voit :
+Les rewards sont des encouragements séparés de l’évaluation des compétences. L’apprenant voit :
 
 - son total de points ;
 - la répartition par type de reward ;
@@ -113,9 +113,9 @@ Les rewards sont des encouragements séparés de l’évaluation des compétence
 
 Le menu du profil, en haut à droite, donne accès à **Modifier mon profil**. L’enseignant peut y modifier son prénom, son NOM, son identifiant de connexion et, s’il le souhaite, son mot de passe. Le nom est toujours enregistré en majuscules et le nouvel identifiant s’applique à la connexion suivante.
 
-### Inscrire les élèves
+### Inscrire les apprenants
 
-L’écran **Élèves** contient l’annuaire, le partage du code/lien d’invitation et les formulaires d’inscription manuelle.
+L’écran **Apprenants** contient l’annuaire, le partage du code/lien d’invitation et les formulaires d’inscription manuelle.
 
 Pour créer un accès, l’enseignant renseigne :
 
@@ -128,15 +128,15 @@ Pour créer un accès, l’enseignant renseigne :
 
 Le code personnel est prévisualisé pendant la saisie. Après création, il apparaît dans l’annuaire et un email de bienvenue est préparé dans la boîte de notifications.
 
-Le menu à trois points de **Élèves & inscriptions** ouvre **Nouvel accès**, **Inscription groupée**, **Invitation au parcours** et l’import/export. La recherche accepte le nom, le prénom et le courriel ; les filtres limitent l’annuaire par groupe ou parcours. La recherche et les filtres, seuls ou combinés, sont retrouvés au retour dans cette page. Ils sont mémorisés dans le navigateur pour le compte connecté, y compris après une déconnexion ; les comptes conservent des choix distincts. Une inscription déjà existante n’est pas dupliquée.
+Le menu à trois points de **Apprenants & inscriptions** ouvre **Nouvel accès**, **Inscription groupée**, **Invitation au parcours** et l’import/export. La recherche accepte le nom, le prénom et le courriel ; les filtres limitent l’annuaire par groupe ou parcours. La recherche et les filtres, seuls ou combinés, sont retrouvés au retour dans cette page. Ils sont mémorisés dans le navigateur pour le compte connecté, y compris après une déconnexion ; les comptes conservent des choix distincts. Une inscription déjà existante n’est pas dupliquée.
 
-Une adresse électronique secondaire privée peut être ajoutée à la fiche d’un élève. Seuls les enseignants autorisés et le superadmin peuvent la voir ou la modifier. Lorsqu’elle est renseignée, sa mise à jour est intégrée à la partie **Admin** de la fiche.
+Une adresse électronique secondaire privée peut être ajoutée à la fiche d’un apprenant. Seuls les enseignants autorisés et le superadmin peuvent la voir ou la modifier. Lorsqu’elle est renseignée, sa mise à jour est intégrée à la partie **Admin** de la fiche.
 
 ### Archiver ou supprimer
 
 Dans l’annuaire, **Admin** ouvre les commandes d’une participation et du compte :
 
-- **Archiver** une participation la masque à l’élève mais conserve progression, validations et rewards ;
+- **Archiver** une participation la masque à l’apprenant mais conserve progression, validations et rewards ;
 - **Retirer définitivement** supprime la participation et tout son historique dans ce cours (progression, validations, QCM, visites, notes privées et accès ciblés), sans toucher au compte ni à ses autres cours ;
 - **Archiver le compte** bloque la connexion et archive ses participations ;
 - **Effacer définitivement** supprime le compte et toutes ses données.
@@ -145,25 +145,25 @@ Si le compte participe au cours d’un autre enseignant, son archivage ou sa sup
 
 ### Suivre un cours
 
-Le logo **liike** ouvre le tableau de bord (`?view=teacher`). La navigation enseignante propose **Élèves**, **Bibliothèque** et **Parcours** ; sur mobile, **Bibliothèque** est nommée **Contenus**.
+Le logo **liike** ouvre le tableau de bord (`?view=teacher`). La navigation enseignante propose **Apprenants**, **Bibliothèque** et **Parcours** ; sur mobile, **Bibliothèque** est nommée **Contenus**.
 
-Le chevron placé avant **Progression des élèves** affiche ou masque la liste, fermée par défaut. Le dernier choix est mémorisé dans le navigateur pour le compte connecté, indépendamment du parcours consulté. Il s’agit uniquement d’un réglage d’affichage.
+Le chevron placé avant **Progression des apprenants** affiche ou masque la liste, fermée par défaut. Le dernier choix est mémorisé dans le navigateur pour le compte connecté, indépendamment du parcours consulté. Il s’agit uniquement d’un réglage d’affichage.
 
-Dans cette liste, ouvrir un élève. La dernière visite connue apparaît à droite de chaque étape. Le bouton **Historique des visites** ouvre un tableau par jour et par page avec la première visite, la dernière activité, le nombre de sessions et le temps actif estimé.
+Dans cette liste, ouvrir un apprenant. La dernière visite connue apparaît à droite de chaque étape. Le bouton **Historique des visites** ouvre un tableau par jour et par page avec la première visite, la dernière activité, le nombre de sessions et le temps actif estimé.
 
 Le navigateur enregistre l’ouverture immédiatement, puis actualise le temps actif toutes les 60 secondes et à la fermeture ou au masquage de l’onglet. Les données de plus d’un mois sont automatiquement supprimées.
 
 Sous le titre du tableau de bord, le **Calendrier des échéances** rassemble les dates limites de tous les parcours actifs dont vous faites partie de l’équipe enseignante, quel que soit le cours sélectionné. La vue **Jour** est sélectionnée par défaut et affiche uniquement les échéances du jour choisi. Les boutons **Jour**, **Semaine** et **Mois**, les flèches et **Aujourd’hui** permettent de naviguer. Les entrées indiquent leur parcours et ouvrent l’étape. Les titres sont limités à 40 caractères, points de suspension compris, avec le titre complet au survol. Chaque journée s’agrandit selon le nombre de tuiles, sans défilement interne ; les étapes masquées restent accessibles en édition pour l’enseignant. Les parcours archivés ne figurent pas dans ce calendrier. Sur mobile, la période est présentée en liste chronologique des jours ayant des échéances. Les dates d’événements sans échéance ne sont pas ajoutées automatiquement.
 
-Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque élève actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les élèves sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des élèves montre leur avancement, les confirmations attendues et leur score de rewards. Après **Progression**, la colonne **Moyennes** présente la moyenne pondérée des évaluations sur 10 puis la moyenne simple des niveaux autoévalués sur 3, chacune au dixième (par exemple **7,0 | 2,5**). Les calculs portent sur les étapes suivies du cours ; seules les autoévaluations remises et encore activées sont retenues. Une valeur absente est indiquée par **—**. Le tri **Moyennes** compare d’abord les notes d’évaluation, puis les niveaux autoévalués. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient plusieurs QCM. Le compteur de chaque élève additionne les autoévaluations et les évaluations prêtes à corriger, y compris les travaux remis. Son carré est rouge pastel dès qu’au moins une évaluation est en attente ; il reste orangé pour les autres confirmations. Le compteur de la tuile du parcours suit la même règle : rouge pastel dès qu’un élève a une évaluation à confirmer. Son nombre reste celui des élèves ayant une confirmation en attente. Le survol indique le nombre d’évaluations dans le total.
+Le tableau de bord affiche la progression moyenne, le nombre de validations en attente et la prochaine évaluation. La case **Progression moyenne** présente le pourcentage de progression puis la moyenne des notes sur 10 (par exemple **61% / 7,00**). Chaque apprenant actif du cours compte à parts égales, à partir de sa moyenne pondérée des évaluations suivies. Les apprenants sans note sont exclus du calcul ; un tiret apparaît si aucune note n’est disponible. La liste des apprenants montre leur avancement, les confirmations attendues et leur score de rewards. Après **Progression**, la colonne **Moyennes** présente la moyenne pondérée des évaluations sur 10 puis la moyenne simple des niveaux autoévalués sur 3, chacune au dixième (par exemple **7,0 | 2,5**). Les calculs portent sur les étapes suivies du cours ; seules les autoévaluations remises et encore activées sont retenues. Une valeur absente est indiquée par **—**. Le tri **Moyennes** compare d’abord les notes d’évaluation, puis les niveaux autoévalués. Une évaluation QCM rejoint **À confirmer** lorsque tous les QCM de l’étape ont été remis ; l’étape n’est comptée qu’une fois, même si elle contient plusieurs QCM. Le compteur de chaque apprenant additionne les autoévaluations et les évaluations prêtes à corriger, y compris les travaux remis. Son carré est rouge pastel dès qu’au moins une évaluation est en attente ; il reste orangé pour les autres confirmations. Le compteur de la tuile du parcours suit la même règle : rouge pastel dès qu’un apprenant a une évaluation à confirmer. Son nombre reste celui des apprenants ayant une confirmation en attente. Le survol indique le nombre d’évaluations dans le total.
 
-Une annonce globale du parcours s’adresse à tous ses élèves actifs. Pour choisir les destinataires, utiliser **Courriel / Annonce** dans le menu Actions à trois points du tableau de bord. Ce menu regroupe aussi les modèles, Correspondance, Réunion, Paiement et Notifications ; ses entrées sont triées selon la langue affichée.
+Une annonce globale du parcours s’adresse à tous ses apprenants actifs. Pour choisir les destinataires, utiliser **Courriel / Annonce** dans le menu Actions à trois points du tableau de bord. Ce menu regroupe aussi les modèles, Correspondance, Réunion, Paiement et Notifications ; ses entrées sont triées selon la langue affichée.
 
-La fenêtre d’envoi permet de choisir un modèle personnel, d’adapter le titre et le contenu Markdown et de sélectionner un ou plusieurs élèves. Les modèles sont disponibles dans tous les parcours de leur auteur et acceptent `{prenom}`, `{nom}` et `{cours}` ; aucun prénom ni signature n’est ajouté automatiquement. Pour chaque élève, sa deuxième adresse peut être cochée : elle figure alors en CC dans son unique courriel. L’enseignant reçoit un seul récapitulatif de l’envoi groupé, avec le titre, le contenu original (variables conservées) et la liste des destinataires et CC. Ce récapitulatif ne confirme pas la livraison des messages.
+La fenêtre d’envoi permet de choisir un modèle personnel, d’adapter le titre et le contenu Markdown et de sélectionner un ou plusieurs apprenants. Les modèles sont disponibles dans tous les parcours de leur auteur et acceptent `{prenom}`, `{nom}` et `{cours}` ; aucun prénom ni signature n’est ajouté automatiquement. Pour chaque apprenant, sa deuxième adresse peut être cochée : elle figure alors en CC dans son unique courriel. L’enseignant reçoit un seul récapitulatif de l’envoi groupé, avec le titre, le contenu original (variables conservées) et la liste des destinataires et CC. Ce récapitulatif ne confirme pas la livraison des messages.
 
 Les annonces ciblées apparaissent en gris dans le parcours. Un chevron **Destinataires** affiche les noms et les états de lecture dans l’application. Supprimer l’annonce retire aussi les courriels encore en attente, sans rappeler ceux déjà envoyés. Les envois et les modèles n’acceptent pas de pièce jointe.
 
-En ouvrant un élève, l’enseignant peut :
+En ouvrant un apprenant, l’enseignant peut :
 
 - lire son auto-positionnement et sa note ;
 - confirmer un niveau de 0 à 3 ;
@@ -176,35 +176,35 @@ Les actions de confirmation et de notation utilisent un crayon à droite de l’
 
 Pour une **Évaluation**, le crayon reste disponible pour saisir ou modifier la note, même si les QCM ou travaux ne sont pas tous remis, ou si le questionnaire a été modifié depuis les réponses. La note enseignante sur 10 est indépendante du score QCM. Cette saisie manuelle ne crée ni réponse QCM ni remise de travail ; les indicateurs automatiques de correction attendent toujours les remises requises.
 
-Sous **Laissez la note vide pour annuler la validation**, l’interrupteur est vert à droite (**Utilisé dans la moyenne**) par défaut. À gauche, il devient rouge (**Non comptabilisé**). Enregistrer le choix avec **Enregistrer la note**, même sans note saisie. L’exclusion concerne uniquement cet élève et cette évaluation : elle retire la note et sa pondération des moyennes, sans effacer la note ni les résultats QCM. Elle est prise en compte dans les moyennes individuelles, de groupe, de compétences et objectifs, les moyennes QCM du groupe et les exports CSV/PDF. Réactiver l’interrupteur réintègre la note conservée. Une exclusion sans note ne crée aucune validation. La file **À confirmer** reste fondée sur les remises et validations, indépendamment de ce choix de calcul.
+Sous **Laissez la note vide pour annuler la validation**, l’interrupteur est vert à droite (**Utilisé dans la moyenne**) par défaut. À gauche, il devient rouge (**Non comptabilisé**). Enregistrer le choix avec **Enregistrer la note**, même sans note saisie. L’exclusion concerne uniquement cet apprenant et cette évaluation : elle retire la note et sa pondération des moyennes, sans effacer la note ni les résultats QCM. Elle est prise en compte dans les moyennes individuelles, de groupe, de compétences et objectifs, les moyennes QCM du groupe et les exports CSV/PDF. Réactiver l’interrupteur réintègre la note conservée. Une exclusion sans note ne crée aucune validation. La file **À confirmer** reste fondée sur les remises et validations, indépendamment de ce choix de calcul.
 
 
 ### Guides de prise en main
 
-Le menu du profil propose **Guide d’utilisation**, juste sous **Modifier mon profil**. Il ouvre automatiquement le guide correspondant au compte connecté : quatre pages pour les élèves, six pour les enseignants. La lecture HTML possède un sommaire et s’adapte au téléphone ; **Télécharger le PDF** conserve la même documentation. Les deux guides sont en français.
+Le menu du profil propose **Guide d’utilisation**, juste sous **Modifier mon profil**. Il ouvre automatiquement le guide correspondant au compte connecté : quatre pages pour les apprenants, six pour les enseignants. La lecture HTML possède un sommaire et s’adapte au téléphone ; **Télécharger le PDF** conserve la même documentation. Les deux guides sont en français.
 
-### Exporter la progression des élèves
+### Exporter la progression des apprenants
 
-Dans le **Tableau de bord**, accessible par le logo liike (`?view=teacher`), ouvrir le menu **⋮** en haut à droite du titre, puis **Exporter la progression**. La même fenêtre regroupe les formats **CSV** et **PDF**, les modes **Récapitulatif** et **Détaillé**, ainsi que les noms des élèves actifs du parcours sélectionné. Tous sont cochés initialement ; la recherche, les cases individuelles et la sélection globale permettent de préparer un sous-ensemble. Le bouton unique **Exporter** lance le téléchargement.
+Dans le **Tableau de bord**, accessible par le logo liike (`?view=teacher`), ouvrir le menu **⋮** en haut à droite du titre, puis **Exporter la progression**. La même fenêtre regroupe les formats **CSV** et **PDF**, les modes **Récapitulatif** et **Détaillé**, ainsi que les noms des apprenants actifs du parcours sélectionné. Tous sont cochés initialement ; la recherche, les cases individuelles et la sélection globale permettent de préparer un sous-ensemble. Le bouton unique **Exporter** lance le téléchargement.
 
 | Mode | CSV | PDF |
 |---|---|---|
-| Récapitulatif | Une ligne par élève : identité, progression, moyennes, encouragements et dernière activité connue. | Tableau A4 paysage reprenant les indicateurs du suivi. |
-| Détaillé | Une ligne par élève et étape ; plusieurs lignes si l’étape contient plusieurs QCM. | Fiches A4 portrait ; **chaque élève commence sur une nouvelle page**, avec continuation si nécessaire. |
+| Récapitulatif | Une ligne par apprenant : identité, progression, moyennes, encouragements et dernière activité connue. | Tableau A4 paysage reprenant les indicateurs du suivi. |
+| Détaillé | Une ligne par apprenant et étape ; plusieurs lignes si l’étape contient plusieurs QCM. | Fiches A4 portrait ; **chaque apprenant commence sur une nouvelle page**, avec continuation si nécessaire. |
 
 Le détail conserve l’ordre et les regroupements : bandeaux de groupe dans le PDF, colonne **Regroupement** dans le CSV (vide pour une étape indépendante). Les groupes masqués sont signalés par l’accès fermé aux étapes, sans supprimer leurs résultats. Les titres sont repris sans ajouter de numéro d’étape. Le détail comprend la note de chaque évaluation sur 10, sa pondération, les autoévaluations sur 3, les confirmations et commentaires. Chaque QCM possède une colonne **Note QCM /10** : questions correctes ÷ nombre de questions × 10, arrondi à deux décimales. Seul le **dernier résultat** de chaque QCM est disponible, y compris pour l’entraînement ; les anciennes tentatives et les réponses individuelles ne sont pas exportées. Le CSV indique aussi le nombre de tentatives et la date de dernière réponse.
 
-Une cellule vide signifie qu’aucun résultat n’est disponible ; zéro reste une note. Les étapes devenues inaccessibles sont signalées afin de conserver les résultats utiles au bilan. Le CSV utilise UTF-8 avec BOM, le point-virgule et les horaires **Europe/Zurich**. Les indicateurs de l’élève et les notes d’étape sont répétés sur les lignes QCM : ne pas les additionner.
+Une cellule vide signifie qu’aucun résultat n’est disponible ; zéro reste une note. Les étapes devenues inaccessibles sont signalées afin de conserver les résultats utiles au bilan. Le CSV utilise UTF-8 avec BOM, le point-virgule et les horaires **Europe/Zurich**. Les indicateurs de l’apprenant et les notes d’étape sont répétés sur les lignes QCM : ne pas les additionner.
 
-Depuis la fiche de suivi (`?view=student-detail`), le bouton immédiatement à droite de l’encadré des points ouvre **Gestion de l’élève**, avec les mêmes informations, inscriptions et historique que depuis **Élèves & inscriptions**.
+Depuis la fiche de suivi (`?view=student-detail`), le bouton immédiatement à droite de l’encadré des points ouvre **Gestion de l’apprenant**, avec les mêmes informations, inscriptions et historique que depuis **Apprenants & inscriptions**.
 
 ### Suivi administratif
 
-Dans **Élèves**, le statut actif/inactif apparaît à côté des initiales. **Admin**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. **Progression** ouvre le suivi pédagogique de la participation ; si plusieurs parcours actifs sont disponibles, choisissez celui à consulter. Le bouton est désactivé lorsqu’aucune participation ne permet ce suivi. Le suivi reste également accessible depuis le **Tableau de bord**.
+Dans **Apprenants**, le statut actif/inactif apparaît à côté des initiales. **Admin**, à droite du code, ouvre une fenêtre avec Informations, Inscriptions et Historique. **Progression** ouvre le suivi pédagogique de la participation ; si plusieurs parcours actifs sont disponibles, choisissez celui à consulter. Le bouton est désactivé lorsqu’aucune participation ne permet ce suivi. Le suivi reste également accessible depuis le **Tableau de bord**.
 
-Dans **Admin → Informations**, l’enseignant autorisé peut modifier le prénom, le nom, le courriel et le groupe classe. Le code de connexion reste stable. Le téléphone est consultable, mais seul l’élève le modifie depuis son profil. Une modification concurrente est signalée sans écrasement. Si le courriel d’un compte encore en attente est corrigé, un nouveau lien de validation est envoyé à cette adresse.
+Dans **Admin → Informations**, l’enseignant autorisé peut modifier le prénom, le nom, le courriel et le groupe classe. Le code de connexion reste stable. Le téléphone est consultable, mais seul l’apprenant le modifie depuis son profil. Une modification concurrente est signalée sans écrasement. Si le courriel d’un compte encore en attente est corrigé, un nouveau lien de validation est envoyé à cette adresse.
 
-**Ajouter un suivi** enregistre une Réunion (y compris une discussion), une Correspondance ou un Paiement pour un ou plusieurs élèves. Ces actions sont également accessibles depuis le menu Actions du tableau de bord. Le compte rendu commun comporte une date et une heure, un titre de 160 caractères maximum, un contenu Markdown de 5 000 caractères maximum et, facultativement, un parcours. Il peut reprendre un modèle. Son enregistrement n’envoie pas de courriel ; Paiement est une catégorie de compte rendu, sans transaction financière.
+**Ajouter un suivi** enregistre une Réunion (y compris une discussion), une Correspondance ou un Paiement pour un ou plusieurs apprenants. Ces actions sont également accessibles depuis le menu Actions du tableau de bord. Le compte rendu commun comporte une date et une heure, un titre de 160 caractères maximum, un contenu Markdown de 5 000 caractères maximum et, facultativement, un parcours. Il peut reprendre un modèle. Son enregistrement n’envoie pas de courriel ; Paiement est une catégorie de compte rendu, sans transaction financière.
 
 L’historique réunit les comptes rendus et les annonces ciblées accessibles à l’enseignant, par pages de 50 éléments. L’auteur peut modifier ou supprimer un compte rendu pour tous ses participants. Chaque entrée présente son type, « créé par …, le … », les **Autres participants** actifs lorsqu’il y en a, puis **Concerne** : parcours / titre (ou seulement le titre). Un chevron ouvre le contenu ; une modification est indiquée en italique.
 
@@ -230,11 +230,11 @@ Pour intégrer une vidéo ou un lecteur audio, choisir **Vidéo / audio**, puis 
 
 Le bloc **Travail à rendre** permet de demander un **lien vers un document**, un **texte court**, ou un **lien et un commentaire**. La consigne s’écrit en Markdown dans le contenu du bloc ; la légende sert de titre. La remise peut être obligatoire ou facultative. Le texte et le commentaire sont limités à **512 caractères**, avec un compteur visible. Le lien, séparé du texte, accepte une adresse HTTP(S) de 2 048 caractères maximum.
 
-L’élève retrouve sa saisie après fermeture grâce à la sauvegarde automatique du brouillon et à une copie locale en cas de coupure réseau. Le bouton **Enregistrer le brouillon** permet aussi une sauvegarde explicite. Un brouillon reste privé et ne valide pas l’étape. **Rendre mon travail**, suivi d’une confirmation, enregistre une remise datée et verrouille les champs. Tous les blocs obligatoires doivent être remis avant l’autoévaluation ou la fin d’une étape sans autoévaluation. Une évaluation combinant QCM et travaux est signalée comme prête à noter une fois ses QCM et ses travaux obligatoires remis. L’enseignant peut toutefois saisir ou corriger sa note manuellement avant cela.
+L’apprenant retrouve sa saisie après fermeture grâce à la sauvegarde automatique du brouillon et à une copie locale en cas de coupure réseau. Le bouton **Enregistrer le brouillon** permet aussi une sauvegarde explicite. Un brouillon reste privé et ne valide pas l’étape. **Rendre mon travail**, suivi d’une confirmation, enregistre une remise datée et verrouille les champs. Tous les blocs obligatoires doivent être remis avant l’autoévaluation ou la fin d’une étape sans autoévaluation. Une évaluation combinant QCM et travaux est signalée comme prête à noter une fois ses QCM et ses travaux obligatoires remis. L’enseignant peut toutefois saisir ou corriger sa note manuellement avant cela.
 
-Dans la fiche de l’élève, l’enseignant peut consulter les liens et les textes remis, puis noter l’évaluation, confirmer le niveau ou confirmer la réception si l’étape n’a ni évaluation ni autoévaluation. Le pencil orange et rempli signale une confirmation attendue. **Autoriser une nouvelle remise** rouvre un bloc, conserve sa version précédente et retire la validation de l’étape pour permettre une nouvelle correction. Les remises précédentes restent consultables. L’adresse et le texte remis sont conservés ; le contenu du document externe peut évoluer chez son hébergeur.
+Dans la fiche de l’apprenant, l’enseignant peut consulter les liens et les textes remis, puis noter l’évaluation, confirmer le niveau ou confirmer la réception si l’étape n’a ni évaluation ni autoévaluation. Le pencil orange et rempli signale une confirmation attendue. **Autoriser une nouvelle remise** rouvre un bloc, conserve sa version précédente et retire la validation de l’étape pour permettre une nouvelle correction. Les remises précédentes restent consultables. L’adresse et le texte remis sont conservés ; le contenu du document externe peut évoluer chez son hébergeur.
 
-Les réponses sont propres à l’élève et à l’étape du parcours. Les copies et exports de pages reprennent les consignes et les réglages, sans les brouillons ni les travaux des élèves.
+Les réponses sont propres à l’apprenant et à l’étape du parcours. Les copies et exports de pages reprennent les consignes et les réglages, sans les brouillons ni les travaux des apprenants.
 
 Les titres Markdown sont disponibles du niveau `#` au niveau `######`. Une liste à puces peut commencer par `- ` ; contrairement à celle-ci, une ligne commençant par `* ` conserve son étoile comme du texte ordinaire. Une ligne contenant `---` produit un séparateur horizontal. Pour commencer la suite du contenu sur une nouvelle page dans l’export PDF, placer cette instruction sur sa propre ligne :
 
@@ -269,7 +269,7 @@ Le contenu de `<pre>` est toujours traité comme du texte : les éventuelles bal
 Les tableaux utilisent la syntaxe Markdown à barres verticales. Les deux-points de la ligne de séparation règlent l’alignement des colonnes :
 
 ```markdown
-| Élève | Travail rendu | Score |
+| Apprenant | Travail rendu | Score |
 | :--- | :---: | ---: |
 | Lina | Oui | 8 |
 | Sam | En cours | 6 |
@@ -291,13 +291,13 @@ Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]`
 
 Les choix sont sauvegardés automatiquement comme brouillon, sans attribuer de score ni consommer la remise d’une évaluation. Attendez le message **Brouillon enregistré** : vous pouvez alors fermer la fenêtre et retrouver les cases cochées en revenant au même QCM, même après reconnexion. En cas de coupure réseau, une copie locale permet la reprise dans le même navigateur ; un avertissement indique que le serveur n’a pas encore confirmé la sauvegarde. La remise définitive efface le brouillon. Un QCM modifié par l’équipe enseignante ne réutilise pas les anciennes réponses.
 
-Dans une étape ordinaire, l’élève voit son résultat et peut recommencer. Si le type **Évaluation** est sélectionné, le bouton devient **Terminer le QCM** et une confirmation précède la remise définitive : le score reste visible par l’élève et apparaît dans le profil de l’élève côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue élève ; les champs personnels et les commandes restent utilisables. Le téléchargement PDF de l’étape est également retiré et refusé côté serveur pour l’élève. Ces restrictions ne s’appliquent pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, y compris si l’étape a été masquée après la remise, mais jamais les réponses choisies.
+Dans une étape ordinaire, l’apprenant voit son résultat et peut recommencer. Si le type **Évaluation** est sélectionné, le bouton devient **Terminer le QCM** et une confirmation précède la remise définitive : le score reste visible par l’apprenant et apparaît dans le profil de l’apprenant côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue apprenant ; les champs personnels et les commandes restent utilisables. Le téléchargement PDF de l’étape est également retiré et refusé côté serveur pour l’apprenant. Ces restrictions ne s’appliquent pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, y compris si l’étape a été masquée après la remise, mais jamais les réponses choisies.
 
 Dans **Acquis → Évaluations**, une évaluation masquée reste présente pour assurer la continuité du suivi. Tant qu’elle n’est ni accessible ni notée, son vrai titre est remplacé par **Évaluation à venir**.
 
 La recherche porte sur le titre, le résumé, les tags, les objectifs et le nom du propriétaire ou de l’auteur connu d’une copie. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant accède à ses contenus ainsi qu’aux contenus partagés auxquels il est autorisé à contribuer ; le filtre initial affiche uniquement ses propres contenus.
 
-Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent visibles dans une barre persistante au-dessus des réglages pendant le défilement des blocs. **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton, sauvegarde puis prépare un courriel par élève actif ayant accès à la page. On peut donc enregistrer plusieurs corrections, puis prévenir une seule fois, même si la dernière version est déjà sauvegardée. Une erreur ou un conflit de sauvegarde empêche cet envoi. Les modifications restent signalées dans **Depuis la dernière visite** côté élève. Une page en brouillon ou hors parcours reste invisible dans le chemin de travail des élèves.
+Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent visibles dans une barre persistante au-dessus des réglages pendant le défilement des blocs. **Enregistrer** sauvegarde sans envoyer de courriel. Le lien **Enregistrer et prévenir des modifications**, sous le statut et le bouton, sauvegarde puis prépare un courriel par apprenant actif ayant accès à la page. On peut donc enregistrer plusieurs corrections, puis prévenir une seule fois, même si la dernière version est déjà sauvegardée. Une erreur ou un conflit de sauvegarde empêche cet envoi. Les modifications restent signalées dans **Depuis la dernière visite** côté apprenant. Une page en brouillon ou hors parcours reste invisible dans le chemin de travail des apprenants.
 
 Une page qui n’est utilisée dans aucun parcours peut être supprimée définitivement depuis son écran d’édition. Tant qu’elle est utilisée, la suppression reste bloquée et il faut d’abord la retirer de chaque parcours concerné.
 
@@ -325,7 +325,7 @@ Dans **Parcours**, l’enseignant sélectionne un cours. Le menu à trois points
 - retirer une page du parcours, avec confirmation explicite de la suppression des progressions liées à cette étape ;
 - archiver ou réactiver un parcours sans perdre ses données ;
 - supprimer définitivement un parcours archivé dont il est propriétaire ; les données propres au parcours sont purgées, mais ses pages restent dans la bibliothèque ;
-- dupliquer un parcours sans ses élèves ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
+- dupliquer un parcours sans ses apprenants ni leurs progressions, en conservant ses échéances ou en les remettant toutes à zéro.
 
 Dans la liste de gestion du parcours, une étape sans date n’affiche aucune mention d’échéance ; sa durée et son type restent indiqués.
 
@@ -335,9 +335,9 @@ La **Consigne propre à ce parcours** accepte le Markdown (liens, titres, listes
 LIEN >[LAB PY ](https://webe.li/tec/labs/python/ "LAB PY")
 ```
 
-Le lien est cliquable dans la vue élève et dans l’aperçu enseignant. Le PDF interprète aussi la mise en forme ; le texte Markdown d’origine reste modifiable dans les réglages de l’étape.
+Le lien est cliquable dans la vue apprenant et dans l’aperçu enseignant. Le PDF interprète aussi la mise en forme ; le texte Markdown d’origine reste modifiable dans les réglages de l’étape.
 
-L’organisation complète du parcours n’est jamais proposée dans la navigation élève.
+L’organisation complète du parcours n’est jamais proposée dans la navigation apprenant.
 
 #### Regrouper les étapes
 
@@ -349,7 +349,7 @@ Le titre ou la poignée à gauche permet de déplacer le regroupement entier, av
 
 Le chevron ouvre ou replie le groupe. Ce choix est mémorisé séparément pour chaque compte et chaque vue dans l’onglet du navigateur. Ouvrir les réglages d’une étape ouvre aussi son regroupement. Le petit crayon ouvre une fenêtre Bootstrap pour renommer le titre ; supprimer un regroupement conserve ses étapes, leur ordre et toute la progression.
 
-Les numéros restent continus dans tout le parcours : chaque groupe ne recommence pas à 1. Replier un groupe ne change aucun numéro ; déplacer une étape change sa place dans la séquence, comme le réordonnancement habituel. Les groupes sont sans imbrication. Ils figurent aussi dans l’aperçu enseignant et la vue d’ensemble de l’élève. L’élève ne voit que les étapes autorisées ; un groupe sans étape accessible est masqué.
+Les numéros restent continus dans tout le parcours : chaque groupe ne recommence pas à 1. Replier un groupe ne change aucun numéro ; déplacer une étape change sa place dans la séquence, comme le réordonnancement habituel. Les groupes sont sans imbrication. Ils figurent aussi dans l’aperçu enseignant et la vue d’ensemble de l’apprenant. L’apprenant ne voit que les étapes autorisées ; un groupe sans étape accessible est masqué.
 
 La duplication et l’import/export JSON conservent les regroupements, y compris ceux qui sont encore vides. Les anciens fichiers sans regroupement restent importables. Les regroupements n’interviennent pas dans les calculs des acquis ou de progression.
 
@@ -369,11 +369,11 @@ Dans **Parcours**, le menu à trois points de l’étape permet aussi de **Tél�
 
 Le `.ics` s’importe dans un agenda compatible. Le lien Google ouvre un événement prérempli que l’utilisateur confirme dans son propre agenda. Ces ajouts ne synchronisent pas les modifications ultérieures : après un changement, mettre également à jour son agenda. Le téléchargement respecte l’accès à l’étape. Une consultation de l’événement suit les règles des étapes sans autoévaluation ; elle ne prouve pas la présence à la réunion.
 
-Les événements et leurs horaires sont conservés dans les copies et les imports/exports JSON du parcours. **Remettre toutes les échéances à zéro** concerne les échéances pédagogiques ; les dates des événements restent à ajuster manuellement. Lors de la mise à jour d’une ancienne installation, une étape qui cumulait évaluation et autoévaluation devient **Évaluation** sans effacement des résultats historiques. Un avertissement apparaît sous **Type d’étape** uniquement lorsqu’un changement sélectionné efface des notes, niveaux, commentaires ou validations d’évaluation ou d’autoévaluation enregistrés. Il reste masqué à l’ouverture, lors de modifications sans effet sur ces données et après retour au type initial. Il précise que le changement de catégorie efface définitivement les données de validation concernées et revenir au type initial ne les restaure pas. Il invite à exporter les résultats avant toute modification. Une évaluation contenant au moins une note ne peut pas changer de type : un message renvoie au suivi des élèves pour modifier les notes. Pour changer volontairement de type, il faut d’abord retirer toutes les notes dans ce suivi (champ **Note sur 10** vide, puis **Enregistrer la note**). Une note de zéro est également protégée. Les autres changements de type gardent les règles de remise à zéro des validations concernées.
+Les événements et leurs horaires sont conservés dans les copies et les imports/exports JSON du parcours. **Remettre toutes les échéances à zéro** concerne les échéances pédagogiques ; les dates des événements restent à ajuster manuellement. Lors de la mise à jour d’une ancienne installation, une étape qui cumulait évaluation et autoévaluation devient **Évaluation** sans effacement des résultats historiques. Un avertissement apparaît sous **Type d’étape** uniquement lorsqu’un changement sélectionné efface des notes, niveaux, commentaires ou validations d’évaluation ou d’autoévaluation enregistrés. Il reste masqué à l’ouverture, lors de modifications sans effet sur ces données et après retour au type initial. Il précise que le changement de catégorie efface définitivement les données de validation concernées et revenir au type initial ne les restaure pas. Il invite à exporter les résultats avant toute modification. Une évaluation contenant au moins une note ne peut pas changer de type : un message renvoie au suivi des apprenants pour modifier les notes. Pour changer volontairement de type, il faut d’abord retirer toutes les notes dans ce suivi (champ **Note sur 10** vide, puis **Enregistrer la note**). Une note de zéro est également protégée. Les autres changements de type gardent les règles de remise à zéro des validations concernées.
 
-#### Aperçu élève pour l’enseignant
+#### Aperçu apprenant pour l’enseignant
 
-L’icône de chapeau ouvre **Aperçu élève** (`?view=teacher-preview`). Les étapes invisibles pour les élèves sont cachées dans la liste, la carte **Prochaine étape** et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. La carte privilégie l’échéance future la plus proche, comme dans la vue élève. Sans date future, cet aperçu générique propose la première étape visible, car il ne représente la progression d’aucun élève particulier. Les étapes restreintes restent visibles en gris clair. Le titre, le numéro, la durée et le lien de la carte correspondent à l’étape proposée ; les étapes sans échéance n’affichent aucune mention de date. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
+L’icône de chapeau ouvre **Aperçu apprenant** (`?view=teacher-preview`). Les étapes invisibles pour les apprenants sont cachées dans la liste, la carte **Prochaine étape** et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. La carte privilégie l’échéance future la plus proche, comme dans la vue apprenant. Sans date future, cet aperçu générique propose la première étape visible, car il ne représente la progression d’aucun apprenant particulier. Les étapes restreintes restent visibles en gris clair. Le titre, le numéro, la durée et le lien de la carte correspondent à l’étape proposée ; les étapes sans échéance n’affichent aucune mention de date. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
 
 #### Importer et exporter un parcours
 
@@ -381,22 +381,22 @@ Dans l’onglet **Parcours**, le bouton à trois points situé à droite du titr
 
 À l’import :
 
-- **Créer une copie modifiable** crée un nouveau parcours sans élève ni progression ;
+- **Créer une copie modifiable** crée un nouveau parcours sans apprenant ni progression ;
 - **Écraser le parcours portant la même référence** remplace ses étapes et options ; ses progressions et rewards liés aux anciennes étapes sont supprimés ;
 - l’option **Remettre toutes les échéances à zéro** ignore les échéances pédagogiques du fichier, en conservant les dates des événements ;
 - toutes les pages référencées sont vérifiées avant écriture. Une page absente arrête entièrement l’import.
 
 Le menu à trois points de **Gestion du parcours** propose une seule entrée **Vue synthétique du parcours**, puis une fenêtre permet de choisir **PDF** ou **DOCX** : numéro d’étape, nom, échéance et durée. Les deux formats conservent les titres et l’ordre des regroupements, y compris les groupes vides, ainsi que les légendes d’objectifs et compétences. Le DOCX contient un tableau A4 paysage modifiable dans Word ou LibreOffice. À droite de chaque étape, le menu à trois points propose PDF, Markdown, DOCX et LaTeX. Le choix PDF télécharge directement une fiche détaillée contenant toutes les métadonnées du parcours, la consigne, les tags, objectifs, compétences et le contenu complet de la page. Les vidéos et fichiers externes sont indiqués par leur lien ; les images locales sont reproduites dans le PDF.
 
-### Importer et exporter les élèves
+### Importer et exporter les apprenants
 
-Le bouton à trois points situé à droite du titre **Élèves & inscriptions** regroupe le nouvel accès, l’inscription groupée et l’import/export des élèves dans des fenêtres dédiées. L’import/export contient les profils et leurs inscriptions aux parcours de l’enseignant. Aucun mot de passe, jeton ou secret de session n’est exporté.
+Le bouton à trois points situé à droite du titre **Apprenants & inscriptions** regroupe le nouvel accès, l’inscription groupée et l’import/export des apprenants dans des fenêtres dédiées. L’import/export contient les profils et leurs inscriptions aux parcours de l’enseignant. Aucun mot de passe, jeton ou secret de session n’est exporté.
 
-Un import conserve le numéro de téléphone des élèves déjà présents : sa modification reste réservée à l’élève. Le mode **Modifier/créer** conserve les autres inscriptions existantes. Le mode **Écraser** remplace, pour chaque élève importé, ses inscriptions aux parcours de l’enseignant. Un parcours référencé mais absent bloque entièrement l’import. Un fichier peut contenir au maximum **500 élèves** et peser jusqu’à **25 Mo**.
+Un import conserve le numéro de téléphone des apprenants déjà présents : sa modification reste réservée à l’apprenant. Le mode **Modifier/créer** conserve les autres inscriptions existantes. Le mode **Écraser** remplace, pour chaque apprenant importé, ses inscriptions aux parcours de l’enseignant. Un parcours référencé mais absent bloque entièrement l’import. Un fichier peut contenir au maximum **500 apprenants** et peser jusqu’à **25 Mo**.
 
 L’option **Activation des nouveaux comptes** propose deux comportements :
 
-- **Validation par courriel par chaque élève**, sélectionnée par défaut, laisse chaque nouveau compte en attente pendant 15 minutes ;
+- **Validation par courriel par chaque apprenant**, sélectionnée par défaut, laisse chaque nouveau compte en attente pendant 15 minutes ;
 - **Activation immédiate par l’enseignant** rend les nouveaux comptes actifs et utilisables dès la fin de l’import, après une confirmation supplémentaire. Elle active aussi un compte encore en attente s’il avait déjà été créé et était géré par ce même enseignant. Elle ne réactive jamais un compte archivé ou géré par une autre personne.
 
 ### Mettre à jour l’application
@@ -409,7 +409,7 @@ Avec le nouvel outil de maintenance, seuls les fichiers nouveaux ou différents 
 
 Un enseignant peut porter l’indicateur `is_superadmin`. Le compte de démonstration Nora possède ce droit. **Superadministration** est accessible depuis le menu **Connecté·e comme** ; elle ne possède pas d’onglet supplémentaire dans la navigation principale. Cet espace permet d’effacer définitivement :
 
-- n’importe quel élève ou enseignant, y compris le compte actuellement connecté ;
+- n’importe quel apprenant ou enseignant, y compris le compte actuellement connecté ;
 - n’importe quelle page, même utilisée dans un parcours ;
 - n’importe quel parcours, actif ou archivé.
 
@@ -427,7 +427,7 @@ Une même page peut donc être utilisée dans plusieurs cours avec un ordre, une
 
 ### Vue du parcours mémorisée
 
-Le lien **Parcours** de la navigation ouvre par défaut **l’aperçu élève**. La bascule en haut de page permet de passer à l’édition ou de revenir à l’aperçu. Le dernier mode ouvert est mémorisé pendant un an dans ce navigateur, séparément pour chaque compte enseignant et chaque installation, même après déconnexion. Les liens explicitement destinés à organiser ou modifier un parcours continuent d’ouvrir l’édition.
+Le lien **Parcours** de la navigation ouvre par défaut **l’aperçu apprenant**. La bascule en haut de page permet de passer à l’édition ou de revenir à l’aperçu. Le dernier mode ouvert est mémorisé pendant un an dans ce navigateur, séparément pour chaque compte enseignant et chaque installation, même après déconnexion. Les liens explicitement destinés à organiser ou modifier un parcours continuent d’ouvrir l’édition.
 
 
 ### Passer des évaluations au parcours
@@ -451,7 +451,7 @@ Les pastilles de vos contenus se trouvent immédiatement à droite de **Prêt** 
 
 Les copies issues d’un lien de partage gardent une indication d’origine et restent indépendantes, même si la source disparaît. Les anciennes copies identifiables par leur reçu de récupération sont reprises automatiquement. Les fichiers JSON importés sans information d’origine ne permettent pas de retrouver leur auteur ; aucune origine n’est inventée.
 
-Dans **Parcours**, la ligne de date, durée et mode porte une pastille **bleue** pour votre contenu dont le mode **Contenu partagé** est actif, ou **orange** pour une source appartenant à un autre enseignant. Le libellé accessible et l’infobulle précisent sa signification. Une simple copie indépendante ne porte aucune pastille de provenance dans le parcours. Arrêter le partage retire la pastille bleue du propriétaire. L’origine orange des contenus déjà récupérés par un collègue reste visible dans la bibliothèque. Dans le parcours du collègue, la carte reste à la même place et passe en noir avec du texte blanc et la mention **Partage arrêté par le propriétaire**. Elle reprend son apparence habituelle lorsque le mode **Contenu partagé** est réactivé. Cette indication ne supprime ni l’étape ni les résultats des élèves. Au retour à la bibliothèque par le bouton Précédent du navigateur, les couleurs, pastilles et filtres de partage sont actualisés sans effacer une édition en cours.
+Dans **Parcours**, la ligne de date, durée et mode porte une pastille **bleue** pour votre contenu dont le mode **Contenu partagé** est actif, ou **orange** pour une source appartenant à un autre enseignant. Le libellé accessible et l’infobulle précisent sa signification. Une simple copie indépendante ne porte aucune pastille de provenance dans le parcours. Arrêter le partage retire la pastille bleue du propriétaire. L’origine orange des contenus déjà récupérés par un collègue reste visible dans la bibliothèque. Dans le parcours du collègue, la carte reste à la même place et passe en noir avec du texte blanc et la mention **Partage arrêté par le propriétaire**. Elle reprend son apparence habituelle lorsque le mode **Contenu partagé** est réactivé. Cette indication ne supprime ni l’étape ni les résultats des apprenants. Au retour à la bibliothèque par le bouton Précédent du navigateur, les couleurs, pastilles et filtres de partage sont actualisés sans effacer une édition en cours.
 
 ### Partager un contenu avec des collègues
 
@@ -461,27 +461,27 @@ Dans le parcours, **Partager ce contenu** se trouve à côté du bouton d’expo
 |---|---|---|
 | **Contenu partagé** | Le collègue se connecte à la même plateforme et récupère la page dans sa bibliothèque, éventuellement dans l’un de ses parcours. | La même page est utilisée et modifiable par les équipes des parcours concernés ; les modifications du contenu sont communes. Les consignes, échéances et résultats restent propres à chaque parcours. |
 | **Copie indépendante** | Le collègue récupère sa propre page ou télécharge le JSON pour l’importer dans une autre installation liike. | La copie possède sa référence, ses blocs, objectifs et catégories. Aucune modification ultérieure n’est synchronisée. |
-| **Utilisation externe** | Consultation sans compte, entraînement individuel ou séance collective `qcm_classe` animée par un enseignant. | Le contenu suit la page source. Les élèves participent sans inscription et sans note nominative. |
+| **Utilisation externe** | Consultation sans compte, entraînement individuel ou séance collective `qcm_classe` animée par un enseignant. | Le contenu suit la page source. Les apprenants participent sans inscription et sans note nominative. |
 
-Une récupération directement dans un parcours crée une étape de consultation simple ; le collègue règle ensuite son type, ses consignes et échéances. Réutiliser le même lien de copie avec le même compte retrouve la copie déjà créée, sans la remplacer. Aucun élève, résultat, commentaire privé ou historique du parcours source n’est transféré.
+Une récupération directement dans un parcours crée une étape de consultation simple ; le collègue règle ensuite son type, ses consignes et échéances. Réutiliser le même lien de copie avec le même compte retrouve la copie déjà créée, sans la remplacer. Aucun apprenant, résultat, commentaire privé ou historique du parcours source n’est transféré.
 
 Cocher au moins un mode active le partage : les changements sont enregistrés automatiquement, sans case d’activation supplémentaire. Pour arrêter, décocher les trois modes ou cliquer sur **Arrêter le partage**. Le message **Partage désactivé** confirme l’arrêt et le lien devient indisponible. En cas d’échec de l’enregistrement, une erreur apparaît avec la possibilité de recharger les réglages. Sans JavaScript, le bouton **Enregistrer le partage** permet de valider les cases choisies.
 
-Le propriétaire peut changer les modes ou désactiver le partage à tout moment. **L’URL reste identique**, y compris après réactivation. Les réglages s’appliquent aux nouvelles utilisations ; les pages déjà récupérées et les copies restent chez les collègues. Désactiver le partage ou le mode externe ferme également les séances anonymes ouvertes. Le retour en brouillon suspend l’accès externe. Le partage ne donne aucun accès au parcours source ni à ses élèves.
+Le propriétaire peut changer les modes ou désactiver le partage à tout moment. **L’URL reste identique**, y compris après réactivation. Les réglages s’appliquent aux nouvelles utilisations ; les pages déjà récupérées et les copies restent chez les collègues. Désactiver le partage ou le mode externe ferme également les séances anonymes ouvertes. Le retour en brouillon suspend l’accès externe. Le partage ne donne aucun accès au parcours source ni à ses apprenants.
 
-Une personne non connectée voit uniquement **Utilisation anonyme**, le mode **Utilisation externe** s’il est autorisé, et le bouton **Compris**. Aucun mode de récupération ni téléchargement JSON n’est accessible sans compte enseignant actif, même par une URL directe. Si l’utilisation externe est désactivée, la page indique qu’elle n’est pas disponible anonymement. Le lien facultatif **Se connecter pour récupérer ce contenu**, présent si un mode de récupération est autorisé, permet au collègue de retrouver ces modes. Les comptes élèves restent limités à l’utilisation externe.
+Une personne non connectée voit uniquement **Utilisation anonyme**, le mode **Utilisation externe** s’il est autorisé, et le bouton **Compris**. Aucun mode de récupération ni téléchargement JSON n’est accessible sans compte enseignant actif, même par une URL directe. Si l’utilisation externe est désactivée, la page indique qu’elle n’est pas disponible anonymement. Le lien facultatif **Se connecter pour récupérer ce contenu**, présent si un mode de récupération est autorisé, permet au collègue de retrouver ces modes. Les comptes apprenants restent limités à l’utilisation externe.
 
-Le lien de contenu est destiné aux collègues : après connexion enseignant, si les modes partagé ou copie sont autorisés, il permet de modifier la page ou d’en obtenir les sources, avec les réponses des QCM. Pour une séance collective, transmettre aux élèves uniquement **le lien ou le QR code de la séance**.
+Le lien de contenu est destiné aux collègues : après connexion enseignant, si les modes partagé ou copie sont autorisés, il permet de modifier la page ou d’en obtenir les sources, avec les réponses des QCM. Pour une séance collective, transmettre aux apprenants uniquement **le lien ou le QR code de la séance**.
 
 #### Animer un QCM en classe sans compte
 
 1. Le collègue ouvre le lien, puis choisit **Utilisation externe** ou clique sur **Compris** dans la présentation anonyme. Aucune connexion n’est nécessaire pour consulter le contenu ou animer la séance.
 2. Pour chaque bloc `:::qcm_classe`, **Animer une séance anonyme** crée une séance distincte. Les séances des différents collègues sont indépendantes. Le navigateur qui crée la séance en conserve les commandes ; le lien et le QR code servent uniquement à rejoindre la participation.
-3. Il affiche le QR code, éventuellement dans **Ouvrir la projection**, ou transmet le lien de la séance. Les élèves cliquent sur **Rejoindre anonymement**, sans nom, courriel ni compte.
+3. Il affiche le QR code, éventuellement dans **Ouvrir la projection**, ou transmet le lien de la séance. Les apprenants cliquent sur **Rejoindre anonymement**, sans nom, courriel ni compte.
 4. L’enseignant ouvre les questions, ferme les votes et révèle les corrections. Les résultats sont des totaux anonymes. Un vote peut être modifié tant que la question reste ouverte ; aucune note n’est ajoutée à un parcours.
 
-Le chevron devant le titre de l’activité affiche ou masque l’encadré contenant le QR code et le lien d’invitation, y compris pendant les questions. Cet encadré est ouvert à l’arrivée sur la séance. **Ouvrir la projection** ouvre un nouvel onglet avec un affichage agrandi, sans les commandes de séance, pour le présenter aux élèves sur un vidéoprojecteur ou un second écran. Le pilotage reste dans l’onglet d’origine. **Plein écran** affiche l’onglet actuel sur tout l’écran en masquant les barres du navigateur ; la touche Échap permet d’en sortir. Ces deux fonctions peuvent être combinées.
+Le chevron devant le titre de l’activité affiche ou masque l’encadré contenant le QR code et le lien d’invitation, y compris pendant les questions. Cet encadré est ouvert à l’arrivée sur la séance. **Ouvrir la projection** ouvre un nouvel onglet avec un affichage agrandi, sans les commandes de séance, pour le présenter aux apprenants sur un vidéoprojecteur ou un second écran. Le pilotage reste dans l’onglet d’origine. **Plein écran** affiche l’onglet actuel sur tout l’écran en masquant les barres du navigateur ; la touche Échap permet d’en sortir. Ces deux fonctions peuvent être combinées.
 
-Une séance est disponible 24 heures. Les identifiants aléatoires et réponses expirés sont supprimés au prochain accès à l’application. Le QR code est généré dans le navigateur, sans service externe. La participation est liée à la session du navigateur : changer de navigateur peut créer une nouvelle participation, et les résultats ne permettent pas d’identifier les élèves. Sans compte, le pilotage est lié à la session du navigateur créateur : il reste disponible au rechargement et dans la projection ouverte depuis ce navigateur. Une autre personne qui ouvre le lien ne reçoit pas ces commandes. Si cette session est effacée ou expire, il faut créer une nouvelle séance. Limites : 500 participations par séance et 20 séances simultanées par compte enseignant ou session d’animation anonyme.
+Une séance est disponible 24 heures. Les identifiants aléatoires et réponses expirés sont supprimés au prochain accès à l’application. Le QR code est généré dans le navigateur, sans service externe. La participation est liée à la session du navigateur : changer de navigateur peut créer une nouvelle participation, et les résultats ne permettent pas d’identifier les apprenants. Sans compte, le pilotage est lié à la session du navigateur créateur : il reste disponible au rechargement et dans la projection ouverte depuis ce navigateur. Une autre personne qui ouvre le lien ne reçoit pas ces commandes. Si cette session est effacée ou expire, il faut créer une nouvelle séance. Limites : 500 participations par séance et 20 séances simultanées par compte enseignant ou session d’animation anonyme.
 
 Les QCM simples et stricts restent des entraînements individuels dans le lecteur externe. Les blocs de travail sont consultables, mais la remise et la notation demandent une inscription à un parcours. Les intégrations dépendent des autorisations du site intégré. Les fichiers locaux d’images et documents de moins de 10 Mo sont embarqués dans le JSON ; les autres références doivent rester accessibles depuis l’installation de destination.

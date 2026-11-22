@@ -2,14 +2,14 @@
 declare(strict_types=1);
 
 return [
-    'audience'=>'Élèves', 'title'=>'Mon guide liike',
+    'audience'=>'Apprenants', 'title'=>'Mon guide liike',
     'subtitle'=>'Trouver mon travail, avancer à mon rythme et comprendre mes progrès.',
     'pages'=>[
         [
             'id'=>'premiers-pas', 'title'=>'Mes premiers pas',
             'lead'=>'liike rassemble tes activités, tes travaux et tes acquis. Commence par rejoindre le bon parcours : tu retrouveras ensuite tout ton travail au même endroit.',
             'cards'=>[
-                ['title'=>'1. Activer mon accès', 'html'=>'<p>Ouvre le lien d’invitation de ton enseignant ou utilise le code du parcours. Si tu crées ton compte, renseigne ton prénom, ton nom, ton courriel et ton groupe classe, puis valide le lien reçu par courriel dans les <strong>15 minutes</strong>.</p><p>Pour te connecter, utilise ton <strong>code personnel d’élève</strong>. Il est différent du code qui sert à rejoindre un parcours. Si ton enseignant a déjà créé ton accès, suis les indications qu’il te transmet.</p>'],
+                ['title'=>'1. Activer mon accès', 'html'=>'<p>Ouvre le lien d’invitation de ton enseignant ou utilise le code du parcours. Si tu crées ton compte, renseigne ton prénom, ton nom, ton courriel et ton groupe classe, puis valide le lien reçu par courriel dans les <strong>15 minutes</strong>.</p><p>Pour te connecter, utilise ton <strong>code personnel d’apprenant</strong>. Il est différent du code qui sert à rejoindre un parcours. Si ton enseignant a déjà créé ton accès, suis les indications qu’il te transmet.</p>'],
                 ['title'=>'2. Me repérer', 'html'=>'<ul><li><strong>Parcours</strong> : les étapes et les activités à réaliser.</li><li><strong>Acquis</strong> : les compétences, les objectifs et les évaluations.</li><li><strong>Encouragements</strong> : les points et les messages reçus pour tes efforts.</li></ul><p>Sur téléphone, ces rubriques sont en bas de l’écran. Si tu suis plusieurs parcours, choisis celui qui t’intéresse dans les boutons en haut de la page ; le menu à trois points donne accès aux suivants.</p>'],
                 ['title'=>'3. Retrouver mon compte', 'html'=>'<p>Touche tes initiales pour ouvrir le menu du profil. Tu peux y modifier tes informations, rejoindre un autre cours et retrouver ce guide. <strong>Ton numéro de téléphone se modifie uniquement depuis ton propre profil.</strong></p><p>L’icône de discussion ouvre les échanges autorisés. La cloche signale les annonces à lire.</p>'],
             ],

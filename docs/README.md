@@ -2,7 +2,7 @@
 
 État documenté : 17 septembre 2026. La documentation décrit les sources de développement ; une instance conserve son ancien fonctionnement tant que le code correspondant n’y a pas été installé.
 
-liike organise des contenus pédagogiques réutilisables dans des parcours propres à chaque cours. L’élève voit son travail, ses échéances et ses acquis ; l’enseignant construit les parcours et confirme les niveaux atteints.
+liike organise des contenus pédagogiques réutilisables dans des parcours propres à chaque cours. L’apprenant voit son travail, ses échéances et ses acquis ; l’enseignant construit les parcours et confirme les niveaux atteints.
 
 ## Choisir son entrée
 
@@ -19,16 +19,16 @@ L’application couvre la bibliothèque de pages, six types de blocs, les tags, 
 
 Le projet ne fournit et ne requiert aucun répertoire `/server` ou `/serveur`. Le guide d’exploitation documente le démarrage PHP autonome, les deux formes d’arborescence et les emplacements possibles des dépendances Composer.
 
-Il fournit une connexion enseignante par mot de passe, des codes élèves, une reconnexion PWA de 90 jours, des contrôles de rôle et une protection CSRF. Le socle et la messagerie ont des bases SQLite et des migrations distinctes. La maintenance vérifie les publications complètes et, avec le nouvel outil, sauvegarde et remplace seulement les fichiers concernés. Les limites restantes sont détaillées dans la documentation dédiée.
+Il fournit une connexion enseignante par mot de passe, des codes apprenants, une reconnexion PWA de 90 jours, des contrôles de rôle et une protection CSRF. Le socle et la messagerie ont des bases SQLite et des migrations distinctes. La maintenance vérifie les publications complètes et, avec le nouvel outil, sauvegarde et remplace seulement les fichiers concernés. Les limites restantes sont détaillées dans la documentation dédiée.
 
 ## Fonctionnalités ajoutées récemment — septembre 2026
 
-- [Regroupements d’étapes](guide-utilisateur.md#regrouper-les-étapes) : titres, chevrons et glisser-déposer, visibles dans l’éditeur et le parcours élève.
+- [Regroupements d’étapes](guide-utilisateur.md#regrouper-les-étapes) : titres, chevrons et glisser-déposer, visibles dans l’éditeur et le parcours apprenant.
 
-- [Enregistrement des contenus](guide-utilisateur.md#gérer-les-contenus) : sauvegarde silencieuse et lien explicite pour prévenir les élèves après les corrections.
-- [Exports de progression](guide-utilisateur.md#exporter-la-progression-des-élèves) : sélection des élèves, CSV/PDF récapitulatif ou détaillé, notes individuelles, dernier résultat QCM et saut de page avant chaque élève.
-- [Gestion depuis le suivi individuel](guide-utilisateur.md#exporter-la-progression-des-élèves) : accès à la fiche de gestion à droite des points.
+- [Enregistrement des contenus](guide-utilisateur.md#gérer-les-contenus) : sauvegarde silencieuse et lien explicite pour prévenir les apprenants après les corrections.
+- [Exports de progression](guide-utilisateur.md#exporter-la-progression-des-apprenants) : sélection des apprenants, CSV/PDF récapitulatif ou détaillé, notes individuelles, dernier résultat QCM et saut de page avant chaque apprenant.
+- [Gestion depuis le suivi individuel](guide-utilisateur.md#exporter-la-progression-des-apprenants) : accès à la fiche de gestion à droite des points.
 - [Types d’étapes et événements](guide-utilisateur.md#types-détapes-et-événements) : choix exclusif, dates et horaires, fichier `.ics` et ajout à Google Calendar.
-- [Aperçu enseignant](guide-utilisateur.md#aperçu-élève-pour-lenseignant) : étapes invisibles masquées et navigation filtrée.
+- [Aperçu enseignant](guide-utilisateur.md#aperçu-apprenant-pour-lenseignant) : étapes invisibles masquées et navigation filtrée.
 
 Les règles de conservation et d’accès figurent dans le [modèle fonctionnel](modele-fonctionnel.md) ; la migration 28 et les commandes de vérification sont décrites dans [l’exploitation](exploitation.md).

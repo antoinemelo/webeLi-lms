@@ -185,11 +185,11 @@ function export_students_document(PDO $pdo, int $teacherId): array
 
 function validate_students_document(PDO $pdo, array $document, int $teacherId): array
 {
-    transfer_document($document,'liike.students');$students=$document['students']??null;if(!is_array($students)||count($students)>500)throw new TransferException('La liste des élèves est invalide ou trop volumineuse.');
+    transfer_document($document,'liike.students');$students=$document['students']??null;if(!is_array($students)||count($students)>500)throw new TransferException('La liste des apprenants est invalide ou trop volumineuse.');
     $courseLookup=$pdo->prepare('SELECT id FROM courses WHERE reference=? AND teacher_id=?');$validated=[];$emails=[];
     foreach($students as $student){
-        if(!is_array($student))throw new TransferException('Une fiche élève est invalide.');$first=trim((string)($student['first_name']??''));$last=mb_strtoupper(trim((string)($student['last_name']??'')),'UTF-8');$email=mb_strtolower(trim((string)($student['email']??'')),'UTF-8');
-        if(mb_strlen(preg_replace('/\s+/u','',$first)??'')<2||mb_strlen(preg_replace('/\s+/u','',$last)??'')<3||!filter_var($email,FILTER_VALIDATE_EMAIL)||isset($emails[$email]))throw new TransferException('Une fiche élève contient un nom ou un courriel invalide ou dupliqué.');$emails[$email]=true;
+        if(!is_array($student))throw new TransferException('Une fiche apprenant est invalide.');$first=trim((string)($student['first_name']??''));$last=mb_strtoupper(trim((string)($student['last_name']??'')),'UTF-8');$email=mb_strtolower(trim((string)($student['email']??'')),'UTF-8');
+        if(mb_strlen(preg_replace('/\s+/u','',$first)??'')<2||mb_strlen(preg_replace('/\s+/u','',$last)??'')<3||!filter_var($email,FILTER_VALIDATE_EMAIL)||isset($emails[$email]))throw new TransferException('Une fiche apprenant contient un nom ou un courriel invalide ou dupliqué.');$emails[$email]=true;
         $resolved=[];foreach((array)($student['courses']??[]) as $course){if(!is_array($course)||trim((string)($course['reference']??''))==='')throw new TransferException('Une inscription de cours est invalide.');$courseLookup->execute([trim((string)$course['reference']),$teacherId]);$courseId=$courseLookup->fetchColumn();if($courseId===false)throw new TransferException('Import arrêté : parcours absent : '.trim((string)$course['reference']).'.');$resolved[]=['id'=>(int)$courseId,'status'=>($course['status']??'active')==='archived'?'archived':'active'];}
         $student['first_name']=$first;$student['last_name']=$last;$student['email']=$email;$student['language']=normalize_language((string)($student['language']??''));$student['resolved_courses']=$resolved;$validated[]=$student;
     }

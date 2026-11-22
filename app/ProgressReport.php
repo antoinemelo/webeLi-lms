@@ -96,7 +96,7 @@ function progress_report_attach_links(PDO $pdo,array $data,int $teacherId): arra
         foreach($data['students'] as $student){
             $insert->execute([bin2hex(random_bytes(32)),$student['enrollment_id'],$data['course']['id'],$student['id']]);
             $find->execute([$student['enrollment_id']]);$token=$find->fetchColumn();
-            if(!$token)throw new InvalidArgumentException('Élève introuvable.');
+            if(!$token)throw new InvalidArgumentException('Apprenant introuvable.');
             $data['report_urls'][(int)$student['id']]=progress_report_url($token);
         }
         if($own)$pdo->commit();return $data;

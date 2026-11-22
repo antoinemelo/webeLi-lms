@@ -16,7 +16,7 @@ final class StudentAdminHistory
     public static function requireStudent(PDO $pdo,int $studentId,int $teacherId): array
     {
         $teacher=self::teacher($pdo,$teacherId);
-        if(!teacher_can_manage_student($pdo,$studentId,$teacherId,(bool)$teacher['is_superadmin']))throw new InvalidArgumentException('Élève introuvable ou accès non autorisé.');
+        if(!teacher_can_manage_student($pdo,$studentId,$teacherId,(bool)$teacher['is_superadmin']))throw new InvalidArgumentException('Apprenant introuvable ou accès non autorisé.');
         $query=$pdo->prepare("SELECT * FROM users WHERE id=? AND role='student'");$query->execute([$studentId]);return $query->fetch(PDO::FETCH_ASSOC);
     }
 
@@ -25,7 +25,7 @@ final class StudentAdminHistory
         self::teacher($pdo,$teacherId);$kind=(string)($input['kind']??'');
         if(!isset(self::KINDS[$kind]))throw new InvalidArgumentException('Choisissez un type de suivi.');
         $ids=array_values(array_unique(array_map('intval',(array)($input['students']??[]))));sort($ids);
-        if(!$ids)throw new InvalidArgumentException('Sélectionnez au moins un élève.');
+        if(!$ids)throw new InvalidArgumentException('Sélectionnez au moins un apprenant.');
         $students=[];foreach($ids as $id)$students[]=self::requireStudent($pdo,$id,$teacherId);
         $courseId=(int)($input['course_id']??0);$courseTitle='';
         if($courseId){

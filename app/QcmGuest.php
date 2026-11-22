@@ -107,7 +107,7 @@ final class QcmGuest
             $session=self::context($pdo,$room);$host=self::authorize($pdo,$session,$actor,$participant,$hostSecret);$command=is_string($input['command']??null)?$input['command']:'';
             if((int)($input['session']??0)!==(int)$session['id'])throw new DomainException('Cette séance n’est pas accessible.',409);
             if($command==='vote'){
-                if($host)throw new DomainException('Seuls les élèves peuvent répondre.',403);
+                if($host)throw new DomainException('Seuls les apprenants peuvent répondre.',403);
                 if($session['phase']!=='open'||(int)($input['question']??-1)!==(int)$session['question_index'])throw new DomainException('Cette question n’accepte plus de réponse.',409);
                 $questions=json_decode($session['questions'],true,512,JSON_THROW_ON_ERROR);$question=$questions[(int)$session['question_index']];$values=$input['answers']??null;
                 if(!is_array($values)||!$values)throw new DomainException('Sélectionnez une réponse.',422);$selected=[];

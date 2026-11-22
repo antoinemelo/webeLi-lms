@@ -17,7 +17,7 @@ function user_guide_filename(string $role): string
 {
     return match($role){
         'teacher'=>'guide-liike-enseignants.pdf',
-        'student'=>'guide-liike-eleves.pdf',
+        'student'=>'guide-liike-apprenants.pdf',
         default=>throw new InvalidArgumentException('Guide introuvable.'),
     };
 }

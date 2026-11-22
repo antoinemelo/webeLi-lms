@@ -194,7 +194,7 @@ return json_decode(<<<'JSON'
     "it": "Il link resta invariato dopo modifiche o riattivazione. I nuovi utilizzi seguono le impostazioni; copie e contenuti già importati restano disponibili. Disattivare l’uso esterno chiude anche le sessioni anonime in corso.",
     "es": "El enlace no cambia al modificar los modos o reactivarlo. Los nuevos usos siguen su configuración; se conservan las copias e importaciones existentes. Desactivar el uso externo también cierra las sesiones anónimas activas."
   },
-  "Consultez le contenu sans inscription ou animez un QCM en classe. Les élèves rejoignent la séance par lien ou QR code, sans nom ni compte. Les réponses anonymes sont temporaires et ne deviennent pas des notes.": {
+  "Consultez le contenu sans inscription ou animez un QCM en classe. Les apprenants rejoignent la séance par lien ou QR code, sans nom ni compte. Les réponses anonymes sont temporaires et ne deviennent pas des notes.": {
     "en": "View content without registration or host a classroom quiz. Students join via a link or QR code, without a name or account. Anonymous answers are temporary and are not recorded as grades.",
     "de": "Inhalte ohne Registrierung ansehen oder ein Klassenquiz leiten. Lernende treten per Link oder QR-Code bei, ohne Namen oder Konto. Anonyme Antworten sind vorübergehend und werden nicht zu Noten.",
     "it": "Consulta i contenuti senza registrazione o avvia un quiz in classe. Gli studenti partecipano tramite link o codice QR, senza nome né account. Le risposte anonime sono temporanee e non diventano voti.",
@@ -278,7 +278,7 @@ return json_decode(<<<'JSON'
     "it": "Codice QR per partecipare",
     "es": "Código QR para participar"
   },
-  "Inviter les élèves": {
+  "Inviter les apprenants": {
     "en": "Invite students",
     "de": "Lernende einladen",
     "it": "Invita gli studenti",
@@ -608,7 +608,7 @@ return json_decode(<<<'JSON'
     "it": "Nessun progresso disponibile.",
     "es": "No hay progreso disponible."
   },
-  "Les informations de l’élève sont incomplètes.": {
+  "Les informations de l’apprenant sont incomplètes.": {
     "en": "The student information is incomplete.",
     "de": "Die Angaben zur Schülerin oder zum Schüler sind unvollständig.",
     "it": "Le informazioni dello studente sono incomplete.",
@@ -626,19 +626,19 @@ return json_decode(<<<'JSON'
     "it": "Indica un gruppo classe da 1 a 100 caratteri.",
     "es": "Indica un grupo de clase de 1 a 100 caracteres."
   },
-  "Les informations de cet élève ont changé. Rouvrez sa fiche avant de réessayer.": {
+  "Les informations de cet apprenant ont changé. Rouvrez sa fiche avant de réessayer.": {
     "en": "This student’s information has changed. Reopen their record before trying again.",
     "de": "Die Angaben zu dieser Person haben sich geändert. Öffnen Sie ihr Profil erneut, bevor Sie es noch einmal versuchen.",
     "it": "Le informazioni di questo studente sono cambiate. Riapri la sua scheda prima di riprovare.",
     "es": "La información de este alumno ha cambiado. Vuelve a abrir su ficha antes de intentarlo de nuevo."
   },
-  "Les informations de l’élève ont été enregistrées.": {
+  "Les informations de l’apprenant ont été enregistrées.": {
     "en": "The student information has been saved.",
     "de": "Die Angaben wurden gespeichert.",
     "it": "Le informazioni dello studente sono state salvate.",
     "es": "La información del alumno se ha guardado."
   },
-  "Seul l’élève peut modifier son numéro de téléphone.": {
+  "Seul l’apprenant peut modifier son numéro de téléphone.": {
     "en": "Only the student can change their phone number.",
     "de": "Nur die Schülerin oder der Schüler kann die eigene Telefonnummer ändern.",
     "it": "Solo lo studente può modificare il proprio numero di telefono.",
@@ -686,7 +686,7 @@ return json_decode(<<<'JSON'
     "it": "Condivisione interrotta dal proprietario",
     "es": "El propietario ha dejado de compartir"
   },
-  "Consultez le contenu sans inscription ou animez un QCM où les élèves rejoignent la séance par lien ou QR code, librement, sans nom ni compte.": {
+  "Consultez le contenu sans inscription ou animez un QCM où les apprenants rejoignent la séance par lien ou QR code, librement, sans nom ni compte.": {
     "en": "View the content without registering, or run a quiz that students can freely join by link or QR code, without a name or account.",
     "de": "Sehen Sie sich den Inhalt ohne Registrierung an oder führen Sie ein Quiz durch, an dem die Lernenden frei per Link oder QR-Code teilnehmen, ohne Namen oder Konto.",
     "it": "Consulta il contenuto senza registrarti o conduci un quiz a cui gli alunni possono partecipare liberamente tramite link o codice QR, senza nome né account.",

@@ -91,7 +91,7 @@ function course_progress_export_xlsx(array $data): string
     $summary->full($data['course']['title'],1,36);
     $summary->full($data['course']['code'].' · '.t('Date de l’export').' : '.progress_export_date($data['exported_at']).' (réf. UTC Europe/Zurich)',2);
     $summary->full(t('Les moyennes suivent les règles du tableau de bord. La dernière activité couvre le dernier mois.'),2);
-    $header=$summary->row(array_map('t',['Élève','Groupe classe','Courriel','Progression','Étapes réalisées','Étapes confirmées','À confirmer','Évaluations /10','Autoévaluations /3','Encouragements','Dernière activité']),4,36);
+    $header=$summary->row(array_map('t',['Apprenant','Groupe classe','Courriel','Progression','Étapes réalisées','Étapes confirmées','À confirmer','Éval. /10','Autoévaluations /3','Encouragements','Dernière activité']),4,36);
     foreach($data['students'] as $student)$summary->row([progress_report_name($student),$student['class_group'],$student['email'],[$student['total']?$student['done']/$student['total']:0,6],$student['done'].' / '.$student['total'],[(int)$student['confirmed'],14],[(int)$student['waiting'],14],[$student['evaluation_average']===null?null:(float)$student['evaluation_average'],9],[$student['self_average']===null?null:(float)$student['self_average'],10],[(int)$student['points'],14],[progress_workbook_date($student['last_activity_at']),8]]);
     $summary->freeze=$header;$summary->filter='A'.$header.':'.ProgressWorkbookSheet::column(count($summary->widths)-1).count($summary->rows);$sheets[]=$summary;
     if($data['mode']==='detailed')foreach($data['students'] as $student){
@@ -101,8 +101,8 @@ function course_progress_export_xlsx(array $data): string
         $sheet->full(progress_report_name($student),1,36);
         $sheet->full($data['course']['title'].' · '.$data['course']['code'].' · '.progress_report_contact($student),2);
         $sheet->full(t('Date de l’export').' : '.progress_export_date($data['exported_at']).' (réf. UTC Europe/Zurich)',2);
-        if(isset($data['report_urls'][(int)$student['id']])){$row=$sheet->full(t('Bilan actualisé'),12);$sheet->links[]=['ref'=>'A'.$row,'url'=>$data['report_urls'][(int)$student['id']]];}
-        $metricsHeader=$sheet->row([t('Progression'),null,t('Évaluations /10'),null,null,t('Autoévaluations /3'),null],3,28);
+        if(isset($data['report_urls'][(int)$student['id']]))$sheet->links[]=['ref'=>'A1','url'=>$data['report_urls'][(int)$student['id']]];
+        $metricsHeader=$sheet->row([t('Progression'),null,t('Éval. /10'),null,null,t('Autoévaluations /3'),null],3,28);
         $metricsValues=$sheet->row([[$student['total']?$student['done']/$student['total']:0,6],null,[$student['evaluation_average']===null?null:(float)$student['evaluation_average'],9],null,null,[$student['self_average']===null?null:(float)$student['self_average'],10],null],5,30);
         foreach([$metricsHeader,$metricsValues] as $r)foreach([['A','B'],['C','E'],['F','G']] as [$left,$right])$sheet->merges[]=$left.$r.':'.$right.$r;
         $sheet->full(t('Étapes réalisées').' : '.$student['done'].' / '.$student['total'].' · '.t('Étapes confirmées').' : '.(int)$student['confirmed'].' · '.t('Encouragements').' : '.(int)$student['points'].' · '.t('À confirmer').' : '.(int)$student['waiting'].' · '.t('Dernière activité').' : '.(progress_export_date($student['last_activity_at'])?:'-'),2);
@@ -111,7 +111,7 @@ function course_progress_export_xlsx(array $data): string
         foreach($report['sections'] as $section){
             if($section['title']!==null)$sheet->full($section['title'],3);
             if(!$section['rows']){$sheet->full(t('Aucune étape'),2);continue;}
-            $sheet->row(array_map('t',['Étape','Échéance','Réalisation','Évaluation /10','×','Niveau élève /3','Niveau enseignant /3']),4,36);
+            $sheet->row(array_map('t',['Étape','Échéance','Réalisation','Éval. /10','×','Niveau apprenant /3','Niveau enseignant /3']),4,36);
             foreach($section['rows'] as $row)$sheet->row([$row['title'],[progress_workbook_date($row['deadline'],true),13],[progress_workbook_date($row['completed_at'],true),13],[$row['evaluation']===null?null:(float)$row['evaluation'],9],[$row['weight']===null?null:(float)$row['weight'],11],[$row['student_level']===null?null:(float)$row['student_level'],10],[$row['teacher_level']===null?null:(float)$row['teacher_level'],10]]);
         }
         $quizzes=[];foreach($report['sections'] as $section)foreach($section['rows'] as $row)foreach($row['quizzes'] as $quiz)$quizzes[]=$quiz+['step'=>$row['title']];
@@ -124,23 +124,21 @@ function course_progress_export_xlsx(array $data): string
         if($report['comments'])$sheet->full(t('Commentaires'),3);
         foreach($report['comments'] as $comment){
             $sheet->full($comment['title'],4);
-            foreach(['student'=>'Élève','teacher'=>'Enseignant'] as $key=>$label)if($comment[$key]!==''){
+            foreach(['student'=>'Apprenant','teacher'=>'Enseignant'] as $key=>$label)if($comment[$key]!==''){
                 $note=t($label).' : '.$comment[$key];
                 // Excel caps row height; split long notes without losing their text.
                 foreach(progress_workbook_note_chunks($note) as $chunk)$sheet->full($chunk,5);
             }
         }
         foreach(['objective'=>'Objectifs','skill'=>'Compétences'] as $kind=>$label){
-            $sheet->full(t($label),3);
+            $r=$sheet->row([mb_strtoupper(t($label),'UTF-8'),null,null,null,null,t('ENS/FORM'),t('APR')],4,30);$sheet->merges[]='A'.$r.':E'.$r;$first=$r+1;
             if(empty($report['mastery'][$kind])){$sheet->full(t('Aucun élément évalué.'),2);continue;}
-            $r=$sheet->row([t($label),null,null,null,null,t('Niveau enseignant /3'),t('Niveau élève /3')],4,30);$sheet->merges[]='A'.$r.':E'.$r;$first=$r+1;
             foreach($report['mastery'][$kind] as $level){
                 $title=($level['code']!==''?$level['code'].' · ':'').$level['title'];
                 $r=$sheet->row([$title,null,null,null,null,[$level['teacher_level'],10],[$level['student_level'],10]],5,max(24,16*ceil(mb_strwidth($title)/90)+6));$sheet->merges[]='A'.$r.':E'.$r;
             }
             $sheet->bars[]='F'.$first.':G'.$r;
         }
-        $sheet->full(t('Classement : niveau enseignant, ou autoévaluation à défaut ; égalités par ordre alphabétique. Échelle de 0 à 3.'),2);
         $sheets[]=$sheet;
     }
     $namespace='http://schemas.openxmlformats.org';$entries=[];

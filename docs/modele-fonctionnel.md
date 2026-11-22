@@ -15,7 +15,7 @@ Page ── Blocs + Tags
         └── Compétences du cours
               │
               └── Progression par inscription
-                    ├── auto-positionnement élève 0–3
+                    ├── auto-positionnement apprenant 0–3
                     ├── confirmation enseignante 0–3
                     └── Rewards attribués
 ```
@@ -33,24 +33,24 @@ Cette séparation est structurante :
 
 ## Types et événements
 
-Chaque étape propose un type exclusif : **Évaluation** (note enseignante sur 10), **Autoévaluation** (niveau élève sur 3), **Événement**, ou **Consultation simple**. L’évaluation prévaut sur l’autoévaluation pour les anciennes données mixtes ; la migration ne supprime ni les notes ni les commentaires historiques. Un changement manuel de type est refusé lorsqu’une évaluation contient encore au moins une note, y compris zéro. Les notes doivent être explicitement retirées dans le suivi avant de changer de type. Les autres changements appliquent les règles existantes de réinitialisation des validations concernées.
+Chaque étape propose un type exclusif : **Évaluation** (note enseignante sur 10), **Autoévaluation** (niveau apprenant sur 3), **Événement**, ou **Consultation simple**. L’évaluation prévaut sur l’autoévaluation pour les anciennes données mixtes ; la migration ne supprime ni les notes ni les commentaires historiques. Un changement manuel de type est refusé lorsqu’une évaluation contient encore au moins une note, y compris zéro. Les notes doivent être explicitement retirées dans le suivi avant de changer de type. Les autres changements appliquent les règles existantes de réinitialisation des validations concernées.
 
 Un événement utilise le titre de sa page, un début et une fin en heure Europe/Zurich, un indicateur de journée entière et un lieu facultatif. Il n’active ni note ni autoévaluation. Sa consultation suit les règles d’une étape sans autoévaluation ; elle ne constitue pas un contrôle de présence. La date de l’événement est distincte de l’échéance pédagogique. Copie et import/export JSON conservent les deux ; la remise à zéro des échéances conserve les horaires de l’événement.
 
-Le téléchargement `.ics` est réservé aux enseignants autorisés et aux élèves actifs ayant accès à l’étape d’un parcours non archivé. Le lien Google Calendar ouvre un formulaire prérempli, sans écriture automatique dans le compte de l’utilisateur. Aucun mécanisme de synchronisation ou de récurrence n’est ajouté.
+Le téléchargement `.ics` est réservé aux enseignants autorisés et aux apprenants actifs ayant accès à l’étape d’un parcours non archivé. Le lien Google Calendar ouvre un formulaire prérempli, sans écriture automatique dans le compte de l’utilisateur. Aucun mécanisme de synchronisation ou de récurrence n’est ajouté.
 
-L’aperçu général enseignant exclut les étapes `access_mode=none`, y compris la première étape, la navigation et l’ouverture directe d’une page d’aperçu. Les étapes restreintes restent présentées avec leur indication d’accès ; aucun élève particulier n’est simulé.
+L’aperçu général enseignant exclut les étapes `access_mode=none`, y compris la première étape, la navigation et l’ouverture directe d’une page d’aperçu. Les étapes restreintes restent présentées avec leur indication d’accès ; aucun apprenant particulier n’est simulé.
 
 ## Validation
 
 La progression est unique pour le couple **inscription + étape**.
 
-1. L’élève choisit un niveau 0–3, ajoute éventuellement une note et valide.
+1. L’apprenant choisit un niveau 0–3, ajoute éventuellement une note et valide.
 2. L’enseignant reçoit une notification en attente.
 3. L’enseignant confirme son propre niveau 0–3 et peut ajouter un retour.
-4. L’élève reçoit une notification de confirmation.
+4. L’apprenant reçoit une notification de confirmation.
 
-Si l’élève soumet à nouveau une étape, l’ancienne confirmation enseignante est effacée. Cela rend visible le fait qu’un nouveau travail doit être relu.
+Si l’apprenant soumet à nouveau une étape, l’ancienne confirmation enseignante est effacée. Cela rend visible le fait qu’un nouveau travail doit être relu.
 
 Les dates `student_validated_at` et `teacher_validated_at` portent l’état métier. Une valeur de niveau sans date de validation n’est pas considérée dans les synthèses.
 
@@ -58,7 +58,7 @@ Les dates `student_validated_at` et `teacher_validated_at` portent l’état mé
 
 Une compétence ou un objectif peut être rattaché à plusieurs étapes suivies. Pour une inscription donnée, l’application calcule :
 
-- la moyenne des niveaux élève validés sur ces étapes ;
+- la moyenne des niveaux apprenant validés sur ces étapes ;
 - une moyenne enseignante pondérée sur l’échelle 0–3 ;
 - le nombre de situations validées et confirmées ;
 - le nombre total d’étapes mobilisant l’élément du référentiel.
@@ -70,7 +70,7 @@ niveau de l’évaluation = note / 10 × 3
 moyenne = somme(niveau × poids) / somme(poids)
 ```
 
-Une évaluation suivie reste incluse lorsqu’elle est masquée aux élèves. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Une évaluation marquée **Non comptabilisé** pour un élève est également exclue du numérateur et du dénominateur, même lorsqu’une note est conservée. Ce choix individuel ne modifie ni la note des autres élèves ni les autoévaluations. Les types sont désormais exclusifs. Pour les anciennes étapes mixtes, la migration conserve le type Évaluation et les résultats historiques ; seule la note officielle contribue à la moyenne enseignante.
+Une évaluation suivie reste incluse lorsqu’elle est masquée aux apprenants. Une évaluation sans note et une activité sans confirmation sont omises du numérateur comme du dénominateur. Une évaluation marquée **Non comptabilisé** pour un apprenant est également exclue du numérateur et du dénominateur, même lorsqu’une note est conservée. Ce choix individuel ne modifie ni la note des autres apprenants ni les autoévaluations. Les types sont désormais exclusifs. Pour les anciennes étapes mixtes, la migration conserve le type Évaluation et les résultats historiques ; seule la note officielle contribue à la moyenne enseignante.
 
 L’affichage convertit une moyenne sur 3 en pourcentage pour la barre visuelle :
 
@@ -84,7 +84,7 @@ La moyenne reste une synthèse de navigation, pas une règle institutionnelle d�
 
 Les types de rewards appartiennent au cours et définissent un nom, une icône, une couleur et une valeur proposée. Lors d’une confirmation, l’enseignant peut attribuer une occurrence avec un nombre de points ajusté et un message.
 
-Le score d’un élève dans un cours est la somme de toutes les occurrences :
+Le score d’un apprenant dans un cours est la somme de toutes les occurrences :
 
 ```sql
 SELECT SUM(points)
@@ -100,32 +100,32 @@ Les actions métier insèrent un email dans `notification_outbox` :
 
 | Événement | Destinataire | Déclencheur |
 |---|---|---|
-| `student.validated` | enseignant | validation ou nouvelle soumission élève |
-| `teacher.confirmed` | élève | confirmation du niveau |
-| `reward.awarded` | élève | attribution d’un reward |
-| `page.updated` | élèves actifs ayant accès à la page | action explicite **Enregistrer et prévenir des modifications**, après une sauvegarde sans conflit |
-| `course.announcement` | élèves destinataires et enseignant pour le récapitulatif d’un envoi groupé | annonce globale ou ciblée dans leur parcours |
+| `student.validated` | enseignant | validation ou nouvelle soumission apprenant |
+| `teacher.confirmed` | apprenant | confirmation du niveau |
+| `reward.awarded` | apprenant | attribution d’un reward |
+| `page.updated` | apprenants actifs ayant accès à la page | action explicite **Enregistrer et prévenir des modifications**, après une sauvegarde sans conflit |
+| `course.announcement` | apprenants destinataires et enseignant pour le récapitulatif d’un envoi groupé | annonce globale ou ciblée dans leur parcours |
 
-**Enregistrer** une page n’ajoute aucun message `page.updated`. Le lien explicite peut être utilisé après plusieurs sauvegardes silencieuses, y compris sans nouvelle différence de contenu. Un conflit ou une erreur bloque la préparation des messages. Cliquer plusieurs fois sur le lien explicite peut préparer plusieurs annonces ; il ne s’agit pas d’un regroupement automatique. L’encadré élève **Depuis la dernière visite** continue de signaler les changements.
+**Enregistrer** une page n’ajoute aucun message `page.updated`. Le lien explicite peut être utilisé après plusieurs sauvegardes silencieuses, y compris sans nouvelle différence de contenu. Un conflit ou une erreur bloque la préparation des messages. Cliquer plusieurs fois sur le lien explicite peut préparer plusieurs annonces ; il ne s’agit pas d’un regroupement automatique. L’encadré apprenant **Depuis la dernière visite** continue de signaler les changements.
 
 L’écriture métier ne dépend donc pas du succès immédiat de `mail()`.
 
-Les annonces ciblées conservent le contenu personnalisé pour chaque destinataire. Chaque élève reçoit un seul courriel, avec sa deuxième adresse en CC si elle a été sélectionnée. L’enseignant reçoit un seul récapitulatif du groupe, avec les variables originales et les destinataires ; il n’est pas ajouté systématiquement en CCI. Les modèles appartiennent à leur auteur et sont réutilisables dans tous ses parcours. Le corps des copies techniques de la file est effacé après envoi réussi ; date, destinataire, objet, copies et état restent conservés. Le contenu utile demeure dans l’annonce.
+Les annonces ciblées conservent le contenu personnalisé pour chaque destinataire. Chaque apprenant reçoit un seul courriel, avec sa deuxième adresse en CC si elle a été sélectionnée. L’enseignant reçoit un seul récapitulatif du groupe, avec les variables originales et les destinataires ; il n’est pas ajouté systématiquement en CCI. Les modèles appartiennent à leur auteur et sont réutilisables dans tous ses parcours. Le corps des copies techniques de la file est effacé après envoi réussi ; date, destinataire, objet, copies et état restent conservés. Le contenu utile demeure dans l’annonce.
 
 ## Remises et suivi administratif
 
 Un bloc **Travail à rendre** recueille un lien HTTP(S), un texte limité à 512 caractères, ou les deux. Un brouillon ne valide pas l’étape. La remise explicite verrouille la réponse ; l’enseignant peut autoriser une nouvelle remise, ce qui conserve la version précédente et retire la validation de l’étape. Les remises obligatoires et les QCM doivent être terminés avant la notation d’une évaluation qui les combine.
 
-Une Réunion, une Correspondance ou un Paiement est un compte rendu administratif partagé entre un ou plusieurs élèves. Son enregistrement ne déclenche aucun courriel ni paiement. La fiche **Gestion de l’élève** rassemble les comptes rendus et annonces ciblées autorisés ; ses exports PDF et Markdown incluent tous leurs contenus. Ce suivi est distinct de la progression pédagogique.
+Une Réunion, une Correspondance ou un Paiement est un compte rendu administratif partagé entre un ou plusieurs apprenants. Son enregistrement ne déclenche aucun courriel ni paiement. La fiche **Gestion de l’apprenant** rassemble les comptes rendus et annonces ciblées autorisés ; ses exports PDF et Markdown incluent tous leurs contenus. Ce suivi est distinct de la progression pédagogique.
 
 ## Discussions privées
 
-L’activation par parcours ouvre les échanges élève–enseignant. Chaque fil relie un élève, un enseignant et un parcours ; ses messages sont limités à 256 caractères et modifiables durant trois minutes par leur auteur. Les responsables peuvent gérer les fils de leurs parcours ; le superadmin peut gérer ceux d’une personne sur tous les parcours. Les exports et effacements portent sur les fils autorisés, avec confirmation pour l’effacement. La base de discussions est séparée et ne fournit aucune entrée à l’historique administratif. Les [règles de discussion et de notification push](discussions.md) précisent les accès et la conservation.
+L’activation par parcours ouvre les échanges apprenant–enseignant. Chaque fil relie un apprenant, un enseignant et un parcours ; ses messages sont limités à 256 caractères et modifiables durant trois minutes par leur auteur. Les responsables peuvent gérer les fils de leurs parcours ; le superadmin peut gérer ceux d’une personne sur tous les parcours. Les exports et effacements portent sur les fils autorisés, avec confirmation pour l’effacement. La base de discussions est séparée et ne fournit aucune entrée à l’historique administratif. Les [règles de discussion et de notification push](discussions.md) précisent les accès et la conservation.
 
 ## Export de progression
 
-Le menu du suivi propose une seule fenêtre et une seule action d’export : CSV ou PDF, récapitulatif ou détaillé, pour tous les élèves actifs du parcours ou une sélection non vide. L’enseignant doit avoir accès au parcours ; une sélection contenant un élève extérieur ou archivé est refusée intégralement. Les secrets et notes privées ne sont pas exportés.
+Le menu du suivi propose une seule fenêtre et une seule action d’export : CSV ou PDF, récapitulatif ou détaillé, pour tous les apprenants actifs du parcours ou une sélection non vide. L’enseignant doit avoir accès au parcours ; une sélection contenant un apprenant extérieur ou archivé est refusée intégralement. Les secrets et notes privées ne sont pas exportés.
 
 Le récapitulatif partage les calculs du tableau de bord. Le détail conserve une ligne par étape et QCM, avec les résultats individuels des évaluations sur 10, autoévaluations sur 3 et dernier résultat de chaque QCM sur 10. Aucun historique de tentatives ni choix de réponses n’est inventé. Une absence de résultat reste distincte de zéro. Les étapes inaccessibles figurent explicitement dans le bilan afin de conserver les notes encore utiles au suivi.
 
-Le PDF récapitulatif est en A4 paysage ; le détail est en A4 portrait avec un saut de page avant chaque nouvel élève. Une fiche peut occuper plusieurs pages. Le CSV est en UTF-8 avec BOM, séparateur point-virgule, dates Europe/Zurich et protection des cellules pouvant être interprétées comme des formules. Les totaux répétés sur plusieurs lignes QCM ne doivent pas être additionnés.
+Le PDF récapitulatif est en A4 paysage ; le détail est en A4 portrait avec un saut de page avant chaque nouvel apprenant. Une fiche peut occuper plusieurs pages. Le CSV est en UTF-8 avec BOM, séparateur point-virgule, dates Europe/Zurich et protection des cellules pouvant être interprétées comme des formules. Les totaux répétés sur plusieurs lignes QCM ne doivent pas être additionnés.

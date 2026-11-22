@@ -187,6 +187,19 @@ if($view==='pdf-download'){
         exit;
     }
 }
+if($view==='activity-results'){
+    header('Cache-Control: private, no-store');
+    if($_SERVER['REQUEST_METHOD']!=='GET'){http_response_code(405);header('Allow: GET');exit;}
+    if($user['role']!=='teacher'){http_response_code(403);exit(t('Accès interdit.'));}
+    // PDF generation must not block navigation in another tab of this session.
+    if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
+    try{
+        $data=activity_results_data(db(),(int)($_GET['item']??0),(int)$user['id']);
+        send_pdf_download(activity_results_pdf($data),'resultats-activite-'.$data['item']['id'].'-'.date('Y-m-d').'.pdf');
+    }catch(InvalidArgumentException){http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo t('Accès interdit.');}
+    catch(Throwable $exception){error_log('Activity results export: '.$exception->getMessage());http_response_code(503);header('Content-Type: text/plain; charset=UTF-8');echo t('Export indisponible');}
+    exit;
+}
 if($view==='course-document'){
     header('Cache-Control: private, no-store');
     try{

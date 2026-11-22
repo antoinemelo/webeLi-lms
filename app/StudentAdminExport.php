@@ -9,7 +9,7 @@ function student_admin_export_data(PDO $pdo,int $studentId,int $teacherId): arra
     try{
         $student=StudentAdminHistory::requireStudent($pdo,$studentId,$teacherId);
         $information=[];
-        foreach(['first_name'=>'Prénom','last_name'=>'Nom','email'=>'Courriel','secondary_email'=>'Adresse électronique secondaire','phone'=>'Téléphone','class_group'=>'Groupe classe','login_code'=>'Code élève'] as $field=>$label)$information[]=[$label,(string)($student[$field]??'')];
+        foreach(['first_name'=>'Prénom','last_name'=>'Nom','email'=>'Courriel','secondary_email'=>'Adresse électronique secondaire','phone'=>'Téléphone','class_group'=>'Groupe classe','login_code'=>'Code apprenant'] as $field=>$label)$information[]=[$label,(string)($student[$field]??'')];
         $information[]=['Statut',t(['active'=>'Actif','pending'=>'Courriel à valider','archived'=>'Compte archivé'][$student['account_status']])];
         // Match the enrolments shown in the management panel; account controls themselves are not document content.
         $query=$pdo->prepare('SELECT c.title,e.status,e.joined_at,e.archived_at FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.student_id=? AND c.teacher_id=? ORDER BY c.title');$query->execute([$studentId,$teacherId]);$enrollments=$query->fetchAll(PDO::FETCH_ASSOC);
@@ -42,7 +42,7 @@ function student_admin_export_markdown(array $data,bool $includeHistory=true): s
         if($index){$lines[]='---';$lines[]='';}
         $lines[]=student_admin_export_entry_markdown($entry,(int)$data['student_id']);
     }
-    if(!$data['history'])$lines[]=t('Aucun suivi enregistré pour cet élève.');
+    if(!$data['history'])$lines[]=t('Aucun suivi enregistré pour cet apprenant.');
     return rtrim(implode("\n",$lines))."\n";
 }
 
@@ -74,7 +74,7 @@ function student_admin_export_pdf_html(array $data): string
     foreach($data['history'] as $index=>$entry){
         $html.='<div style="page-break-inside:avoid">'.($index?'<hr>':'').Markdown::render(student_admin_export_entry_markdown($entry,(int)$data['student_id'])).'</div>';
     }
-    if(!$data['history'])$html.='<p>'.e(t('Aucun suivi enregistré pour cet élève.')).'</p>';
+    if(!$data['history'])$html.='<p>'.e(t('Aucun suivi enregistré pour cet apprenant.')).'</p>';
     // Markdown produces escaped HTML. Keep image descriptions and links as text, without fetching resources.
     $html=preg_replace_callback('/<img\b[^>]*>/i',static function(array $match):string{
         $values=[];
@@ -91,5 +91,5 @@ function student_admin_export_pdf_html(array $data): string
         }else{$attributes.=' style="font-size:10pt"';}
         return '<'.$match[1].$attributes.'>';
     },$html)??$html;
-    return pdf_document(t('Gestion de l’élève').' · '.$data['name'],$html);
+    return pdf_document(t('Gestion de l’apprenant').' · '.$data['name'],$html);
 }

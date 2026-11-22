@@ -21,7 +21,7 @@ function student_identity_revision(array $student): string
 /** Administrative identity edits never change the student's phone or login code. */
 function update_student_identity(PDO $pdo,int $studentId,int $teacherId,array $input): array
 {
-    foreach(['first_name','last_name','email','class_group','identity_revision'] as $key)if(!is_string($input[$key]??null))throw new InvalidArgumentException('Les informations de l’élève sont incomplètes.');
+    foreach(['first_name','last_name','email','class_group','identity_revision'] as $key)if(!is_string($input[$key]??null))throw new InvalidArgumentException('Les informations de l’apprenant sont incomplètes.');
     $first=trim($input['first_name']);$last=mb_strtoupper(trim($input['last_name']),'UTF-8');
     $email=mb_strtolower(trim($input['email']),'UTF-8');$group=trim($input['class_group']);
     $compactFirst=preg_replace('/\s+/u','',$first)??'';$compactLast=preg_replace('/\s+/u','',$last)??'';
@@ -31,9 +31,9 @@ function update_student_identity(PDO $pdo,int $studentId,int $teacherId,array $i
     $pdo->exec('BEGIN IMMEDIATE');
     try{
         $query=$pdo->prepare("SELECT is_superadmin FROM users WHERE id=? AND role='teacher' AND account_status='active'");$query->execute([$teacherId]);$teacher=$query->fetch(PDO::FETCH_ASSOC);$query->closeCursor();
-        if(!$teacher||!teacher_can_manage_student($pdo,$studentId,$teacherId,(bool)$teacher['is_superadmin']))throw new InvalidArgumentException('Élève introuvable ou accès non autorisé.');
+        if(!$teacher||!teacher_can_manage_student($pdo,$studentId,$teacherId,(bool)$teacher['is_superadmin']))throw new InvalidArgumentException('Apprenant introuvable ou accès non autorisé.');
         $query=$pdo->prepare("SELECT * FROM users WHERE id=? AND role='student'");$query->execute([$studentId]);$student=$query->fetch(PDO::FETCH_ASSOC);$query->closeCursor();
-        if(!hash_equals(student_identity_revision($student),$input['identity_revision']))throw new InvalidArgumentException('Les informations de cet élève ont changé. Rouvrez sa fiche avant de réessayer.');
+        if(!hash_equals(student_identity_revision($student),$input['identity_revision']))throw new InvalidArgumentException('Les informations de cet apprenant ont changé. Rouvrez sa fiche avant de réessayer.');
         $query=$pdo->prepare('SELECT 1 FROM users WHERE lower(email)=? AND id<>?');$query->execute([$email,$studentId]);$duplicate=(bool)$query->fetchColumn();$query->closeCursor();
         if($duplicate)throw new InvalidArgumentException('Ce courriel est déjà utilisé.');
         $initials=mb_strtoupper(mb_substr($compactFirst,0,1).mb_substr($compactLast,0,1),'UTF-8');

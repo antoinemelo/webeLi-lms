@@ -70,8 +70,8 @@ final class AnnouncementMessages
         $title=trim((string)($input['title']??''));$body=self::body((string)($input['body']??''));self::validateText($title,$body);
         $selected=array_values(array_unique(array_map('intval',(array)($input['students']??[]))));
         $secondary=array_values(array_unique(array_map('intval',(array)($input['secondary']??[]))));
-        if(!$selected)throw new InvalidArgumentException('Sélectionnez au moins un élève.');
-        if(array_diff($secondary,$selected))throw new InvalidArgumentException('La copie CC doit concerner un élève sélectionné.');
+        if(!$selected)throw new InvalidArgumentException('Sélectionnez au moins un apprenant.');
+        if(array_diff($secondary,$selected))throw new InvalidArgumentException('La copie CC doit concerner un apprenant sélectionné.');
         $query=$pdo->prepare("SELECT u.id,u.first_name,u.last_name,u.name,u.email,u.secondary_email FROM enrollments e JOIN users u ON u.id=e.student_id WHERE e.course_id=? AND e.status='active' AND u.account_status='active' ORDER BY u.name,u.id");
         $query->execute([$courseId]);$students=$query->fetchAll(PDO::FETCH_ASSOC);
         if(array_diff($selected,array_map('intval',array_column($students,'id'))))throw new InvalidArgumentException('Un destinataire n’est plus inscrit à ce parcours. Rechargez la page.');

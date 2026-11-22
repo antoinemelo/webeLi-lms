@@ -89,7 +89,7 @@ final class QcmClass
             $context=self::context($pdo,$user,$itemId,$blockId,$key);
             $session=self::latest($pdo,$context);$command=(string)($input['command']??'');
             if($command==='vote'){
-                if($context['teacher'])throw new DomainException('Seuls les élèves peuvent répondre.',403);
+                if($context['teacher'])throw new DomainException('Seuls les apprenants peuvent répondre.',403);
                 if(!$session||$session['phase']!=='open'||(int)($input['session']??0)!==(int)$session['id']
                     ||(int)($input['question']??-1)!==(int)$session['question_index'])throw new DomainException('Cette question n’accepte plus de réponse.',409);
                 $questions=json_decode($session['questions'],true,512,JSON_THROW_ON_ERROR);
