@@ -77,6 +77,10 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&in_array($_GET['view']??'',['library-card
 if($_SERVER['REQUEST_METHOD']==='GET'&&($_GET['view']??'')==='qcm-class-state')qcm_class_http();
 
 if(($_GET['view']??'')==='guest-class-state')qcm_guest_http();
+if(($_GET['view']??'')==='progress-report'){
+    if($_SERVER['REQUEST_METHOD']!=='GET'){http_response_code(405);header('Allow: GET');exit;}
+    progress_report_http();
+}
 if(($_GET['view']??'')==='guest-class'){
     if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['action']??'')==='guest_class_command'){verify_csrf();qcm_guest_http(true);}
     render_qcm_guest_page();

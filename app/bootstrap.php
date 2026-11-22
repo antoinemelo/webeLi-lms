@@ -28,6 +28,7 @@ require_once __DIR__ . '/PathwayService.php';
 require_once __DIR__ . '/PathwayEvent.php';
 require_once __DIR__ . '/ProgressExport.php';
 require_once __DIR__ . '/ProgressPdf.php';
+require_once __DIR__ . '/ProgressWorkbook.php';
 require_once __DIR__ . '/AnnouncementMessages.php';
 require_once __DIR__ . '/AnnouncementMessageViews.php';
 require_once __DIR__ . '/CourseEnrollment.php';

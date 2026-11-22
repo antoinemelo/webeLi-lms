@@ -12,6 +12,7 @@ return static function(PDO $pdo): void {
         'courses'=>['messaging_uuid','messaging_enabled','id','reference','title','code','teacher_id','archived'],
         'course_teachers'=>['course_id','teacher_id','added_by'],
         'enrollments'=>['id','course_id','student_id','status','archived_at','pathway_changes_seen_at'],
+        'progress_report_links'=>['enrollment_id','token','created_at'],
         'course_accesses'=>['user_id','course_id','last_accessed_at'],
         'pages'=>['id','reference','title','status','owner_id','revision'],
         'page_share_links'=>['page_id','token','enabled','allow_shared','allow_copy','allow_external','revision'],

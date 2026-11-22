@@ -666,8 +666,17 @@ function framework_progress_in(PDO $pdo,int $courseId,int $enrollmentId,string $
             WHERE pi.course_id=? ORDER BY pi.position,po.position,po.id");
         $query->execute([$studentId,$enrollmentId,$courseId]);$groupKey=static fn(array $row):string=>'objective:'.mb_strtolower((string)$row['title'],'UTF-8');
     }
+    return framework_progress_from_rows($query->fetchAll(PDO::FETCH_ASSOC),$kind);
+}
+
+/** Shared calculation for Acquis and batched progress reports. */
+function framework_progress_from_rows(array $rows,string $kind): array
+{
+    $groupKey=$kind==='skill'
+        ?static fn(array $row):string=>'skill:'.(int)$row['framework_id']
+        :static fn(array $row):string=>'objective:'.mb_strtolower((string)$row['title'],'UTF-8');
     $framework=[];
-    foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
+    foreach($rows as $row){
         $key=$groupKey($row);
         if(!isset($framework[$key]))$framework[$key]=[
             'id'=>(int)$row['framework_id'],'title'=>(string)$row['title'],'code'=>(string)$row['code'],'description'=>(string)$row['description'],

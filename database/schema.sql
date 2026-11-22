@@ -553,7 +553,7 @@ CREATE TABLE IF NOT EXISTS qcm_class_votes (
     PRIMARY KEY(session_id,student_id,question_index)
 );
 
-PRAGMA user_version = 37;
+PRAGMA user_version = 38;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -663,4 +663,10 @@ CREATE TABLE IF NOT EXISTS page_copy_origins (
 CREATE TABLE IF NOT EXISTS registration_limit_alerts (
     scope TEXT PRIMARY KEY,
     alerted_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS progress_report_links (
+    enrollment_id INTEGER PRIMARY KEY REFERENCES enrollments(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE CHECK(length(token)=64),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

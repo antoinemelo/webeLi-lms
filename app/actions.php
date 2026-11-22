@@ -471,11 +471,13 @@ function handle_action(string $action): never
         try{
             if($user['role']!=='teacher')throw new InvalidArgumentException('Accès interdit.');
             $format=(string)($_POST['format']??'csv');
-            if(!in_array($format,['csv','pdf'],true))throw new InvalidArgumentException('Export indisponible');
+            if(!in_array($format,['csv','pdf','xlsx'],true))throw new InvalidArgumentException('Export indisponible');
             $courseId=(int)($_POST['course_id']??0);
             $data=course_progress_export_data(db(),$courseId,(int)$user['id'],(array)($_POST['students']??[]),(string)($_POST['mode']??''));
             $filename='progression-'.$data['course']['code'].'-'.$data['mode'].'-'.date('Y-m-d');
+            if(in_array($format,['pdf','xlsx'],true)&&$data['mode']==='detailed')$data=progress_report_attach_links(db(),$data,(int)$user['id']);
             if($format==='pdf')send_pdf_download(course_progress_export_pdf($data),$filename.'.pdf',$data['mode']==='summary');
+            if($format==='xlsx')send_progress_workbook($data,$filename.'.xlsx');
             send_csv_download(course_progress_export_csv($data),$filename.'.csv');
         }catch(InvalidArgumentException $exception){
             http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo t($exception->getMessage());
@@ -484,6 +486,14 @@ function handle_action(string $action): never
             http_response_code(503);header('Content-Type: text/plain; charset=UTF-8');echo t('Export indisponible');
         }
         exit;
+    }
+    if($action==='revoke_progress_report'){
+        $enrollmentId=(int)($_POST['enrollment_id']??0);
+        try{
+            progress_report_revoke(db(),$enrollmentId,(int)$user['id']);
+            flash('Le lien privé du bilan est désactivé. Un prochain export détaillé créera un nouveau lien.');
+            redirect('student-detail',['enrollment'=>$enrollmentId]);
+        }catch(InvalidArgumentException){http_response_code(403);exit(t('Accès interdit.'));}
     }
     if($action==='join_course'&&$user['role']==='student'){
         $courseCode=trim((string)($_POST['course_code']??$_SESSION['pending_join_course_code']??''));
