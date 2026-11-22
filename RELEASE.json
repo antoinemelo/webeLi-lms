@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "0855beebdf73515f0d033cbc87a232c8d4771d8b9928db194339e394ed59e1c5",
-    "VERSION": "47c749a57ac441c5ea5949edd5818a240f959834addac6af8dc9f645729dfb4e",
+    "VERSION": "faec7e225b1b857a7be13f443137e0b8d76a1e8685ed55a95835faf7b840f1db",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/ActivityResults.php": "7b73cff2bd1f299828c73f6b6c2c2b583f2e8fcb4c0ce828ec82014862c83daf",
     "app/AdminService.php": "a66617f6c76831f73f74510a90efa41d0c1b9318579c26118f30ca95d619474e",
@@ -810,7 +810,7 @@
     "app/PathwayService.php": "311bf96a2fe52e831351bda1fbafc1f7dc817cf69771e7591ee589d77a3419fc",
     "app/PdfExport.php": "9c30201ddab20cd26c1fe0a02a76dd7c7cbc598a7d8bf2c48bee24cf484012ec",
     "app/ProgressExport.php": "c704d76bd06b403c132b18231b03b67788e210a4ef251897287c78d9d96477ea",
-    "app/ProgressPdf.php": "b54c0b266d7a17870a85d860ce8250ffbc5f36344561550e9c062518b339def5",
+    "app/ProgressPdf.php": "0e1b1595670485d4f3a0327f3fcbf50e2b5899136f147bba5742e42fddab0662",
     "app/ProgressReport.php": "bc3c3991035afc0536dcdd812ea9d78ceb88d37669f52466585a405c85d76c61",
     "app/ProgressWorkbook.php": "b6165b4e299df8db18ec332473893b1d7c9b670f2cf84e7137764889e090f96a",
     "app/PwaSession.php": "b7d07177d6aaefa72ea809b8d89278bd639425388b3a0b83ef08a033c214a54d",
@@ -1173,7 +1173,7 @@
     "app/translations/housekeeping.php": "2a6235997830a3a0852e58d9bce32bf25b4465fae2d2435fb7a66380d9b83ebf",
     "app/translations/it.php": "857a9823b3a02c95a8953f1e7c9d9ae135d2bebb53a85b19c6049ef9088c8400",
     "app/translations/messaging.php": "b10c147b154703fbbd1f2913fc0566bcbbb2d522aff58e0701129e2ffeaaefb3",
-    "app/translations/progress.php": "99796e19c277e21533b45c1cf8f5e36d3f6f8d653d20923c24d8680268ca8e33",
+    "app/translations/progress.php": "b4a42b72aba081f126e907f744f1f9d710e1fdacacb274cdce6309cc51582a46",
     "app/translations/qcm.php": "3c533a21341aac4db048e771154016fc72b818a0521a0fa2b30220b0d76089d1",
     "app/translations/sharing.php": "fcd55d6c3441f84468483e189cd54a69346e8d955c4066e9785d3381d6d0f828",
     "app/views.php": "20bed14ab1de951b3c795efc9850b929384407fb3680f938708777afb59ca051",
@@ -1255,7 +1255,7 @@
     "docs/README.md": "97812a005b5ac5e4a4de7bd5661c38c445815ab8a55917241f45ec777f4a0698",
     "docs/architecture.md": "de57291c9dea503ac9a8cae29a040f322ca8e37c4651ee5568d65c1e0b714984",
     "docs/discussions.md": "06781f158c74fb5289923fb4b628246d7baf1f797bd322959bde06b0ee7ccc05",
-    "docs/exploitation.md": "8ff228522b34a7a8dbae0a405aa33b184fb39bbea84d3f2f1b69e1e6c11e45a0",
+    "docs/exploitation.md": "9c72815d9d67b9ba634609ea09c86d509a671915412b09f2c171dbbd50df3323",
     "docs/guide-utilisateur.md": "382cffd51344c610dcdff6012d85161a25e75f2c87751390e9b78062e2cc35cd",
     "docs/limitations-roadmap.md": "4d7d031df3d1656954c2a8deb79ea70e718d97899d32f4935143d0e0837df555",
     "docs/modele-fonctionnel.md": "688474d377c048c929ca3ad95aa8e4e5adf283635079817f2f0a9677003abf27",
@@ -1272,7 +1272,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-11-22T18:29:45+00:00",
+  "generated_at": "2026-11-22T18:46:21+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -1285,5 +1285,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q4.21"
+  "version": "2026Q4.22"
 }

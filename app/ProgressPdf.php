@@ -1,9 +1,13 @@
 <?php
 declare(strict_types=1);
 
+function progress_pdf_number(mixed $value): string
+{
+    return $value===null||$value===''?'-':progress_export_number($value,1);
+}
 function progress_pdf_score(mixed $value,string $scale): string
 {
-    return $value===null||$value===''?'-':progress_export_number($value,1).' / '.$scale;
+    return $value===null||$value===''?'-':progress_pdf_number($value).' / '.$scale;
 }
 function progress_pdf_date(?string $value,bool $time=false): string
 {
@@ -53,7 +57,7 @@ function progress_pdf_mastery(array $mastery): string
             $html.='<tr><td style="padding:1.5mm 2mm">'.e(($row['code']!==''?$row['code'].' · ':'').$row['title']).'</td>';
             foreach(['teacher_level','student_level'] as $key){
                 $level=$row[$key];$percent=$level===null?0:max(0,min(100,(float)$level/3*100));
-                $html.='<td style="padding:1.5mm 2mm;text-align:center">'.e($level===null||$level===''?'-':progress_export_number($level,1));
+                $html.='<td style="padding:1.5mm 2mm;text-align:center">'.e(progress_pdf_number($level));
                 if($level!==null)$html.='<div style="margin-top:1mm;height:1.3mm;background-color:#ece9f3"><div style="height:1.3mm;width:'.$percent.'%;background-color:#7867ce"></div></div>';
                 $html.='</td>';
             }
@@ -80,7 +84,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
     $subtitle=$data['course']['title'].' · '.$data['course']['code'].' · '.progress_report_contact($student);
     $body=progress_pdf_header($data,progress_report_name($student),$subtitle,$web?'':($data['report_urls'][(int)$student['id']]??''));
     $pct=$student['total']?(int)round(100*$student['done']/$student['total']):0;
-    $body.=progress_pdf_metrics([[t('Progression'),$pct.' %'],[t('Éval. /10'),progress_pdf_score($student['evaluation_average'],'10')],[t('Autoévaluations /3'),progress_pdf_score($student['self_average'],'3')],[t('À confirmer'),(string)(int)$student['waiting']]]);
+    $body.=progress_pdf_metrics([[t('Progression'),$pct.' %'],[t('Éval. /10'),progress_pdf_number($student['evaluation_average'])],[t('Autoéval. /3'),progress_pdf_number($student['self_average'])],[t('À confirmer'),(string)(int)$student['waiting']]]);
     $body.='<p style="font-size:8pt;margin-bottom:1mm">'.e(t('Étapes réalisées')).' : '.$student['done'].' / '.$student['total'].' · '.e(t('Étapes confirmées')).' : '.(int)$student['confirmed'].' · '.e(t('Encouragements')).' : '.(int)$student['points'].' · '.e(t('Dernière activité')).' : '.e(progress_pdf_date($student['last_activity_at'],true)).'</p>';
     if(!$report['sections'])$body.='<p>'.e(t('Ce parcours ne contient aucune étape.')).'</p>';
     foreach($report['sections'] as $section){
@@ -91,12 +95,12 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
         }
         $heading=$section['title']!==null?'<tr><th colspan="4" style="font-size:10pt;text-transform:none;padding:2mm;background-color:#ded8fa">'.e($section['title']).'</th></tr>':'';
         if($web&&$section['title']!==null)$body.='<h2 class="mobile-group">'.e($section['title']).'</h2>';
-        $body.='<div class="report-table"><table style="font-size:8pt;margin-bottom:3mm">'.str_replace('<thead>','<thead>'.$heading,progress_pdf_table_head([[t('Étape'),40],[t('Éval. /10'),11],[t('Autoévaluation /3'),19],[t('QCM /10'),30,'center']])).'<tbody>';
+        $body.='<div class="report-table"><table style="font-size:8pt;margin-bottom:3mm">'.str_replace('<thead>','<thead>'.$heading,progress_pdf_table_head([[t('Étape'),48],[t('Éval. /10'),10],[t('Autoéval. /3'),17],[t('QCM /10'),25,'center']])).'<tbody>';
         foreach($section['rows'] as $row){
             $presence=progress_report_result_presence($row);
             $dates=t('Échéance').' : '.progress_pdf_date($row['deadline']).' / '.t('Réalisation').' : '.progress_pdf_date($row['completed_at']);
             $evaluation=$row['weight']!==null?'<strong>'.e(progress_pdf_score($row['evaluation'],'10')).'</strong><br><span style="font-size:7pt;color:#706e80">× '.e(progress_export_number($row['weight'],1)).'</span>':'-';
-            $self=e(t('Apprenant')).' : '.e(progress_pdf_score($row['student_level'],'3')).'<br>'.e(t('Enseignant')).' : '.e(progress_pdf_score($row['teacher_level'],'3'));
+            $self=$presence['self']?e(t('Apprenant')).' : '.e(progress_pdf_score($row['student_level'],'3')).'<br>'.e(t('Enseignant')).' : '.e(progress_pdf_score($row['teacher_level'],'3')):'-';
             if($web){
                 if(!$presence['evaluation'])$evaluation='-';
                 $selfLevels=[];
@@ -110,7 +114,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
                 $qcm[]='<strong>'.e(progress_pdf_score($quiz['score'],'10')).'</strong><br><span style="font-size:6.5pt;color:#706e80;white-space:nowrap">'.($web?e($label):str_replace(' ','&#160;',e($label))).'</span>';
             }
             $body.='<tr><td style="padding:2mm"><strong>'.e($row['title']).'</strong><br><span style="font-size:6.5pt;color:#706e80;white-space:nowrap">'.($web?e($dates):str_replace(' ','&#160;',e($dates))).'</span></td>'
-                .'<td'.($web&&!$presence['evaluation']?' class="report-result-empty"':'').' data-result="evaluation" data-label="'.e(t('Éval. /10')).'" style="text-align:center;padding:2mm">'.$evaluation.'</td><td'.($web&&!$presence['self']?' class="report-result-empty"':'').' data-result="self" data-label="'.e(t('Autoévaluation /3')).'" style="font-size:7pt;padding:2mm">'.$self.'</td><td'.($web&&!$presence['qcm']?' class="report-result-empty"':'').' data-result="qcm" data-label="'.e(t('QCM /10')).'" style="padding:2mm">'.($qcm?implode('<br>',$qcm):'-').'</td></tr>';
+                .'<td'.($web&&!$presence['evaluation']?' class="report-result-empty"':'').' data-result="evaluation" data-label="'.e(t('Éval. /10')).'" style="text-align:center;padding:2mm">'.$evaluation.'</td><td'.($web&&!$presence['self']?' class="report-result-empty"':'').' data-result="self" data-label="'.e(t('Autoéval. /3')).'" style="font-size:7pt;padding:2mm">'.$self.'</td><td'.($web&&!$presence['qcm']?' class="report-result-empty"':'').' data-result="qcm" data-label="'.e(t('QCM /10')).'" style="padding:2mm">'.($qcm?implode('<br>',$qcm):'-').'</td></tr>';
         }
         $body.='</tbody></table></div>';
     }
@@ -133,7 +137,7 @@ function course_progress_export_pdf(array $data,bool $web=false): string
         $students=$data['students'];$count=count($students);$average=$count?round(array_sum(array_map(static fn(array $s):float=>$s['total']?100*$s['done']/$s['total']:0,$students))/$count):0;
         $body.=progress_pdf_header($data,$data['course']['title'],t('Récapitulatif de la sélection').' · '.$data['course']['code']);
         $body.=progress_pdf_metrics([[t('Apprenants'),(string)$count],[t('Progression moyenne'),$average.' %'],[t('À confirmer'),(string)array_sum(array_column($students,'waiting'))],[t('Encouragements'),(string)array_sum(array_column($students,'points'))]]);
-        $body.='<table style="font-size:8pt">'.progress_pdf_table_head([[t('Apprenant'),30],[t('Progression'),10],[t('Étapes confirmées'),9],[t('À confirmer'),8],[t('Éval. /10'),11],[t('Autoévaluations /3'),11],[t('Encouragements'),8],[t('Dernière activité'),13]]).'<tbody>';
+        $body.='<table style="font-size:8pt">'.progress_pdf_table_head([[t('Apprenant'),30],[t('Progression'),10],[t('Étapes confirmées'),9],[t('À confirmer'),8],[t('Éval. /10'),11],[t('Autoéval. /3'),11],[t('Encouragements'),8],[t('Dernière activité'),13]]).'<tbody>';
         foreach($students as $index=>$student){
             $pct=$student['total']?(int)round(100*$student['done']/$student['total']):0;
             $identity='<strong>'.e(progress_report_name($student)).'</strong><br><span style="font-size:7pt;color:#706e80;white-space:nowrap">'.e(progress_report_contact($student)).'</span>';

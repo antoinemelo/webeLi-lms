@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 return [
+    'Autoéval. /3'=>['en'=>'Self-assess. /3','de'=>'Selbstbew. /3','it'=>'Autoval. /3','es'=>'Autoeval. /3'],
     'ENS / FOR'=>['en'=>'TEACH / TRAIN','de'=>'LEHR / AUSB','it'=>'DOC / FORM','es'=>'DOC / FORM'],
     'QCM /10'=>['en'=>'Quiz /10','de'=>'Quiz /10','it'=>'Quiz /10','es'=>'Cuestionario /10'],
     'OBJECTIFS /3'=>['en'=>'OBJECTIVES /3','de'=>'ZIELE /3','it'=>'OBIETTIVI /3','es'=>'OBJETIVOS /3'],
