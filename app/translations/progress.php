@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 return [
+    'ENS / FOR'=>['en'=>'TEACH / TRAIN','de'=>'LEHR / AUSB','it'=>'DOC / FORM','es'=>'DOC / FORM'],
+    'QCM /10'=>['en'=>'Quiz /10','de'=>'Quiz /10','it'=>'Quiz /10','es'=>'Cuestionario /10'],
+    'OBJECTIFS /3'=>['en'=>'OBJECTIVES /3','de'=>'ZIELE /3','it'=>'OBIETTIVI /3','es'=>'OBJETIVOS /3'],
+    'COMPÉTENCE /3'=>['en'=>'SKILL /3','de'=>'KOMPETENZ /3','it'=>'COMPETENZA /3','es'=>'COMPETENCIA /3'],
     'Actions de l’étape'=>['en'=>'Step actions','de'=>'Aktionen zum Schritt','it'=>'Azioni della tappa','es'=>'Acciones de la etapa'],
     'Activités réalisées'=>['en'=>'Completed activities','de'=>'Erledigte Aktivitäten','it'=>'Attività completate','es'=>'Actividades completadas'],
     'Notes attribuées'=>['en'=>'Grades awarded','de'=>'Vergebene Noten','it'=>'Voti assegnati','es'=>'Calificaciones asignadas'],

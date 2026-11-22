@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 function progress_pdf_score(mixed $value,string $scale): string
 {
-    return $value===null||$value===''?'-':progress_export_number($value).' / '.$scale;
+    return $value===null||$value===''?'-':progress_export_number($value,1).' / '.$scale;
 }
 function progress_pdf_date(?string $value,bool $time=false): string
 {
@@ -37,20 +37,23 @@ function progress_pdf_metrics(array $metrics): string
 function progress_pdf_table_head(array $columns): string
 {
     $html='<thead><tr>';
-    foreach($columns as [$label,$width])$html.='<th style="width:'.$width.'%;font-size:8pt;text-transform:none;padding:2mm;background-color:#ece9ff">'.e($label).'</th>';
+    foreach($columns as $column){
+        [$label,$width]=$column;$align=$column[2]??'left';
+        $html.='<th style="width:'.$width.'%;font-size:8pt;text-transform:none;text-align:'.$align.';padding:2mm;background-color:#ece9ff">'.e($label).'</th>';
+    }
     return $html.'</tr></thead>';
 }
 function progress_pdf_mastery(array $mastery): string
 {
     $html='';
-    foreach(['objective'=>'Objectifs','skill'=>'Compétences'] as $kind=>$title){
-        $html.='<table class="report-mastery" style="font-size:8pt;margin-top:3mm">'.progress_pdf_table_head([[mb_strtoupper(t($title),'UTF-8'),64],[t('ENS/FORM'),18],[t('APR'),18]]).'<tbody>';
+    foreach(['objective'=>'OBJECTIFS /3','skill'=>'COMPÉTENCE /3'] as $kind=>$title){
+        $html.='<table class="report-mastery" style="font-size:8pt;margin-top:3mm">'.progress_pdf_table_head([[t($title),74],[t('ENS / FOR'),13,'center'],[t('APR'),13,'center']]).'<tbody>';
         if(empty($mastery[$kind]))$html.='<tr><td colspan="3" class="muted">'.e(t('Aucun élément évalué.')).'</td></tr>';
         foreach($mastery[$kind]??[] as $row){
             $html.='<tr><td style="padding:1.5mm 2mm">'.e(($row['code']!==''?$row['code'].' · ':'').$row['title']).'</td>';
             foreach(['teacher_level','student_level'] as $key){
                 $level=$row[$key];$percent=$level===null?0:max(0,min(100,(float)$level/3*100));
-                $html.='<td style="padding:1.5mm 2mm;text-align:center">'.e(progress_pdf_score($level,'3'));
+                $html.='<td style="padding:1.5mm 2mm;text-align:center">'.e($level===null||$level===''?'-':progress_export_number($level,1));
                 if($level!==null)$html.='<div style="margin-top:1mm;height:1.3mm;background-color:#ece9f3"><div style="height:1.3mm;width:'.$percent.'%;background-color:#7867ce"></div></div>';
                 $html.='</td>';
             }
@@ -88,11 +91,11 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
         }
         $heading=$section['title']!==null?'<tr><th colspan="4" style="font-size:10pt;text-transform:none;padding:2mm;background-color:#ded8fa">'.e($section['title']).'</th></tr>':'';
         if($web&&$section['title']!==null)$body.='<h2 class="mobile-group">'.e($section['title']).'</h2>';
-        $body.='<div class="report-table"><table style="font-size:8pt;margin-bottom:3mm">'.str_replace('<thead>','<thead>'.$heading,progress_pdf_table_head([[t('Étape'),40],[t('Éval. /10'),11],[t('Autoévaluation /3'),19],[t('Résultat QCM /10'),30]])).'<tbody>';
+        $body.='<div class="report-table"><table style="font-size:8pt;margin-bottom:3mm">'.str_replace('<thead>','<thead>'.$heading,progress_pdf_table_head([[t('Étape'),40],[t('Éval. /10'),11],[t('Autoévaluation /3'),19],[t('QCM /10'),30,'center']])).'<tbody>';
         foreach($section['rows'] as $row){
             $presence=progress_report_result_presence($row);
             $dates=t('Échéance').' : '.progress_pdf_date($row['deadline']).' / '.t('Réalisation').' : '.progress_pdf_date($row['completed_at']);
-            $evaluation=$row['weight']!==null?'<strong>'.e(progress_pdf_score($row['evaluation'],'10')).'</strong><br><span style="font-size:7pt;color:#706e80">× '.e(rtrim(rtrim(progress_export_number($row['weight'],1),'0'),',.')).'</span>':'-';
+            $evaluation=$row['weight']!==null?'<strong>'.e(progress_pdf_score($row['evaluation'],'10')).'</strong><br><span style="font-size:7pt;color:#706e80">× '.e(progress_export_number($row['weight'],1)).'</span>':'-';
             $self=e(t('Apprenant')).' : '.e(progress_pdf_score($row['student_level'],'3')).'<br>'.e(t('Enseignant')).' : '.e(progress_pdf_score($row['teacher_level'],'3'));
             if($web){
                 if(!$presence['evaluation'])$evaluation='-';
@@ -107,7 +110,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
                 $qcm[]='<strong>'.e(progress_pdf_score($quiz['score'],'10')).'</strong><br><span style="font-size:6.5pt;color:#706e80;white-space:nowrap">'.($web?e($label):str_replace(' ','&#160;',e($label))).'</span>';
             }
             $body.='<tr><td style="padding:2mm"><strong>'.e($row['title']).'</strong><br><span style="font-size:6.5pt;color:#706e80;white-space:nowrap">'.($web?e($dates):str_replace(' ','&#160;',e($dates))).'</span></td>'
-                .'<td'.($web&&!$presence['evaluation']?' class="report-result-empty"':'').' data-result="evaluation" data-label="'.e(t('Éval. /10')).'" style="text-align:center;padding:2mm">'.$evaluation.'</td><td'.($web&&!$presence['self']?' class="report-result-empty"':'').' data-result="self" data-label="'.e(t('Autoévaluation /3')).'" style="font-size:7pt;padding:2mm">'.$self.'</td><td'.($web&&!$presence['qcm']?' class="report-result-empty"':'').' data-result="qcm" data-label="'.e(t('Résultat QCM /10')).'" style="padding:2mm">'.($qcm?implode('<br>',$qcm):'-').'</td></tr>';
+                .'<td'.($web&&!$presence['evaluation']?' class="report-result-empty"':'').' data-result="evaluation" data-label="'.e(t('Éval. /10')).'" style="text-align:center;padding:2mm">'.$evaluation.'</td><td'.($web&&!$presence['self']?' class="report-result-empty"':'').' data-result="self" data-label="'.e(t('Autoévaluation /3')).'" style="font-size:7pt;padding:2mm">'.$self.'</td><td'.($web&&!$presence['qcm']?' class="report-result-empty"':'').' data-result="qcm" data-label="'.e(t('QCM /10')).'" style="padding:2mm">'.($qcm?implode('<br>',$qcm):'-').'</td></tr>';
         }
         $body.='</tbody></table></div>';
     }

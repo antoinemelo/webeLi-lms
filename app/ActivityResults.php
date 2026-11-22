@@ -70,11 +70,12 @@ function activity_results_pdf(array $data): string
     $body='<htmlpagefooter name="activityFooter"><table style="font-size:8pt;color:#706e80"><tr><td style="border:0;padding:1mm 0">liike · '.e($item['course_code']).'</td><td style="border:0;padding:1mm 0;text-align:right">{PAGENO} / {nbpg}</td></tr></table></htmlpagefooter><sethtmlpagefooter name="activityFooter" value="on" />';
     $body.='<div class="header"><p class="eyebrow">liike · '.e(t('Résultats de l’activité')).'</p><h1>'.e($item['title']).'</h1><p>'.e($item['course_title'].' · '.$item['course_code']).'</p>';
     if($item['group_title'])$body.='<p>'.e($item['group_title']).'</p>';
-    $body.='<p class="muted">'.e(t('Échéance')).' : '.e(progress_pdf_date($item['deadline'])).' · × '.e(rtrim(rtrim(progress_export_number($item['evaluation_weight'],1),'0'),',.')).'</p><p class="muted" style="font-size:7pt">'.e(t('Date de l’export')).' : '.e(progress_pdf_date($data['exported_at'],true)).' (réf. UTC Europe/Zurich)</p></div>';
+    $body.='<p class="muted">'.e(t('Échéance')).' : '.e(progress_pdf_date($item['deadline'])).' · × '.e(progress_export_number($item['evaluation_weight'],1)).'</p><p class="muted" style="font-size:7pt">'.e(t('Date de l’export')).' : '.e(progress_pdf_date($data['exported_at'],true)).' (réf. UTC Europe/Zurich)</p></div>';
     $body.=progress_pdf_metrics([[t('Apprenants'),(string)count($students)],[t('Activités réalisées'),(string)count(array_filter($students,static fn(array $s):bool=>(bool)$s['completed_at']))],[t('Notes attribuées'),(string)count(array_filter($students,static fn(array $s):bool=>$s['evaluation_score']!==null))],[t('À évaluer'),(string)count(array_filter($students,static fn(array $s):bool=>$s['state']==='À évaluer'))]]);
     if(!$students)$body.='<p>'.e(t('Aucun apprenant inscrit à ce parcours.')).'</p>';
     else{
-        $columns=[[t('Apprenant'),28],[t('Réalisation'),16],[t('Éval. /10'),12],[t('Résultat QCM /10'),$data['work_count']?30:44]];
+        $scoreWidth=$data['work_count']?21:28;
+        $columns=[[t('Apprenant'),28],[t('Réalisation'),16],[t('Éval. /10'),$scoreWidth,'center'],[t('QCM /10'),$scoreWidth,'center']];
         if($data['work_count'])$columns[]=[t('Travaux rendus'),14];
         $body.='<table style="font-size:8pt">'.progress_pdf_table_head($columns).'<tbody>';
         foreach($students as $student){
