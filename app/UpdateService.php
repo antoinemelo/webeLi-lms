@@ -171,16 +171,64 @@ function maintenance_backup_database(PDO $pdo,string $destination): void
     if(!is_file($destination)||filesize($destination)===0)throw new UpdateException('La sauvegarde de la base de données a échoué.');
 }
 
+function maintenance_cleanup_failure(string $operation,string $path,string $message): never
+{
+    error_log('liike maintenance cleanup: '.json_encode(['operation'=>$operation,'path'=>$path,'error'=>error_get_last()['message']??null],JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE));
+    throw new UpdateException($message);
+}
+
+/** Brief lock contention should not require a second click; long operations remain protected. */
+function maintenance_cleanup_lock(string $path,string $busyMessage): mixed
+{
+    $handle=@fopen($path,'c+');
+    if(!$handle)maintenance_cleanup_failure('open-lock',$path,$busyMessage);
+    $deadline=hrtime(true)+500_000_000;
+    do{
+        $wouldBlock=0;
+        if(@flock($handle,LOCK_EX|LOCK_NB,$wouldBlock))return $handle;
+        if(!$wouldBlock){fclose($handle);maintenance_cleanup_failure('lock',$path,$busyMessage);}
+        if(hrtime(true)>=$deadline)break;
+        usleep(20_000);
+    }while(true);
+    fclose($handle);
+    throw new UpdateException($busyMessage);
+}
+
+/** Enumerate first: removing entries while iterating can skip files on some hosts. */
+function maintenance_cleanup_children(string $path,array &$result,array $preserve=[]): void
+{
+    $entries=@scandir($path,SCANDIR_SORT_NONE);
+    if($entries===false){
+        clearstatcache(true,$path);
+        if(!file_exists($path)&&!is_link($path))return;
+        maintenance_cleanup_failure('list',$path,'Impossible de lire un ancien dossier de maintenance.');
+    }
+    foreach($entries as $entry){
+        if($entry==='.'||$entry==='..'||in_array($entry,$preserve,true))continue;
+        maintenance_cleanup_entry($path.'/'.$entry,$result);
+    }
+}
+
 function maintenance_cleanup_entry(string $path,array &$result): void
 {
+    clearstatcache(true,$path);
     if(is_link($path)||is_file($path)){
-        $size=is_file($path)?(int)(filesize($path)?:0):0;
-        if(!unlink($path))throw new UpdateException('Impossible de supprimer un ancien fichier de maintenance.');
+        // A link's target is neither deleted nor included in the freed-byte count.
+        $size=is_link($path)?0:(int)(@filesize($path)?:0);
+        if(!@unlink($path)){
+            clearstatcache(true,$path);
+            if(!file_exists($path)&&!is_link($path))return;
+            maintenance_cleanup_failure('unlink',$path,'Impossible de supprimer un ancien fichier de maintenance.');
+        }
         $result['files']++;$result['bytes']+=$size;return;
     }
     if(!is_dir($path))return;
-    foreach(new FilesystemIterator($path,FilesystemIterator::SKIP_DOTS) as $item)maintenance_cleanup_entry($item->getPathname(),$result);
-    if(!rmdir($path))throw new UpdateException('Impossible de supprimer un ancien dossier de maintenance.');
+    maintenance_cleanup_children($path,$result);
+    if(!@rmdir($path)){
+        clearstatcache(true,$path);
+        if(!file_exists($path)&&!is_link($path))return;
+        maintenance_cleanup_failure('rmdir',$path,'Impossible de supprimer un ancien dossier de maintenance.');
+    }
     $result['directories']++;
 }
 
@@ -191,26 +239,17 @@ function maintenance_cleanup_storage(string $root): array
     $updates=$storage.'/updates';
     if(!is_dir($updates)&&!mkdir($updates,0775,true)&&!is_dir($updates))throw new UpdateException('Le dossier des mises à jour ne peut pas être créé.');
     if(is_link($updates))throw new UpdateException('Le dossier des mises à jour ne peut pas être un lien symbolique.');
-    $updateLock=fopen($updates.'/update.lock','c+');
-    if(!$updateLock||!flock($updateLock,LOCK_EX|LOCK_NB))throw new UpdateException('Une mise à jour est en cours : le nettoyage est momentanément indisponible.');
-    $migrationLock=fopen($storage.'/apr.sqlite.migration.lock','c+');
-    if(!$migrationLock||!flock($migrationLock,LOCK_EX|LOCK_NB)){
-        flock($updateLock,LOCK_UN);fclose($updateLock);
-        if(is_resource($migrationLock))fclose($migrationLock);
-        throw new UpdateException('Une migration de la base est en cours : le nettoyage est momentanément indisponible.');
-    }
-    $result=['files'=>0,'directories'=>0,'bytes'=>0];
+    $updateLock=maintenance_cleanup_lock($updates.'/update.lock','Une mise à jour est en cours : le nettoyage est momentanément indisponible.');
+    $migrationLock=null;$result=['files'=>0,'directories'=>0,'bytes'=>0];
     try{
+        $migrationLock=maintenance_cleanup_lock($storage.'/apr.sqlite.migration.lock','Une migration de la base est en cours : le nettoyage est momentanément indisponible.');
         $backups=$storage.'/backups';
         if(is_link($backups))throw new UpdateException('Le dossier des sauvegardes ne peut pas être un lien symbolique.');
-        if(is_dir($backups))foreach(new FilesystemIterator($backups,FilesystemIterator::SKIP_DOTS) as $item)maintenance_cleanup_entry($item->getPathname(),$result);
-        foreach(new FilesystemIterator($updates,FilesystemIterator::SKIP_DOTS) as $item){
-            if($item->getFilename()==='update.lock')continue;
-            maintenance_cleanup_entry($item->getPathname(),$result);
-        }
+        if(is_dir($backups))maintenance_cleanup_children($backups,$result);
+        maintenance_cleanup_children($updates,$result,['update.lock']);
         return $result;
     }finally{
-        flock($migrationLock,LOCK_UN);fclose($migrationLock);
+        if(is_resource($migrationLock)){flock($migrationLock,LOCK_UN);fclose($migrationLock);}
         flock($updateLock,LOCK_UN);fclose($updateLock);
     }
 }

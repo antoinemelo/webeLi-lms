@@ -675,7 +675,7 @@ function handle_action(string $action): never
             $count=(int)$result['files']+(int)$result['directories'];
             if($count===0)flash(t('Aucune ancienne sauvegarde ou mise à jour à supprimer.'));
             else flash(t('Nettoyage terminé : :count élément(s) supprimé(s), :size libérés.',['count'=>$count,'size'=>maintenance_format_bytes((int)$result['bytes'])]));
-        }catch(Throwable $exception){flash(t('Nettoyage impossible : :details',['details'=>$exception->getMessage()]),'error');}
+        }catch(Throwable $exception){error_log('liike maintenance cleanup: '.get_class($exception).' - '.$exception->getMessage());flash(t('Nettoyage impossible : :details',['details'=>$exception->getMessage()]),'error');}
         redirect('admin');
     }
     if (in_array($action, ['update_profile','update_teacher_profile'], true)) {
