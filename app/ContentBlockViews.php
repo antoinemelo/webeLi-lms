@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 function content_block_labels(): array
 {
-    return ['markdown'=>'Texte Markdown','image'=>'Image','file'=>'Document','media'=>'Vidéo / audio','iframe'=>'Intégration externe (iframe)','submission'=>'Travail à rendre'];
+    return ['markdown'=>'Texte Markdown','image'=>'Image','file'=>'Document','media'=>'Vidéo / audio','iframe'=>'Intégration externe (iframe)','submission'=>'Travail à rendre']+(class_exists('AdaptiveQcm')?['qcm_third'=>'QCM tiers']:[]);
 }
 
 function content_block_editor_config(): array
@@ -16,6 +16,7 @@ function content_block_editor_config(): array
         'media'=>['body'=>'Lien du média ou code du lecteur','caption'=>'Titre du média (facultatif)','rows'=>3],
         'iframe'=>['body'=>'Adresse ou code iframe','caption'=>'Titre de l’intégration','rows'=>4],
         'submission'=>['body'=>'Consigne en Markdown (texte apprenant limité à 512 caractères)','caption'=>'Titre du travail','rows'=>6],
+        'qcm_third'=>['body'=>'Lien « Partager ce contenu » (mode Contenu partagé autorisé)','caption'=>'Titre du réservoir (facultatif)','rows'=>2],
     ];
     foreach($labels as &$config)foreach(['body','caption'] as $key)$config[$key]=t($config[$key]);unset($config);
     return ['types'=>$labels,'importImage'=>t('Importer une image'),'importFile'=>t('Importer un document'),
@@ -28,6 +29,8 @@ function render_content_block_editor(int $index,array $block): void
 {
     $id=(int)($block['id']??0);$kind=ContentBlock::kind($block);$config=content_block_editor_config();$labels=$config['types'][$kind];
     $body=(string)($block['body']??'');$upload=in_array($kind,['image','file'],true);$source=$block['_source']??(str_starts_with($body,'uploads/')||$body===''?'upload':'url');
+    if($kind==='qcm_third')$body=AdaptiveQcm::reference($body)??$body;
+    if($kind==='markdown'&&function_exists('adaptive_qcm_author_source')&&AdaptiveQcm::has($body))$body=adaptive_qcm_author_source(db(),$block);
     $showBody=!$upload||$source==='url';$parsed=$kind==='iframe'?Embed::parse($body):null;
     $height=$block['embed_height']??($parsed['height']??450);$height=max(100,min(2000,(int)$height));
     $alt=$block['image_alt']??($block['caption']??'');

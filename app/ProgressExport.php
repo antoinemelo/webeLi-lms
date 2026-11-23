@@ -54,6 +54,10 @@ function course_progress_export_data(PDO $pdo,int $courseId,int $teacherId,array
             }
             $query=$pdo->prepare('SELECT qa.* FROM qcm_attempts qa JOIN pathway_items pi ON pi.id=qa.pathway_item_id WHERE pi.course_id=?');$query->execute([$courseId]);
             foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row)if(isset($wanted[(int)$row['student_id']]))$data['attempts'][(int)$row['student_id']][(int)$row['pathway_item_id']][(int)$row['page_block_id']][$row['qcm_key']]=$row;
+            if(function_exists('adaptive_qcm_results'))foreach(adaptive_qcm_results($pdo,array_column($data['items'],'id')) as $itemId=>$results){
+                $data['quizzes'][$itemId][]=['block_id'=>0,'key'=>'adaptive','caption'=>t('Adaptatif'),'questions'=>0];
+                foreach($results as $studentId=>$result)if(isset($wanted[$studentId]))$data['attempts'][$studentId][$itemId][0]['adaptive']=$result;
+            }
         }
         if($mode==='detailed')$data['mastery']=progress_export_mastery($pdo,$data);
         if($ownsTransaction)$pdo->commit();

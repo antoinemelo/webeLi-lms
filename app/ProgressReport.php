@@ -60,7 +60,7 @@ function progress_report_student(array $data,array $student): array
             foreach($data['quizzes'][$itemId]??[] as $index=>$quiz){
                 $attempt=$data['attempts'][$studentId][$itemId][$quiz['block_id']][$quiz['key']]??null;
                 $quizzes[]=['title'=>t('QCM').' '.($index+1).($quiz['caption']!==''?' · '.$quiz['caption']:''),
-                    'score'=>$attempt&&(int)$attempt['total_questions']>0?10*(int)$attempt['correct_questions']/(int)$attempt['total_questions']:null,
+                    'score'=>$attempt&&(int)$attempt['total_questions']>0?(!empty($attempt['adaptive'])?(float)$attempt['score_percent']/10:10*(int)$attempt['correct_questions']/(int)$attempt['total_questions']):null,
                     'answered_at'=>$attempt['answered_at']??null];
             }
             $rows[]=['title'=>$title,'deadline'=>$item['deadline'],'completed_at'=>$progress['completed_at']??null,

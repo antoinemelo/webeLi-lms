@@ -38,10 +38,27 @@
     const select = help.querySelector('[data-qcm-example-mode]');
     const example = help.querySelector('[data-qcm-example]');
     const status = help.querySelector('[data-qcm-copy-status]');
+    const examples = JSON.parse(help.dataset.qcmExamples);
     select.addEventListener('change', () => {
-      example.textContent = example.textContent.replace(/^:::qcm(?:_strict|_classe)?/, `:::${select.value}`);
+      help.querySelector('[data-qcm-examples-panel]').hidden = select.value === 'adaptive_settings';
+      if (examples[select.value]) example.textContent = examples[select.value];
       help.querySelectorAll('[data-qcm-mode-help]').forEach((text) => { text.hidden = text.dataset.qcmModeHelp !== select.value; });
       status.textContent = '';
+    });
+    const settings = help.querySelector('.adaptive-settings');
+    settings?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = settings.querySelector('button');
+      if (button.disabled) return;
+      const feedback = settings.querySelector('[data-adaptive-settings-status]');
+      button.disabled = true; feedback.textContent = '';
+      try {
+        const response = await fetch(settings.getAttribute('action') || location.href, { method: 'POST', body: new FormData(settings), headers: { Accept: 'application/json' }, cache: 'no-store' });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || settings.dataset.error);
+        feedback.textContent = result.message;
+      } catch (failure) { feedback.textContent = failure.message || settings.dataset.error; }
+      finally { button.disabled = false; }
     });
     help.querySelector('[data-qcm-copy]').addEventListener('click', async () => {
       try {

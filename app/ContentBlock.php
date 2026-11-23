@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 final class ContentBlock
 {
-    public const TYPES=['markdown','image','file','media','iframe','submission'];
+    public const TYPES=['markdown','image','file','media','iframe','submission','qcm_third'];
 
     public static function mediaType(string $source): ?string
     {
@@ -21,6 +21,7 @@ final class ContentBlock
 
     public static function kind(array $block): string
     {
+        if($block['type']==='markdown'&&class_exists('AdaptiveQcm')&&AdaptiveQcm::reference($block['body'])!==null)return 'qcm_third';
         if($block['type']!=='iframe')return $block['type'];
         $kind=$block['embed_kind']??'auto';
         return $kind==='media'||($kind==='auto'&&self::mediaType(Embed::parse($block['body'])['url']??'')!==null)?'media':'iframe';
@@ -54,6 +55,16 @@ final class ContentBlock
     {
         if(!in_array($kind,self::TYPES,true))throw new InvalidArgumentException('Type de bloc invalide.');
         $body=trim($body);$fileError=(int)($file['error']??UPLOAD_ERR_NO_FILE);$hasFile=$fileError!==UPLOAD_ERR_NO_FILE;
+        if($kind==='qcm_third'){
+            if(!class_exists('AdaptiveQcm'))throw new InvalidArgumentException('Le module QCM adaptatif est désactivé.');
+            $unchanged=$stored&&$stored['type']==='markdown'&&AdaptiveQcm::reference($stored['body'])===$body;
+            if(!$unchanged){
+                if(!AdaptiveQcm::enabled())throw new InvalidArgumentException('Le module QCM adaptatif est désactivé.');
+                $token=AdaptiveQcm::shareToken($body,app_public_base_url());
+                library_share_require_mode(library_share_resolve(db(),$token),'shared');
+            }
+            $body=":::qcm_tiers\n".$body."\n:::";
+        }
         $supportsUpload=in_array($kind,['image','file'],true);
         if($hasFile&&!$supportsUpload)throw new InvalidArgumentException('Ce type de bloc ne permet pas l’import de fichier.');
         $source=$options['source']??($hasFile||str_starts_with($body,'uploads/')?'upload':'url');
@@ -103,7 +114,7 @@ final class ContentBlock
         }
         $alt=$kind==='image'?(string)($options['alt']??$stored['image_alt']??$stored['caption']??''):($stored['image_alt']??null);
         if($alt!==null&&mb_strlen($alt)>512)throw new InvalidArgumentException('La description alternative est limitée à 512 caractères.');
-        return ['type'=>$kind==='media'?'iframe':$kind,'body'=>$body,'image_alt'=>$alt,'embed_kind'=>$embedKind,'embed_height'=>$height,'upload'=>$upload];
+        return ['type'=>$kind==='media'?'iframe':($kind==='qcm_third'?'markdown':$kind),'body'=>$body,'image_alt'=>$alt,'embed_kind'=>$embedKind,'embed_height'=>$height,'upload'=>$upload];
     }
 
     public static function validAddress(string $body): bool {return WorkSubmission::validUrl($body);}

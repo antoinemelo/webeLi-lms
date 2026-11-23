@@ -41,6 +41,10 @@ function activity_results_data(PDO $pdo,int $itemId,int $teacherId): array
             WHERE e.course_id=? AND e.status='active'");
         $q->execute([$itemId,$item['course_id']]);$attempts=[];
         foreach($q->fetchAll(PDO::FETCH_ASSOC) as $row)$attempts[(int)$row['student_id']][(int)$row['page_block_id']][$row['qcm_key']]=$row;
+        if(function_exists('adaptive_qcm_results')){
+            $adaptive=adaptive_qcm_results($pdo,[$itemId])[$itemId]??[];
+            if($adaptive){$quizzes[]=['block_id'=>0,'key'=>'adaptive','title'=>t('QCM adaptatif')];foreach($adaptive as $studentId=>$result)$attempts[$studentId][0]['adaptive']=$result;}
+        }
         // Unsubmitted work is private to the student, including work reopened for revision.
         $q=$pdo->prepare("SELECT w.student_id,w.page_block_id,w.url,w.body,w.submitted_at
             FROM enrollments e JOIN users u ON u.id=e.student_id AND u.account_status='active' AND u.role='student'
@@ -87,7 +91,7 @@ function activity_results_pdf(array $data): string
             $body.='</td><td>';$quizzes=[];
             foreach($student['quizzes'] as $quiz){
                 $attempt=$quiz['attempt'];
-                $text='<strong>'.e($quiz['title']).'</strong><br>'.e(progress_pdf_score($attempt?10*(int)$attempt['correct_questions']/(int)$attempt['total_questions']:null,'10'));
+                $text='<strong>'.e($quiz['title']).'</strong><br>'.e(progress_pdf_score($attempt?(!empty($attempt['adaptive'])?(float)$attempt['score_percent']/10:10*(int)$attempt['correct_questions']/(int)$attempt['total_questions']):null,'10'));
                 if($attempt)$text.='<br><span style="font-size:7pt;color:#706e80">'.e(t(':correct / :total réponses correctes',['correct'=>$attempt['correct_questions'],'total'=>$attempt['total_questions']])).' · '.e(t('Tentatives')).' : '.(int)$attempt['attempt_count'].'<br>'.e(progress_pdf_date($attempt['answered_at'],true)).'</span>';
                 $quizzes[]=$text;
             }

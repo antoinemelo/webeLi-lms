@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__.'/AdaptiveQcm.php';
+
 final class Qcm
 {
     /**
@@ -9,26 +11,28 @@ final class Qcm
      */
     public static function sections(string $source): array
     {
+        if(preg_match('/^\s*:::qcm_tiers\b/u',$source))return [['type'=>'reference','source'=>$source,'valid'=>AdaptiveQcm::reference($source)!==null]];
         $lines=explode("\n",str_replace(["\r\n","\r"],"\n",$source));
-        $sections=[];$markdown=[];$quiz=[];$inQuiz=false;$quizIndex=0;$mode='classic';
+        $sections=[];$markdown=[];$quiz=[];$inQuiz=false;$quizIndex=0;$mode='classic';$domain='';$theme='';$validHeader=true;
         $flushMarkdown=static function()use(&$sections,&$markdown):void{
             $text=trim(implode("\n",$markdown));$markdown=[];
             if($text!=='')$sections[]=['type'=>'markdown','source'=>$text];
         };
         foreach($lines as $line){
-            if(!$inQuiz&&preg_match('/^\s*:::\s*qcm(_strict|_classe)?\s*$/iu',$line,$opening)){
-                $flushMarkdown();$inQuiz=true;$quiz=[];$mode=match(mb_strtolower($opening[1]??'')){ '_strict'=>'strict','_classe'=>'classe',default=>'classic' };continue;
+            if(!$inQuiz&&preg_match('/^\s*:::\s*qcm(_strict|_classe|_adap|_adaptatif)?(?:\[([^\]\r\n]{1,100})\]\[([^\]\r\n]{1,100})\])?\s*$/iu',$line,$opening)){
+                $flushMarkdown();$inQuiz=true;$quiz=[];$validHeader=true;$mode=match(mb_strtolower($opening[1]??'')){ '_strict'=>'strict','_classe'=>'classe','_adap','_adaptatif'=>'adaptive',default=>'classic' };$domain=trim($opening[2]??'');$theme=trim($opening[3]??'');continue;
             }
+            if(!$inQuiz&&preg_match('/^\s*:::\s*qcm_(?:adap|adaptatif)\b/iu',$line)){$flushMarkdown();$inQuiz=true;$quiz=[];$mode='adaptive';$validHeader=false;$domain='';$theme='';continue;}
             if($inQuiz&&preg_match('/^\s*:::\s*$/u',$line)){
-                $raw=trim(implode("\n",$quiz));$parsed=self::parseQuiz($raw);
-                $sections[]=['type'=>'qcm','mode'=>$mode,'source'=>$raw,'index'=>$quizIndex++,'valid'=>$parsed['valid'],'questions'=>$parsed['questions']];
+                $raw=trim(implode("\n",$quiz));$parsed=$mode==='adaptive'?AdaptiveQcm::parse($raw):self::parseQuiz($raw);
+                $sections[]=['type'=>$mode==='adaptive'?'adaptive':'qcm','mode'=>$mode,'domain'=>$domain,'theme'=>$theme,'source'=>$raw,'index'=>$quizIndex++,'valid'=>$validHeader&&$parsed['valid'],'questions'=>$parsed['questions']];
                 $quiz=[];$inQuiz=false;continue;
             }
             if($inQuiz)$quiz[]=$line;else $markdown[]=$line;
         }
         if($inQuiz){
-            $raw=trim(implode("\n",$quiz));$parsed=self::parseQuiz($raw);
-            $sections[]=['type'=>'qcm','mode'=>$mode,'source'=>$raw,'index'=>$quizIndex,'valid'=>false,'questions'=>$parsed['questions']];
+            $raw=trim(implode("\n",$quiz));$parsed=$mode==='adaptive'?AdaptiveQcm::parse($raw):self::parseQuiz($raw);
+            $sections[]=['type'=>$mode==='adaptive'?'adaptive':'qcm','mode'=>$mode,'source'=>$raw,'index'=>$quizIndex,'valid'=>false,'questions'=>$parsed['questions']];
         }
         $flushMarkdown();
         return $sections;
@@ -36,6 +40,7 @@ final class Qcm
 
     public static function hasValidQuiz(string $source,bool $individualOnly=false): bool
     {
+        foreach(self::sections($source) as $section)if(in_array($section['type'],['adaptive','reference'],true)&&!empty($section['valid']))return true;
         foreach(self::sections($source) as $section)if($section['type']==='qcm'&&!empty($section['valid'])&&(!$individualOnly||$section['mode']!=='classe'))return true;
         return false;
     }
@@ -52,6 +57,7 @@ final class Qcm
     {
         $html=[];
         foreach(self::sections($source) as $section){
+            if(in_array($section['type'],['adaptive','reference'],true))continue;
             if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
             if(empty($section['valid'])){$html[]='<section class="qcm-card qcm-invalid"><b>'.e(t('QCM incomplet')).'</b><p>'.e(t('Ce questionnaire doit être corrigé par l’équipe enseignante.')).'</p></section>';continue;}
             $key=self::key($blockId,(int)$section['index'],$section['source'],$section['mode']);
@@ -68,6 +74,7 @@ final class Qcm
     {
         $html=[];
         foreach(self::sections($source) as $section){
+            if(in_array($section['type'],['adaptive','reference'],true)){$html[]='<p>'.e(t('QCM adaptatif : activité à réaliser dans le parcours.')).'</p>';continue;}
             if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
             if(empty($section['valid'])){$html[]='<section class="qcm-static"><b>'.e(t('QCM incomplet')).'</b></section>';continue;}
             $quiz='<section class="qcm-static"><span>'.e(t('QCM')).'</span>';
@@ -86,6 +93,7 @@ final class Qcm
     {
         $html='';
         foreach(self::sections($source) as $section){
+            if(in_array($section['type'],['adaptive','reference'],true)){$html.='<p>'.e(t('QCM adaptatif : activité à réaliser dans le parcours.')).'</p>';continue;}
             if($section['type']==='markdown'){if($onlyIndex===null)$html.=Markdown::render($section['source']);continue;}
             if($onlyIndex!==null&&(int)$section['index']!==$onlyIndex)continue;
             if(empty($section['valid'])){$html.='<p>'.e(t('QCM incomplet')).'</p>';continue;}
@@ -112,6 +120,7 @@ final class Qcm
     {
         $html=[];
         foreach(self::sections($source) as $section){
+            if(in_array($section['type'],['adaptive','reference'],true)){$html[]='<p>'.e(t(empty($section['valid'])?'Réservoir QCM incomplet.':'Réservoir du QCM adaptatif de la page.')).'</p>';continue;}
             if($section['type']==='markdown'){$html[]=Markdown::render($section['source']);continue;}
             if(empty($section['valid'])){$html[]='<section class="qcm-card qcm-invalid"><b>'.e(t('QCM incomplet')).'</b><p>'.e(t('Ce questionnaire doit être corrigé par l’équipe enseignante.')).'</p></section>';continue;}
             $quiz='<section class="qcm-card qcm-preview"><header><span><i class="bi bi-ui-checks-grid"></i> '.e(t(match($section['mode']){'strict'=>'QCM strict','classe'=>'QCM en classe',default=>'QCM'})).'</span><small>'.e(t('Interaction désactivée dans l’aperçu')).'</small></header><form>';
@@ -202,6 +211,10 @@ final class Qcm
 
     public static function summary(PDO $pdo,int $studentId,int $itemId): ?array
     {
+        if(function_exists('adaptive_qcm_results')){
+            $adaptive=adaptive_qcm_results($pdo,[$itemId])[$itemId][$studentId]??null;
+            if($adaptive)return $adaptive+['correct'=>$adaptive['correct_questions'],'total'=>$adaptive['total_questions'],'attempts'=>$adaptive['attempt_count']];
+        }
         $query=$pdo->prepare("SELECT SUM(correct_questions) AS correct,SUM(total_questions) AS total,SUM(attempt_count) AS attempts,MAX(answered_at) AS answered_at
             FROM qcm_attempts WHERE student_id=? AND pathway_item_id=?");
         $query->execute([$studentId,$itemId]);$row=$query->fetch(PDO::FETCH_ASSOC);
@@ -222,6 +235,7 @@ final class Qcm
         $blocks->execute([$courseId]);$expectedKeys=[];
         foreach($blocks->fetchAll(PDO::FETCH_ASSOC) as $block){
             $itemId=(int)$block['item_id'];$blockId=(int)$block['block_id'];
+            if(AdaptiveQcm::enabled()&&AdaptiveQcm::has($block['body']))$expectedKeys[$itemId]['adaptive']=true;
             foreach(self::quizKeys((string)$block['body'],$blockId,true) as $key)$expectedKeys[$itemId][$blockId."\0".$key]=true;
         }
         if(!$expectedKeys)return ['expected'=>[],'completed'=>[]];
@@ -236,6 +250,7 @@ final class Qcm
             if(isset($expectedKeys[$itemId][$key]))$answered[(int)$attempt['student_id']][$itemId][$key]=true;
         }
         $expected=[];$completed=[];
+        if(function_exists('adaptive_qcm_results'))foreach(adaptive_qcm_results($pdo,array_keys($expectedKeys)) as $itemId=>$results)foreach($results as $studentId=>$result)if(isset($expectedKeys[$itemId]['adaptive']))$answered[$studentId][$itemId]['adaptive']=true;
         foreach($expectedKeys as $itemId=>$keys)$expected[(int)$itemId]=count($keys);
         foreach($answered as $studentId=>$items)foreach($items as $itemId=>$keys)if(count($keys)===$expected[$itemId])$completed[(int)$studentId][(int)$itemId]=true;
         return ['expected'=>$expected,'completed'=>$completed];
@@ -271,6 +286,16 @@ final class Qcm
             if(isset($steps[$itemId]))$steps[$itemId]['score_percent']=round((float)$score['score_percent'],1);
         }
         $displayPositions=pathway_display_position_map($pdo,$courseId);
+        if(function_exists('adaptive_qcm_results')){
+            $adaptive=adaptive_qcm_results($pdo,array_keys($steps));$grouped=[];
+            if($adaptive){
+                $eligible=$pdo->prepare("SELECT pi.id,e.student_id FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id AND e.status='active'
+                    JOIN users u ON u.id=e.student_id AND u.account_status='active' LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id
+                    WHERE pi.course_id=? AND (pi.is_evaluation=0 OR COALESCE(pr.evaluation_included,1)=1)");$eligible->execute([$courseId]);
+                foreach($eligible->fetchAll(PDO::FETCH_ASSOC) as $row)if(isset($adaptive[$row['id']][$row['student_id']]))$grouped[$row['id']][]=$adaptive[$row['id']][$row['student_id']]['score_percent'];
+                foreach($grouped as $itemId=>$values)$steps[$itemId]['score_percent']=round(array_sum($values)/count($values),1);
+            }
+        }
         foreach($steps as &$step)$step['position']=$displayPositions[(int)$step['item_id']]??'–';
         unset($step);
         return array_values($steps);
@@ -303,6 +328,7 @@ final class Qcm
 
     private static function parseQuiz(string $source): array
     {
+        if(preg_match('/^\s*\[[0-3]\]\[[0-9]+\]\[/mu',$source))return AdaptiveQcm::parse($source,false);
         $questions=[];$current=null;$valid=true;
         foreach(explode("\n",$source) as $line){
             $trim=trim($line);if($trim==='')continue;

@@ -22,6 +22,7 @@ require_once __DIR__ . '/LearningActivity.php';
 require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/LibrarySharing.php';
 require_once __DIR__ . '/LibrarySharingViews.php';
+require_once __DIR__ . '/AdaptiveQcmViews.php';
 require_once __DIR__ . '/QcmGuest.php';
 require_once __DIR__ . '/QcmGuestViews.php';
 require_once __DIR__ . '/PathwayService.php';
@@ -286,7 +287,7 @@ function render_level_picker(string $name, ?int $selected = null): string
 function request_is_background_poll(): bool
 {
     if(($_SERVER['REQUEST_METHOD']??'GET')==='GET')return in_array($_GET['view']??'',[
-        'session-status','notification-status','discussion-data','qcm-class-state','guest-class-state','library-cards','library-index',
+        'adaptive-qcm','session-status','notification-status','discussion-data','qcm-class-state','guest-class-state','library-cards','library-index',
     ],true);
     return in_array($_POST['action']??'',[
         'acquire_edit_lock','release_edit_lock','track_learning_activity',

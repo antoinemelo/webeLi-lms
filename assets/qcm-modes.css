@@ -10,6 +10,7 @@
 .qcm-strict-dialog .qcm-options label{min-height:3rem}
 .qcm-marker-help{margin-top:1.25rem;padding-left:1.2rem}.qcm-marker-help li{margin:.5rem 0}
 .qcm-authoring-modal [data-qcm-copy-status]{display:block;min-height:1.5rem;margin-top:.5rem}
+.qcm-authoring-modal [data-qcm-adaptive-help] p+p{margin-top:.65rem}
 .qcm-class-page{margin:0;min-height:100vh;background:#f7f7fb;color:#29273b;font-family:system-ui,sans-serif}
 .qcm-live{box-sizing:border-box;max-width:65rem;margin:auto;padding:clamp(1rem,3vw,2.5rem);padding-bottom:max(2rem,env(safe-area-inset-bottom))}
 .qcm-live-header,.qcm-live-tools{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}

@@ -67,7 +67,7 @@ L’apprenant voit immédiatement :
 
 La liste « Vue d’ensemble » distingue trois états : à faire, envoyé à l’enseignant et confirmé.
 
-Le bouton **Prochaine étape** ouvre en priorité l’étape accessible dont l’échéance future est la plus proche, même si elle est déjà réalisée. Une échéance future correspond à un jour après aujourd’hui, selon le calendrier suisse. En cas d’égalité, l’ordre du parcours départage les étapes. Sans échéance future, le bouton ouvre la première étape non réalisée ; si tout est terminé, il permet de revoir la dernière étape. Les étapes invisibles, les groupes masqués et les restrictions d’accès restent respectés.
+Le bouton **Prochaine étape** ouvre en priorité l’étape accessible dont l’échéance, aujourd’hui ou après, est la plus proche, même si elle est déjà réalisée. Les activités du jour sont incluses pendant toute la journée, selon le calendrier suisse. En cas d’égalité, l’ordre du parcours départage les étapes. Sans échéance aujourd’hui ou après, le bouton ouvre la première étape non réalisée ; si tout est terminé, il permet de revoir la dernière étape. Les étapes invisibles, les groupes masqués et les restrictions d’accès restent respectés.
 
 La carte entière est cliquable. Sa zone violette occupe toute sa largeur et affiche le numéro ou le type d’étape, son titre et la durée prévue ; la description apparaît en dessous. Une étape sans échéance n’affiche aucune mention de date, dans la carte comme dans la vue d’ensemble.
 
@@ -181,7 +181,7 @@ Sous **Laissez la note vide pour annuler la validation**, l’interrupteur est v
 
 ### Guides de prise en main
 
-Le menu du profil propose **Guide d’utilisation**, juste sous **Modifier mon profil**. Il ouvre automatiquement le guide correspondant au compte connecté : quatre pages pour les apprenants, six pour les enseignants. La lecture HTML possède un sommaire et s’adapte au téléphone ; **Télécharger le PDF** conserve la même documentation. Les deux guides sont en français.
+Le menu du profil propose **Guide d’utilisation**, juste sous **Modifier mon profil**. Il ouvre automatiquement le guide correspondant au compte connecté : cinq pages pour les apprenants, neuf pour les enseignants. La lecture HTML possède un sommaire et s’adapte au téléphone ; **Télécharger le PDF** conserve la même documentation. Les deux guides sont en français.
 
 ### Exporter la progression des apprenants
 
@@ -192,7 +192,7 @@ Dans le **Tableau de bord**, accessible par le logo liike (`?view=teacher`), ouv
 | Récapitulatif | Une ligne par apprenant : identité, progression, moyennes, encouragements et dernière activité connue. | Tableau A4 paysage reprenant les indicateurs du suivi. |
 | Détaillé | Une ligne par apprenant et étape ; plusieurs lignes si l’étape contient plusieurs QCM. | Fiches A4 portrait ; **chaque apprenant commence sur une nouvelle page**, avec continuation si nécessaire. |
 
-Le détail conserve l’ordre et les regroupements : bandeaux de groupe dans le PDF, colonne **Regroupement** dans le CSV (vide pour une étape indépendante). Les groupes masqués sont signalés par l’accès fermé aux étapes, sans supprimer leurs résultats. Les titres sont repris sans ajouter de numéro d’étape. Le détail comprend la note de chaque évaluation sur 10, sa pondération, les autoévaluations sur 3, les confirmations et commentaires. Chaque QCM possède une colonne **Note QCM /10** : questions correctes ÷ nombre de questions × 10, arrondi à deux décimales. Seul le **dernier résultat** de chaque QCM est disponible, y compris pour l’entraînement ; les anciennes tentatives et les réponses individuelles ne sont pas exportées. Le CSV indique aussi le nombre de tentatives et la date de dernière réponse.
+Le détail conserve l’ordre et les regroupements : bandeaux de groupe dans le PDF, colonne **Regroupement** dans le CSV (vide pour une étape indépendante). Les groupes masqués sont signalés par l’accès fermé aux étapes, sans supprimer leurs résultats. Les titres sont repris sans ajouter de numéro d’étape. Le détail comprend la note de chaque évaluation sur 10, sa pondération, les autoévaluations sur 3, les confirmations et commentaires. La colonne **QCM /10** reprend le résultat : pour un QCM classique, questions correctes ÷ nombre de questions × 10 ; pour un QCM adaptatif, score final adaptatif ÷ 10. Les fiches PDF présentent les nombres avec une décimale. Seul le **dernier résultat** de chaque QCM est disponible, y compris pour l’entraînement ; les anciennes tentatives et les réponses individuelles ne sont pas exportées. Le CSV indique aussi le nombre de tentatives et la date de dernière réponse.
 
 Une cellule vide signifie qu’aucun résultat n’est disponible ; zéro reste une note. Les étapes devenues inaccessibles sont signalées afin de conserver les résultats utiles au bilan. Le CSV utilise UTF-8 avec BOM, le point-virgule et les horaires **Europe/Zurich**. Les indicateurs de l’apprenant et les notes d’étape sont répétés sur les lignes QCM : ne pas les additionner.
 
@@ -222,7 +222,7 @@ La **Bibliothèque** contient toutes les pages, qu’elles soient ou non utilis�
 
 - un titre, un résumé, un statut et une durée estimée ;
 - zéro ou plusieurs catégories parmi **Démarrage**, **Méthode**, **Activité**, **Évaluation**, **Médias**, **Lecture**, **Exercice** et **QCM** ;
-- une suite ordonnée de blocs **Texte Markdown**, **Image**, **Document**, **Vidéo / audio**, **Intégration externe (iframe)** ou **Travail à rendre**.
+- une suite ordonnée de blocs **Texte Markdown**, **Image**, **Document**, **Vidéo / audio**, **Intégration externe (iframe)**, **Travail à rendre** ou **QCM tiers**.
 
 Seuls **Image** et **Document** proposent un import de fichier ou une adresse, avec une seule source active à la fois. Image affiche l’image et sa description alternative ; Document propose le téléchargement. La taille maximale dépend des limites PHP, sans dépasser 10 Mo. Le bloc Markdown propose un aperçu et n’accepte pas d’import de fichier.
 
@@ -301,6 +301,42 @@ Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent 
 
 Une page qui n’est utilisée dans aucun parcours peut être supprimée définitivement depuis son écran d’édition. Tant qu’elle est utilisée, la suppression reste bloquée et il faut d’abord la retirer de chaque parcours concerné.
 
+#### Préparer un QCM adaptatif
+
+Dans l’éditeur de page, ouvrez **Créer un QCM en Markdown** (icône de questionnaire près du titre), sélectionnez **Adaptatif**, puis **Copier l’exemple**. Collez-le dans un bloc **Texte Markdown** et adaptez les questions. Le modal détaille les paramètres, les durées et le score ; son lien ouvre la page correspondante du guide dans un autre onglet.
+
+```text
+:::qcm_adap[Finance et comptabilité][Transitoires]
+# Intitulé de la question
+[2][60][-][0][0]
+[v] Réponse juste
+[x] Réponse fausse
+:::
+```
+
+Sous chaque question, les **cinq champs obligatoires** indiquent : niveau enseignant (0 à 3), temps maximal en secondes, temps moyen observé, nombre de présentations en évaluation et nombre de réponses justes en évaluation. Pour une nouvelle question, utilisez `[-][0][0]` pour les trois derniers champs ; ils sont calculés et actualisés par le système. `[2][60]` seul ne suffit pas. Les marqueurs `[v]`, `[x]` et `[-]` conservent leur sens habituel.
+
+1. Fixez la **durée estimée du contenu**, en minutes : elle limite l’activité entière, indépendamment du délai propre à chaque question.
+2. Enregistrez la page, puis ouvrez **Créer un QCM en Markdown** et sélectionnez **QCM adaptatif : réservoir et réglages** dans le menu déroulant. Cette entrée regroupe le niveau initial et les statistiques des questions enregistrées. Enregistrer le niveau ne recharge pas la page et conserve la saisie du contenu en cours. Le niveau initial sert à choisir la première question ; les suivantes dépendent des taux de réussite.
+3. Ajoutez la page au parcours. Une étape ordinaire propose un **entraînement** renouvelable, sans alimenter les statistiques. Une étape **Évaluation** autorise une tentative par apprenant et met à jour les statistiques.
+4. Pour compléter le réservoir, ajoutez explicitement un bloc **QCM tiers** avec le lien de partage d’un collègue de la même installation. Le mode **Contenu partagé** doit être autorisé. Aucun autre contenu n’est recherché automatiquement.
+
+Chaque question n’est posée qu’une fois. Un délai dépassé compte comme non réussi et fait passer à la suite. La fin du temps total ou l’épuisement du réservoir termine le test. Quitter ou recharger la page ne suspend pas les chronomètres. Les corrections sont données après chaque réponse en entraînement et à la fin en évaluation.
+
+Depuis l’**Aperçu apprenant** d’une étape, **Commencer le test** permet à l’enseignant de tester le QCM avec les mêmes délais et le même mode de correction. **Recommencer le test** reste possible pendant ou après l’essai. Recharger conserve le test et ses échéances. Ces essais ne modifient ni les résultats des apprenants ni les statistiques.
+
+Le **score de difficulté** est la moyenne des deux dernières positions du curseur après les réponses, ou la seule position disponible. La difficulté d’une question vaut **100 − son taux de réussite**. Les déplacements du curseur restent de 20, 10 puis 5 points selon le tiers de temps où la question a été présentée.
+
+Avec des difficultés différentes, réussir la question la plus difficile du réservoir termine immédiatement le test à **10,0 /10**. Un échec sur la plus facile termine aussi le test s’il ne reste aucune question aussi facile ou plus facile non présentée. Un délai dépassé compte comme un échec.
+
+Sinon, la note vaut **10 × (score − difficulté minimale) ÷ (difficulté maximale − difficulté minimale)**, limitée à 0–10 et arrondie au dixième. Exemple : avec des bornes **20–70**, un score de 45 donne **5,0 /10**, 60 donne **8,0 /10** et 70 donne **10,0 /10**. Avec des bornes **0–100**, 50 donne **5,0 /10** et 66,66 donne **6,7 /10**. Les bornes portent sur tout le réservoir et restent figées pendant la tentative.
+
+Si tous les taux sont identiques, le déroulement initial reste actif, sans ces arrêts anticipés, et la note reste le score divisé par dix. Les tentatives déjà commencées ou terminées conservent leur ancien barème. La note QCM ne remplace pas la note d’évaluation saisie par l’enseignant.
+
+Le fichier [expl_qcm-adaptatif.md](../expl_qcm-adaptatif.md) propose un réservoir complet de **20 questions sur les transitoires**, prêtes à coller dans un bloc Markdown. Toutes conservent le niveau 2 et un délai de 60 secondes ; dans une nouvelle page sans statistiques, elles partent du même taux provisoire de 40 %. Les compteurs saisis dans le fichier ne remplacent pas les statistiques des évaluations enregistrées. Le délai de 60 secondes ne fixe pas la durée totale : réglez-la sur le contenu.
+
+Le [guide détaillé du QCM adaptatif](qcm-adaptatif.md) explique le calcul, les statistiques, les droits sur les blocs tiers et la désactivation du prototype. Les guides HTML/PDF du profil proposent aussi un chapitre adapté à chaque rôle.
+
 #### Importer et exporter une page
 
 Une page peut être exportée en JSON depuis son écran d’édition. Le fichier contient ses métadonnées, blocs, tags et, pour les images ou fichiers locaux sous `uploads/`, une copie Base64 de la pièce jointe.
@@ -373,7 +409,7 @@ Les événements et leurs horaires sont conservés dans les copies et les import
 
 #### Aperçu apprenant pour l’enseignant
 
-L’icône de chapeau ouvre **Aperçu apprenant** (`?view=teacher-preview`). Les étapes invisibles pour les apprenants sont cachées dans la liste, la carte **Prochaine étape** et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. La carte privilégie l’échéance future la plus proche, comme dans la vue apprenant. Sans date future, cet aperçu générique propose la première étape visible, car il ne représente la progression d’aucun apprenant particulier. Les étapes restreintes restent visibles en gris clair. Le titre, le numéro, la durée et le lien de la carte correspondent à l’étape proposée ; les étapes sans échéance n’affichent aucune mention de date. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
+L’icône de chapeau ouvre **Aperçu apprenant** (`?view=teacher-preview`). Les étapes invisibles pour les apprenants sont cachées dans la liste, la carte **Prochaine étape** et la navigation **Précédent / Suivant**. Leur adresse directe n’ouvre pas leur contenu dans cet aperçu. La carte privilégie l’échéance la plus proche, aujourd’hui inclus, comme dans la vue apprenant. Sans date aujourd’hui ou après, cet aperçu générique propose la première étape visible, car il ne représente la progression d’aucun apprenant particulier. Les étapes restreintes restent visibles en gris clair. Le titre, le numéro, la durée et le lien de la carte correspondent à l’étape proposée ; les étapes sans échéance n’affichent aucune mention de date. La gestion du parcours permet toujours à l’équipe de régler les étapes cachées.
 
 #### Importer et exporter un parcours
 

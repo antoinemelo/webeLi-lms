@@ -68,7 +68,7 @@ function student_next_pathway_item(array $visibleItems,?DateTimeImmutable $now=n
     foreach($visibleItems as $item){
         if($unfinished===null&&empty($item['completed_at']))$unfinished=$item;
         $deadline=$item['deadline']??null;
-        if(!is_string($deadline)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$deadline)||$deadline<=$today)continue;
+        if(!is_string($deadline)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$deadline)||$deadline<$today)continue;
         $date=DateTimeImmutable::createFromFormat('!Y-m-d',$deadline,$zone);
         if(!$date||$date->format('Y-m-d')!==$deadline)continue;
         // Keep the first step in pathway order when several share a date.

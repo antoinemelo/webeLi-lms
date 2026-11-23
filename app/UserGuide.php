@@ -41,7 +41,7 @@ function view_user_guide(): void
 {
     $user=require_actor();$guide=user_guide_data($user['role']);
     ?>
-    <link rel="stylesheet" href="assets/guides/guides.css?v=1">
+    <link rel="stylesheet" href="assets/guides/guides.css?v=3">
     <article id="top" class="user-guide" lang="fr" data-user-guide="<?=e($user['role'])?>">
       <header class="guide-hero">
         <div><p class="guide-kicker">liike · Le guide pratique · <?=e($guide['audience'])?></p><h1><?=e($guide['title'])?></h1><p><?=e($guide['subtitle'])?></p></div>
@@ -78,7 +78,7 @@ function user_guide_pdf_bytes(string $role,string $temporaryDirectory): string
     $pdf->SetTitle($guide['title'].' · '.$guide['audience']);$pdf->SetAuthor('liike');$pdf->SetSubject($guide['subtitle']);
     $pdf->SetHTMLHeader('<table width="100%" style="font-size:8pt;color:#6d6684;border-bottom:0.3mm solid #ddd7ee"><tr><td><b style="color:#6757df">liike</b> / LE GUIDE PRATIQUE</td><td align="right">'.user_guide_escape($guide['audience']).'</td></tr></table>');
     $pdf->SetHTMLFooter('<table width="100%" style="font-size:8pt;color:#6d6684"><tr><td>Édition novembre 2026 · liike</td><td align="right">{PAGENO} / {nbpg}</td></tr></table>');
-    $pdf->WriteHTML('body{font-family:dejavusans;font-size:10pt;line-height:1.48;color:#302b42}h2{font-size:25pt;line-height:1.16;color:#302445;margin:2mm 0 3mm}h3{font-size:12pt;color:#5542a5;margin:4mm 0 1.4mm}p{margin:1.5mm 0}ul,ol{margin:2mm 0;padding-left:6mm}li{margin-bottom:1mm}strong{color:#302445}.guide-kicker{font-size:8pt;font-weight:bold;letter-spacing:1pt;color:#6757df;margin:0 0 2mm}.guide-lead{font-size:11pt;color:#635a76;border-bottom:.6mm solid #d6cdef;padding-bottom:4mm;margin-bottom:4mm}.guide-card{margin-bottom:3mm}.guide-card h3{page-break-after:avoid}.guide-tip{margin-top:5mm;padding:3.5mm 4mm;background-color:#edf7f5;border-left:1mm solid #32816f;page-break-inside:avoid}.guide-tip h3{margin:0 0 1.5mm;color:#246653;font-size:11pt}.guide-tip p{font-size:9.5pt;margin:0}',\Mpdf\HTMLParserMode::HEADER_CSS);
+    $pdf->WriteHTML('body{font-family:dejavusans;font-size:10pt;line-height:1.48;color:#302b42}h2{font-size:25pt;line-height:1.16;color:#302445;margin:2mm 0 3mm}h3{font-size:12pt;color:#5542a5;margin:4mm 0 1.4mm}p{margin:1.5mm 0}ul,ol{margin:2mm 0;padding-left:6mm}li{margin-bottom:1mm}strong{color:#302445}pre{font-family:dejavusansmono;font-size:9pt;line-height:1.4;background-color:#f5f2fb;border:.2mm solid #e4ddf5;padding:3mm;margin:2mm 0;white-space:pre-wrap}code{font-family:dejavusansmono;font-size:9pt;color:#5542a5}.guide-scale{width:100%;border-collapse:collapse;margin:3mm 0;font-size:9.5pt}.guide-scale th,.guide-scale td{padding:1.5mm;border-bottom:.2mm solid #e4ddf5;text-align:left}.guide-scale th{color:#5542a5;background-color:#f5f2fb}.guide-kicker{font-size:8pt;font-weight:bold;letter-spacing:1pt;color:#6757df;margin:0 0 2mm}.guide-lead{font-size:11pt;color:#635a76;border-bottom:.6mm solid #d6cdef;padding-bottom:4mm;margin-bottom:4mm}.guide-card{margin-bottom:3mm}.guide-card h3{page-break-after:avoid}.guide-tip{margin-top:5mm;padding:3.5mm 4mm;background-color:#edf7f5;border-left:1mm solid #32816f;page-break-inside:avoid}.guide-tip h3{margin:0 0 1.5mm;color:#246653;font-size:11pt}.guide-tip p{font-size:9.5pt;margin:0}',\Mpdf\HTMLParserMode::HEADER_CSS);
     $pdf->WriteHTML(user_guide_pages($guide,true),\Mpdf\HTMLParserMode::HTML_BODY);
     return $pdf->Output('',\Mpdf\Output\Destination::STRING_RETURN);
 }
