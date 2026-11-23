@@ -44,9 +44,10 @@ function render_adaptive_qcm(array $item,array $blocks,bool $preview=false): voi
         'score'=>'Résultat','review'=>'Correction','single'=>'Une seule réponse possible.','multiple'=>'Plusieurs réponses possibles.',
         'question'=>'Question','total'=>'Temps total restant','remaining'=>'Temps de la question','ready'=>'Le chronomètre démarre lorsque vous commencez.','expected'=>'Réponse attendue'] as $key=>$label)$labels[$key]=t($label);
     if($preview){$labels['start']=t('Commencer le test');$labels['retry']=t('Recommencer le test');}
+    else $labels['ready']=t('Le chronomètre démarre au premier clic. Une tentative en cours ne peut pas être recommencée.');
     ?><section class="adaptive-qcm" data-adaptive-qcm data-item="<?=(int)$item['id']?>" data-preview="<?=$preview?'1':'0'?>" data-labels="<?=e(json_encode($labels,JSON_UNESCAPED_UNICODE))?>">
       <h2><?=e(t('QCM adaptatif'))?></h2>
-      <p><?=e(t($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : vous pouvez recommencer.')))?> · <?=(int)$item['estimated_minutes']?> min</p>
+      <p><?=e(t($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : nouvel essai après la fin.')))?> · <?=(int)$item['estimated_minutes']?> min</p>
       <?php if($preview): ?><p><?=e(t('Test enseignant : vous pouvez recommencer librement. Vos essais ne modifient ni les résultats des apprenants ni les statistiques des questions.'))?></p><button type="button" class="button secondary" data-adaptive-restart hidden><?=e(t('Recommencer le test'))?></button><?php endif; ?>
       <div data-adaptive-content><p><?=e(t('Chargement…'))?></p></div><p data-adaptive-error role="alert" hidden></p><noscript><?=e(t('Activez JavaScript pour réaliser cette activité chronométrée.'))?></noscript>
     </section><?php
@@ -164,7 +165,9 @@ function adaptive_qcm_http(): never
     session_write_close();
     try{
         $item=AdaptiveQcm::context(db(),(int)($_POST['item_id']??0),(int)$user['id']);$store=AdaptiveQcm::store(db());
-        $operation=$_POST['operation']??'state';if(!in_array($operation,['state','start','answer'],true))throw new InvalidArgumentException('Commande invalide.');
+        $operation=$_POST['operation']??'state';
+        if($operation==='restart'){http_response_code(403);echo json_encode(['error'=>t('Vous ne pouvez pas remettre ce test à zéro.')]);exit;}
+        if(!in_array($operation,['state','start','answer'],true))throw new InvalidArgumentException('Commande invalide.');
         $run=$store->latest((int)$user['id'],(int)$item['id']);
         if($operation==='start'){
             $bank=AdaptiveQcm::bank(db(),(int)$item['page_id'],app_public_base_url());

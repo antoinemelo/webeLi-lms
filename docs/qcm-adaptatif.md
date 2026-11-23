@@ -62,8 +62,10 @@ Le serveur contrôle les deux échéances. Une question expirée est enregistré
 
 Le statut de l’étape dans le parcours détermine le mode :
 
-- **Entraînement** : tentatives renouvelables, retour après chaque réponse. Aucune mise à jour des statistiques de questions.
+- **Entraînement** : un nouvel essai est possible seulement après la fin du précédent, avec un retour après chaque réponse. Aucune mise à jour des statistiques de questions.
 - **Évaluation** : une tentative par apprenant et étape, correction à la fin. Chaque question effectivement présentée contribue au compteur des présentations. Une question jamais présentée n’est pas comptée.
+
+**Un apprenant ne peut jamais remettre une tentative en cours à zéro.** Recharger la page, ouvrir un autre onglet ou renvoyer une demande de démarrage reprend la même tentative et conserve ses réponses et ses échéances. Une commande directe de redémarrage est refusée par le serveur ; le mode de test enseignant lui est également interdit. Après une évaluation terminée, un nouveau démarrage retrouve le résultat existant.
 
 Le temps moyen porte sur les réponses correctes ou incorrectes reçues dans le délai, lors d’évaluations uniquement. Les dépassements de délai restent dans le dénominateur du taux de réussite, mais sont exclus du temps moyen.
 
@@ -133,7 +135,9 @@ La disponibilité du partage est revérifiée au démarrage et à chaque répons
 
 ## Isolation et retour en arrière
 
-Le module crée uniquement `storage/adaptive-qcm.sqlite` (et ses fichiers SQLite WAL/SHM) à côté de la base LMS. Il ne modifie pas le schéma principal. Les blocs tiers utilisent une représentation Markdown compatible avec les transferts de pages. Les réglages adaptatifs, les tentatives et les statistiques appartiennent à la base dédiée ; une copie de page repart avec de nouvelles statistiques et le niveau initial par défaut.
+Le module crée uniquement `storage/adaptive.sqlite` (et ses fichiers SQLite WAL/SHM) à côté de la base LMS. Il ne modifie pas le schéma principal. Les blocs tiers utilisent une représentation Markdown compatible avec les transferts de pages. Les réglages adaptatifs, les tentatives et les statistiques appartiennent à la base dédiée ; une copie de page repart avec de nouvelles statistiques et le niveau initial par défaut.
+
+Sur une nouvelle installation, la base est créée automatiquement lors du premier enregistrement des réglages adaptatifs ou du premier accès apprenant à une activité adaptative. Le dossier `storage/` doit être accessible en écriture par PHP. Il n’est pas nécessaire de copier une base vide depuis dev vers le serveur. L’aperçu enseignant seul fonctionne en mémoire et ne crée pas cette base. Une fois des données enregistrées sur le serveur, conserver sa propre base lors des mises à jour, avec la base LMS à laquelle elle est rattachée.
 
 Pour désactiver l’essai, configurer `APP_ADAPTIVE_QCM=0` dans l’environnement PHP. Les questions ne sont plus proposées et la base dédiée est conservée. Garder le parseur actuel lors de la désactivation : il masque les blocs de réservoir au lieu de les interpréter comme du Markdown ordinaire. Restaurer un ancien parseur tout en conservant des blocs adaptatifs actifs pourrait exposer leur texte aux lecteurs.
 

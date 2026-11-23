@@ -43,7 +43,7 @@ final class AdaptiveQcm
         if(!self::enabled())return null;
         $file='';foreach($core->query('PRAGMA database_list') as $row)if($row['name']==='main')$file=(string)$row['file'];
         if($file==='')return null; // In-memory callers supply an isolated store explicitly.
-        $path=dirname($file).'/adaptive-qcm.sqlite';
+        $path=dirname($file).'/adaptive.sqlite';
         if(!$create&&!is_file($path))return null;
         static $stores=[];
         if(!isset($stores[$path])){

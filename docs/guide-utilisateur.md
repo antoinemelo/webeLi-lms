@@ -325,6 +325,8 @@ Chaque question n’est posée qu’une fois. Un délai dépassé compte comme n
 
 Depuis l’**Aperçu apprenant** d’une étape, **Commencer le test** permet à l’enseignant de tester le QCM avec les mêmes délais et le même mode de correction. **Recommencer le test** reste possible pendant ou après l’essai. Recharger conserve le test et ses échéances. Ces essais ne modifient ni les résultats des apprenants ni les statistiques.
 
+Ce redémarrage est réservé au test enseignant. **L’apprenant ne peut pas recommencer une tentative en cours**, même après rechargement ou depuis un autre onglet : les réponses et les chronomètres sont conservés. Une évaluation reste limitée à une tentative ; en entraînement, un nouvel essai n’est proposé qu’après la fin du précédent.
+
 Le **score de difficulté** est la moyenne des deux dernières positions du curseur après les réponses, ou la seule position disponible. La difficulté d’une question vaut **100 − son taux de réussite**. Les déplacements du curseur restent de 20, 10 puis 5 points selon le tiers de temps où la question a été présentée.
 
 Avec des difficultés différentes, réussir la question la plus difficile du réservoir termine immédiatement le test à **10,0 /10**. Un échec sur la plus facile termine aussi le test s’il ne reste aucune question aussi facile ou plus facile non présentée. Un délai dépassé compte comme un échec.
