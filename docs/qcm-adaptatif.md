@@ -1,156 +1,140 @@
-# QCM adaptatif — prototype sous dev
+# QCM adaptatif — fonctionnement et calibration
 
-Chaque activité utilise les questions de sa page et celles des blocs **QCM tiers** ajoutés explicitement à cette page. Aucune recherche automatique n’est effectuée dans les autres pages, domaines ou bibliothèques.
+Chaque activité utilise exclusivement les questions adaptatives de sa page et les blocs **QCM tiers** explicitement ajoutés. Aucun réservoir extérieur n’est parcouru automatiquement.
 
-## Préparer le contenu
+## Préparer et voir les questions
 
-Dans **Créer un QCM en Markdown**, choisir **Adaptatif**, puis **Copier l’exemple**. Coller le texte dans un ou plusieurs blocs Markdown, par exemple :
+Dans **Créer un QCM en Markdown**, choisir **Adaptatif**, puis copier l’exemple dans un bloc Markdown. Prévoir au moins cinq questions distinctes et assez de temps pour les traiter.
 
 ```text
-:::qcm_adap[Finance][Provision]
+:::qcm_adap[Finance][Transitoires]
 # Intitulé de la question
-[1][120][-][0][0]
+[2][60][-][0][0]
 [v] Proposition correcte
-[x] Proposition incorrecte
-[-] Proposition neutre
-
-# Autre question
-[2][90][-][0][0]
-[v] Première proposition correcte
-[v] Deuxième proposition correcte
 [x] Proposition incorrecte
 :::
 ```
 
-L’ordre des deux étiquettes est **domaine**, puis **thématique**. Le marqueur `qcm_adaptatif` est également accepté. Le classement `[Domaine][Thématique]` est facultatif pour les QCM classiques, stricts et en classe ; il ne change pas leur fonctionnement.
+Les cinq champs sont : niveau initial enseignant (0–3), délai maximal en secondes, temps moyen observé, présentations en évaluation, réponses justes en évaluation. Les trois derniers sont descriptifs : les saisir ou les importer ne remplace jamais les statistiques en base. `[2][60]` seul est incomplet. Les compteurs sont actualisés à l’ouverture de l’éditeur, y compris avec des retours à la ligne Windows (CRLF).
 
-Les cinq paramètres sous chaque question sont :
+Le tableau **Niveaux et statistiques des questions**, directement dans l’éditeur, distingue :
 
-1. Niveau initial de la question, entre 0 et 3, fixé par l’enseignant.
-2. Temps maximal, en secondes, fixé par l’enseignant (1 à 86 400).
-3. Temps moyen observé, en secondes ; `-` lorsqu’aucune réponse dans le délai n’est disponible.
-4. Nombre de présentations lors d’évaluations.
-5. Nombre de réponses entièrement correctes lors d’évaluations.
+- **Niveau initial** : repère fixé par l’enseignant, jamais remplacé automatiquement.
+- **Difficulté estimée** : 100 moins le taux de réussite estimé ; un pourcentage élevé désigne une question plus difficile.
+- **Réussite observée** et **réponses retenues** : observations admissibles pour la calibration.
+- **Temps moyen**, présentations et réponses justes : informations descriptives.
+- **Estimation initiale**, **Historique limité**, **Historique disponible** : respectivement aucune observation, moins de 20 observations, au moins 20. Le seuil de 20 est un repère de volume, pas une validation scientifique.
 
-Les trois dernières valeurs sont calculées dans la base dédiée. Une saisie, une copie ou un import de compteurs ne remplace jamais les statistiques. Elles sont actualisées à l’ouverture de l’éditeur et dans le tableau **QCM adaptatif : réservoir et réglages**. Une modification de la question, de ses propositions, de son classement, de son niveau ou de son temps maximal crée une nouvelle version statistique. Modifier uniquement les compteurs du texte ne change pas son identité.
+Le menu **QCM adaptatif : réservoir et réglages** rassemble ces informations, le niveau de départ du test et l’actualisation des références d’évaluation. Enregistrer ces réglages conserve le texte non enregistré dans l’éditeur.
 
-Le nombre de propositions est libre, avec au moins deux propositions et une bonne réponse. Toutes les propositions `[v]` doivent être sélectionnées et aucune `[x]` ne doit l’être. Une proposition `[-]` est neutre. Plusieurs bonnes propositions entraînent un affichage à cases à cocher.
+Toutes les propositions `[v]` doivent être choisies et aucune `[x]` ne doit l’être. `[-]` reste neutre. Il n’y a pas de crédit partiel ; plusieurs bonnes propositions entraînent des cases à cocher.
 
-## Exemple complet : Finance et comptabilité / Transitoires
+## Démarrer sans historique
 
-Le fichier [expl_qcm-adaptatif.md](../expl_qcm-adaptatif.md) contient les **20 questions fournies**, leurs quatre propositions et leurs corrections. Il peut être collé tel quel dans un bloc **Texte Markdown**. Les consignes de l’activité peuvent être placées dans un texte séparé, avant le réservoir.
+Les taux initiaux de réussite restent N0 = 80 %, N1 = 60 %, N2 = 40 %, N3 = 20 %. Ils constituent une estimation de départ, pas des observations fictives.
 
-Chaque question conserve le niveau 2 et 60 secondes maximum. Le fichier a été adapté par son auteur avec deux présentations et une ou deux réponses justes dans les champs descriptifs. Ces valeurs ne sont pas importées dans la base : elles ne créent pas des taux observés de 50 % ou 100 %. Le moteur utilise les statistiques des évaluations effectivement enregistrées. Le format abrégé `[2][60]` n’est pas accepté : les cinq champs doivent être présents.
-
-Après enregistrement, choisir le niveau de départ **2** dans **Créer un QCM en Markdown → QCM adaptatif : réservoir et réglages**, puis fixer la durée estimée du contenu. Par exemple, **10 minutes** donne une activité de 10 minutes maximum, avec 60 secondes maximum par question. Cette durée est une proposition de réglage, pas une instruction contenue dans le fichier Markdown.
-
-Dans une nouvelle page sans statistiques enregistrées, les questions de cet exemple restent toutes au même taux provisoire de **40 %**, puisque leur niveau vaut 2, indépendamment des compteurs saisis dans le texte. Les premières sélections sont donc départagées au hasard ; les évaluations permettront de distinguer les questions pour les évaluations suivantes. Le curseur et le score évoluent dès la première tentative. Les entraînements ne calibrent pas le réservoir.
-
-## Durée et déroulement
-
-La **durée estimée du contenu**, en minutes, est la limite globale de l’activité. Le chronomètre commence au clic sur **Commencer**. Dans **Créer un QCM en Markdown**, l’entrée **QCM adaptatif : réservoir et réglages** du menu déroulant permet de choisir le niveau de départ (1 par défaut) et de consulter les questions enregistrées. Le réglage est enregistré sans recharger la page ; les modifications du contenu en cours restent en place. Enregistrez le contenu pour actualiser la liste des questions et leurs statistiques.
-
-Le niveau enseignant sélectionne uniquement la première question, au niveau demandé ou au plus proche disponible. Les questions suivantes sont choisies selon leur taux de réussite de référence. En l’absence de statistiques : N0 = 80 %, N1 = 60 %, N2 = 40 %, N3 = 20 %. Le taux observé est `100 × réponses correctes / présentations`.
-
-Le curseur de difficulté commence à `100 − taux de réussite de la première question`. Une réponse correcte l’augmente ; une réponse incorrecte ou un délai dépassé le diminue. Le déplacement est de 20 points dans le premier tiers du temps total, 10 dans le deuxième et 5 dans le dernier. Le tiers est fixé au moment où la question est présentée : attendre pour répondre ne change pas ce déplacement. Le curseur reste entre 0 et 100.
-
-La prochaine question est tirée parmi celles dont le taux de réussite est le plus proche de `100 − curseur`. Les égalités sont départagées aléatoirement. Une question n’est présentée qu’une fois par tentative ; les doublons de contenu sont écartés. Si le réservoir est épuisé avant la fin du temps, l’activité s’arrête et l’indique. Il n’y a pas de nombre maximal de questions à configurer (limite technique du réservoir : 2 000 questions).
-
-Le serveur contrôle les deux échéances. Une question expirée est enregistrée comme non réussie et la suivante apparaît automatiquement. À l’échéance globale, l’activité se termine. Recharger ou quitter la page ne remet pas les chronomètres à zéro ; reprendre après l’échéance termine la tentative. En cas de panne réseau, une commande permet de réessayer l’envoi ; une réponse arrivée hors délai ne devient pas une réponse à temps.
-
-## Entraînement et évaluation
-
-Le statut de l’étape dans le parcours détermine le mode :
-
-- **Entraînement** : un nouvel essai est possible seulement après la fin du précédent, avec un retour après chaque réponse. Aucune mise à jour des statistiques de questions.
-- **Évaluation** : une tentative par apprenant et étape, correction à la fin. Chaque question effectivement présentée contribue au compteur des présentations. Une question jamais présentée n’est pas comptée.
-
-**Un apprenant ne peut jamais remettre une tentative en cours à zéro.** Recharger la page, ouvrir un autre onglet ou renvoyer une demande de démarrage reprend la même tentative et conserve ses réponses et ses échéances. Une commande directe de redémarrage est refusée par le serveur ; le mode de test enseignant lui est également interdit. Après une évaluation terminée, un nouveau démarrage retrouve le résultat existant.
-
-Le temps moyen porte sur les réponses correctes ou incorrectes reçues dans le délai, lors d’évaluations uniquement. Les dépassements de délai restent dans le dénominateur du taux de réussite, mais sont exclus du temps moyen.
-
-Les taux de référence sont figés au début de la première tentative d’évaluation d’une étape pour cette version du réservoir, du niveau de départ et de la durée. Les apprenants suivants utilisent la même référence. Les statistiques globales continuent à progresser et serviront aux autres évaluations. Une tentative commencée conserve ses questions et paramètres même si le contenu est modifié ensuite.
-
-## Tester depuis l’aperçu enseignant
-
-Dans l’**Aperçu apprenant** de l’étape (`?view=teacher-preview-page&item=…`), utiliser **Commencer le test**. Les questions, les délais, l’adaptation et le calcul du score utilisent le même moteur que pour les apprenants. Une étape Évaluation garde sa correction à la fin ; un entraînement garde le retour immédiat.
-
-**Recommencer le test** permet de repartir de zéro, pendant ou après l’essai, y compris pour une évaluation. Recharger la page conserve la question et les échéances du test en cours. Le dernier test reste lié à la session du navigateur ; commencer un test sur une autre étape le remplace.
-
-L’aperçu est une simulation isolée : aucune tentative, aucun résultat et aucun compteur ne sont enregistrés dans les données réelles. Les taux de référence d’une évaluation déjà commencée sont repris lorsqu’ils correspondent à la même configuration. Les droits sur le parcours et sur les contenus tiers restent vérifiés à chaque requête. Seul un enseignant autorisé peut lancer cette simulation.
-
-## Arrêts anticipés
-
-Les décisions utilisent les taux de référence figés pour la tentative, y compris les questions des blocs tiers. La **difficulté** d’une question vaut `100 − taux de réussite` : un taux de réussite de 80 % donne une difficulté de 20 %, tandis qu’un taux de 30 % donne une difficulté de 70 %.
-
-Pour un réservoir dont les difficultés ne sont pas toutes identiques :
-
-- **Réussite de la question la plus difficile du réservoir** : le test se termine immédiatement et attribue **10,0 /10**. Plusieurs questions peuvent partager cette difficulté maximale ; il suffit d’en réussir une. Une question plus difficile déjà présentée reste prise en compte : réussir seulement la dernière question disponible ne suffit pas.
-- **Échec de la question la plus facile** : le test se termine s’il ne reste aucune question non présentée plus facile ou de facilité équivalente. Sinon, il continue. Un dépassement du délai d’une question compte comme un échec. La note est calculée avec le barème ci-dessous.
-- La fin du temps global et l’épuisement du réservoir continuent aussi à terminer le test.
-
-Si **toutes les difficultés sont identiques**, les nouveaux arrêts anticipés sont désactivés : l’activité garde son déroulement initial jusqu’à la fin du temps ou l’épuisement du réservoir. Une première bonne réponse n’attribue donc pas automatiquement 10/10 aux vingt questions encore non calibrées de l’exemple.
-
-## Score et note sur 10
-
-Le **score de difficulté S** reste la moyenne des deux dernières positions du curseur après traitement des réponses, délais dépassés compris. Avec une seule réponse, cette seule position est utilisée. Il ne s’agit pas du pourcentage de bonnes réponses.
-
-En dehors du 10/10 automatique pour la réussite maximale, la note utilise les bornes de difficulté de **tout le réservoir de référence**, pas seulement des questions présentées :
+Les résultats prennent progressivement le relais. Sans effet de rapidité, le taux estimé est :
 
 ```text
-Dmin = difficulté minimale du réservoir
-Dmax = difficulté maximale du réservoir
-Note /10 = 10 × (S − Dmin) / (Dmax − Dmin)
+(réponses correctes retenues + 10 × taux initial) / (réponses retenues + 10)
 ```
 
-Le calcul conserve la précision du score de difficulté jusqu’à la conversion. La note est limitée à **0–10**, puis **arrondie au dixième**, sans arrondi intermédiaire. Une valeur sous la borne minimale donne 0,0 ; au-dessus de la borne maximale, 10,0. Les bornes ne changent pas au fil des réponses et ne sont pas recalculées à partir des statistiques que la tentative est en train d’alimenter.
+Le taux initial est exprimé entre 0 et 1. Une question initialement à 40 % passe à environ **45,5 %** après une réussite, au lieu de 100 %. Une réponse en attente ne fait pas baisser le taux.
 
-| Bornes de difficulté | Score S | Note /10 |
-|---|---:|---:|
-| 30–80 | 80 | 10,0 |
-| 30–80 | 75 | 9,0 |
-| 30–80 | 70 | 8,0 |
-| 30–80 | 65 | 7,0 |
-| 0–100 | 50 | 5,0 |
-| 0–100 | 66,66 | 6,7 |
-| 20–70 | 20 | 0,0 |
-| 20–70 | 33,33 | 2,7 |
-| 20–70 | 45 | 5,0 |
-| 20–70 | 60 | 8,0 |
-| 20–70 | 70 | 10,0 |
+Si toutes les questions ont le même niveau et aucune observation, leurs difficultés sont indifférenciées. Le tirage les départage au hasard ; le système ne peut pas inventer une différence fiable. Varier les niveaux initiaux et consacrer les premiers groupes à la calibration améliore le réservoir. Les statistiques ne transforment pas instantanément une banque novice en instrument de mesure validé.
 
-**Bornes identiques :** le barème initial est conservé, soit `Note /10 = S / 10`, affichée au dixième. Il n’y a aucune division par zéro. L’apprentissage statistique du réservoir permettra d’utiliser le barème relatif dans de futures évaluations disposant de taux différenciés.
+## Quelles observations contribuent ?
 
-L’écran final indique la **note sur 10**, le score de difficulté et, lorsqu’elles s’appliquent, les deux bornes. Le niveau enseignant 0–3 n’est pas affiché aux apprenants. Le suivi et les exports utilisent la même note QCM ; la note d’évaluation saisie par l’enseignant reste distincte. Dans une page mélangeant QCM classiques et adaptatif, les exports détaillent les résultats séparément ; la synthèse QCM de l’étape retient le score adaptatif.
+Seules les évaluations enregistrées d’apprenants authentifiés contribuent à la calibration. Les entraînements, aperçus enseignants et séances anonymes en sont exclus.
 
-Le nouveau barème s’applique aux **nouvelles tentatives**. Une tentative déjà commencée garde ses anciennes règles jusqu’à sa fin ; les notes déjà obtenues restent inchangées. Le moteur conserve les questions, les taux de référence, les réponses, les échéances et les positions du curseur pour expliquer le résultat. Le score dépend toujours du niveau de départ et du réservoir disponible.
+Pour une version de question, seule la première observation admissible de chaque apprenant contribue, même si la question est utilisée dans plusieurs parcours. Les présentations et réponses descriptives continuent à être comptées ; le tableau distingue donc ces compteurs du nombre d’observations retenues.
 
-## Ajouter un QCM tiers
+Une observation doit être résolue et avoir bénéficié de la fenêtre complète de temps prévue. Un délai individuel complet dépassé compte comme un échec. Une question tronquée par la fin globale est exclue de la calibration. Les anciennes observations sont reprises avec ces mêmes critères lors de la migration, sans modifier leurs anciennes notes.
 
-Dans l’éditeur, ajouter un bloc de type **QCM tiers**, puis coller l’URL issue de **Partager ce contenu**. Le propriétaire doit autoriser **Contenu partagé**. Les modes Copie indépendante ou Utilisation externe seuls ne donnent pas ce droit d’intégration.
+### Réponse correcte et rapide
 
-Le prototype accepte les liens de la même installation liike. Il ne télécharge aucune URL distante. Les questions des blocs QCM directs de la page partagée enrichissent le réservoir ; ses propres références à des blocs tiers ne sont pas suivies. Les questions classiques sans paramètres utilisent provisoirement N1 et 120 secondes. Les questions et statistiques restent rattachées à la source ; plusieurs références identiques ne les dupliquent pas.
+Une réponse correcte peut recevoir un poids de **1,25** au lieu de 1 dans la calibration uniquement si :
 
-La disponibilité du partage est revérifiée au démarrage et à chaque réponse ou reprise. Retirer le partage empêche de poursuivre la séance ; les questions déjà enregistrées et l’historique restent conservés.
+- la référence contient déjà au moins cinq réponses chronométrées pour cette question ;
+- le temps est au moins `max(3 secondes, 5 % du délai maximal)` ;
+- il est au plus égal à la moitié du temps moyen de référence.
 
-## Isolation et retour en arrière
+La référence de temps est figée pour l’évaluation. Une réponse presque instantanée, une réponse lente ou une erreur garde le poids normal. La lenteur n’ajoute aucune pénalité de difficulté. Le poids supplémentaire est enregistré, pas ajouté aux compteurs bruts. Le taux estimé utilise les réussites pondérées et la somme des poids, avec le même poids initial de 10.
 
-Le module crée uniquement `storage/adaptive.sqlite` (et ses fichiers SQLite WAL/SHM) à côté de la base LMS. Il ne modifie pas le schéma principal. Les blocs tiers utilisent une représentation Markdown compatible avec les transferts de pages. Les réglages adaptatifs, les tentatives et les statistiques appartiennent à la base dédiée ; une copie de page repart avec de nouvelles statistiques et le niveau initial par défaut.
+**La rapidité ne donne aucun bonus direct à la note de l’apprenant.** Elle peut seulement faciliter légèrement la question pour les évaluations futures. Ces seuils prudents restent des paramètres de fonctionnement à confronter aux usages réels.
 
-Sur une nouvelle installation, la base est créée automatiquement lors du premier enregistrement des réglages adaptatifs ou du premier accès apprenant à une activité adaptative. Le dossier `storage/` doit être accessible en écriture par PHP. Il n’est pas nécessaire de copier une base vide depuis dev vers le serveur. L’aperçu enseignant seul fonctionne en mémoire et ne crée pas cette base. Une fois des données enregistrées sur le serveur, conserver sa propre base lors des mises à jour, avec la base LMS à laquelle elle est rattachée.
+## Identité, modifications et partage
 
-Pour désactiver l’essai, configurer `APP_ADAPTIVE_QCM=0` dans l’environnement PHP. Les questions ne sont plus proposées et la base dédiée est conservée. Garder le parseur actuel lors de la désactivation : il masque les blocs de réservoir au lieu de les interpréter comme du Markdown ordinaire. Restaurer un ancien parseur tout en conservant des blocs adaptatifs actifs pourrait exposer leur texte aux lecteurs.
+Les questions sont identifiées et versionnées en base. Le Markdown est l’interface de rédaction, pas le journal des réponses.
 
-Inclure cette base dans les sauvegardes, par une sauvegarde SQLite cohérente. Le nettoyage des anciennes sauvegardes et mises à jour ne touche pas ce fichier actif. Aucun déploiement automatique n’est associé au prototype.
+- Modifier l’énoncé, une proposition, sa correction ou le temps maximal crée une nouvelle version statistique. Les observations de l’ancienne version et les tentatives restent conservées.
+- Modifier les compteurs descriptifs, le classement, le niveau initial ou l’ordre des propositions ne supprime pas les observations.
+- Les espaces et retours à la ligne sont normalisés ; une simple ponctuation modifiée reste, par prudence, une modification de l’énoncé.
+- Déplacer l’ordre des questions dans un même bloc ne change pas leur identité. Déplacer une question vers un autre bloc, recréer le bloc, copier ou importer une page crée de nouvelles identités. Il n’y a pas de fusion automatique d’historiques indépendants.
+
+Une page réellement partagée ou un bloc **QCM tiers** reprend les identités et les observations de la source sur la même installation. Les évaluations des collègues contribuent donc à la même calibration, sans publier les résultats nominatifs de leurs apprenants dans le tableau des questions. Une **copie indépendante** repart avec ses propres observations.
+
+Les QCM tiers acceptent uniquement les liens de partage de cette installation avec le mode **Contenu partagé**. Les liens externes à l’installation et le seul mode Copie indépendante ou Utilisation externe ne suffisent pas. Aucune référence récursive n’est suivie. Les droits sont revérifiés à chaque reprise et réponse ; leur retrait bloque la poursuite, sans effacer les données enregistrées.
+
+## Références d’évaluation
+
+Les questions, leurs taux estimés et leurs repères de temps sont figés au début d’une évaluation. Les apprenants suivants utilisent cette référence commune. Les nouvelles observations continuent de s’accumuler, mais ne changent pas rétroactivement le test.
+
+**Actualiser pour les prochains participants** prépare une nouvelle référence à partir des observations actuelles. Cette commande est réservée à un enseignant autorisé sur le parcours et le contenu, avec protection CSRF, et refuse toute actualisation pendant une tentative non terminée dont le délai est encore ouvert. Elle ne donne pas de nouvel essai aux apprenants déjà évalués.
+
+Une modification des questions ou réglages qui changerait une référence déjà engagée nécessite son actualisation explicite avant de nouveaux départs. Les tentatives en cours conservent leur copie des questions et de la correction. Réorganiser simplement les mêmes questions n’altère pas la référence du nouveau modèle.
+
+Les anciennes évaluations gardent leur ancien barème, y compris pour les nouveaux participants tant que leur référence n’est pas actualisée. Les tentatives et notes existantes ne sont jamais recalculées par cette actualisation.
+
+## Durée et reprise
+
+La durée estimée du contenu fixe la durée totale. Le temps utilisable commence lorsque le serveur présente effectivement la première question, pour ne pas pénaliser une attente de verrou à l’ouverture. La question suivante doit disposer de son délai maximal complet : sinon l’activité se termine avec une explication, sans présenter une question pour une seule seconde.
+
+Une question n’apparaît qu’une fois par tentative. L’activité s’arrête lorsque les questions sont épuisées, le temps total est écoulé ou qu’aucune question restante ne dispose de son temps maximal.
+
+Recharger, ouvrir un autre onglet ou renvoyer un démarrage conserve la tentative. Les commandes sont idempotentes ; les échéances et corrections sont contrôlées côté serveur. Une évaluation reste limitée à une tentative. Un entraînement peut être refait seulement après la fin. Une erreur réseau donne une commande pour réessayer ; elle ne remet pas le temps à zéro.
+
+Le démarrage HTTP et la première présentation sont enregistrés dans une seule transaction : en cas d’échec, les deux sont annulés ensemble. Une reprise avec une question encore ouverte ne demande pas de verrou d’écriture.
+
+## Note lisible et minimum de cinq
+
+Pour le nouveau calcul, **au moins cinq questions traitées sont nécessaires**. Sont prises en compte les réponses correctes, incorrectes et les délais individuels complets dépassés. Une interruption par la fin globale sans fenêtre complète n’entre pas dans ce minimum.
+
+En dessous, le résultat indique **« Moins de 5 questions traitées : aucune note automatique. »** L’activité peut être terminée sans être notée ; les suivis et exports ne remplacent pas cette absence par zéro.
+
+Toutes les réponses et difficultés rencontrées contribuent au calcul. Les ajustements deviennent progressivement plus prudents ; les anciens pas de 20, 10 et 5 points liés au chronomètre sont supprimés. La moyenne des deux dernières positions et le 10/10 après une seule question difficile réussie ne s’appliquent plus aux nouvelles références.
+
+Les réponses connues sont comptées telles quelles. Le système estime les réussites sur les questions non posées, puis rapporte l’ensemble au réservoir complet. La note est bornée entre 0 et 10 et arrondie au dixième. Si toutes les questions ont été traitées, **6 bonnes réponses sur 8 donnent exactement 7,5 /10**. Une banque encore peu documentée est signalée. La note d’évaluation saisie par l’enseignant reste indépendante.
+
+### Détail du modèle
+
+Le modèle utilise une probabilité de type Rasch : `P(réussite) = 1 / (1 + exp(difficulté − aptitude))`. Un taux estimé `p` devient une difficulté `log((1−p)/p)`, bornée numériquement via des taux entre 1 et 99 %. L’estimation de l’aptitude utilise toutes les réponses avec un a priori normal de moyenne 0 et d’écart-type 1,5, sur une grille de −6 à 6 par pas de 0,1. Le niveau de départ choisit la première question, pas l’a priori de notation.
+
+Les questions suivantes visent la difficulté la plus proche de l’aptitude estimée, parmi les questions disponibles et compatibles avec le temps restant. La note utilise la distribution estimée pour prédire les seules questions non traitées. Le modèle stabilise les cas tout juste / tout faux et permet des tests numériques reproductibles ; il ne prouve pas une validité psychométrique. Les taux restent dépendants des populations et conditions d’évaluation. Cinq réponses sont un minimum opérationnel, pas un certificat de précision.
+
+## Aperçu enseignant
+
+**Commencer le test** dans l’aperçu apprenant utilise le même moteur. **Recommencer le test** reste possible dans cette simulation uniquement. Les questions et paramètres sont conservés en session ; aucune tentative, observation de calibration ou note réelle n’est créée. Le tableau enseignant présente les observations actuelles ; une évaluation déjà figée utilise sa référence propre.
+
+## Stockage, sauvegarde et désactivation
+
+La base dédiée est **`storage/adaptive.sqlite`**, schéma 4. Elle se crée automatiquement au premier enregistrement des réglages ou accès apprenant ; l’aperçu seul peut fonctionner en mémoire. PHP doit pouvoir écrire dans `storage/`. Aucune base vide n’est à copier depuis dev.
+
+La migration des schémas 1/2/3 conserve les identités anciennes et les résultats, construit les correspondances de versions et les observations admissibles. Une sauvegarde SQLite cohérente est créée avant la migration d’une base sur disque. Les mises à jour de l’application sauvegardent aussi la base adaptative lorsqu’elle existe. Garder ensemble les sauvegardes de la base LMS et de sa base adaptative.
+
+`APP_ADAPTIVE_QCM=0` désactive le module sans supprimer sa base. Conserver le parseur actuel, qui masque les réservoirs aux apprenants. Un retour à un ancien code ne doit pas être réalisé seul sur une base migrée : préférer la désactivation, ou une restauration cohérente des bases et du code, après sauvegarde des données plus récentes.
+
+Le répertoire local `quiz-test` est un matériel d’audit, **pas une dépendance de l’application**. Il est ignoré par Git et n’appartient pas à la liste de fichiers publiée. Aucun déploiement n’est effectué par ces modifications.
 
 ## Vérifications
 
 ```sh
-php dev/tests/adaptive_qcm.php
+php dev/tests/adaptive_qcm.php                 # barèmes antérieurs et compatibilité
+php dev/tests/adaptive_qcm_model.php           # nouveau calcul, minimum, vitesse, références
+php dev/tests/adaptive_qcm_audit.php dev/quiz-test  # optionnel, copies des snapshots locaux
 php dev/tests/adaptive_qcm_concurrency.php
 node dev/tests/adaptive_qcm_browser.mjs
 php dev/tests/qcm_modes.php
-php dev/tests/smoke.php
 ```
 
-Les tests utilisent des bases temporaires : sélection locale, délais, double envoi, reprise, étalonnage provisoire, statistiques réservées aux évaluations, score final, affichage mobile, ajout d’un bloc tiers et révocation des droits.
+Les tests ne s’exécutent pas sur la base active. Les snapshots fournis sont copiés dans un dossier temporaire et leurs empreintes originales vérifiées après lecture. Les tests techniques sont complétés par des contrôles sur les résultats observés ; une étude de calibration avec des groupes plus variés reste distincte de ces vérifications logicielles.

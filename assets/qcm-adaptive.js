@@ -31,7 +31,11 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
       const number = value => new Intl.NumberFormat(document.documentElement.lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
       const percent = value => new Intl.NumberFormat(document.documentElement.lang, { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(value);
       if (state.score !== null) content.append(node('p', `${labels.score} : ${number(state.score / 10)} /10`, 'adaptive-score'));
-      if (state.grading && state.grading.raw_score !== null) {
+      if (state.grading?.method === 'all_answers') {
+        content.append(node('p', `${labels.basis} : ${state.grading.answered}`));
+        if (state.score === null) content.append(node('p', labels.insufficient, 'adaptive-feedback'));
+        else if (state.grading.provisional) content.append(node('p', labels.provisional));
+      } else if (state.grading && state.grading.raw_score !== null) {
         content.append(node('p', `${labels.difficulty} : ${percent(state.grading.raw_score)} %`));
         content.append(node('p', state.grading.relative
           ? `${labels.scale} : ${percent(state.grading.min)} % → ${percent(state.grading.max)} %`

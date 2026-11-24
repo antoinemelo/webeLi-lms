@@ -38,12 +38,22 @@ final class AdaptiveQcmPreview
         $pool=$reference?$reference->statistics($bank['questions']):$bank['questions'];
         $this->questions($pool);
         // An existing evaluation keeps exactly the same reference rates in the preview.
+        $version=null;
         if($reference&&$item['is_evaluation']){
-            $fingerprint=hash('sha256',json_encode([array_column($pool,'id'),$level,max(1,(int)$item['estimated_minutes'])*60],JSON_THROW_ON_ERROR));
-            $frozen=$reference->one('SELECT * FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$fingerprint]);
-            if($frozen)$this->insert('evaluation_pools',['item_id','fingerprint','pool'],[$frozen]);
+            $duration=max(1,(int)$item['estimated_minutes'])*60;$revision=$reference->referenceRevision((int)$item['id']);
+            if($revision)$this->insert('evaluation_revisions',['item_id','revision'],[['item_id'=>$item['id'],'revision'=>$revision]]);
+            $fingerprints=[AdaptiveQcm::fingerprint($pool,$level,$duration,$revision)];
+            if(!$revision)$fingerprints[]=hash('sha256',json_encode([array_column($pool,'id'),$level,$duration],JSON_THROW_ON_ERROR));
+            foreach($fingerprints as $fingerprint){
+                $frozen=$reference->one('SELECT * FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$fingerprint]);
+                if($frozen){
+                    $this->insert('evaluation_pools',['item_id','fingerprint','pool'],[$frozen]);
+                    if($fingerprint!==$fingerprints[0])$version=(int)($reference->one('SELECT scoring_version FROM runs WHERE item_id=? AND pool=? ORDER BY started_at LIMIT 1',[$item['id'],$frozen['pool']])['scoring_version']??2);
+                }
+            }
         }
-        return $this->store->start($item,$teacherId,$bank,$now);
+        if($reference)$bank['reference_questions']=$pool;
+        return $this->store->start($item,$teacherId,$bank,$now,$version);
     }
 
     /** The snapshot is server-side session data, never supplied by the browser. */

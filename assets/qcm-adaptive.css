@@ -11,3 +11,4 @@
 .adaptive-qcm [hidden]{display:none!important}.qcm-authoring-modal .adaptive-authoring{margin:1rem 0 0;padding:0;border:0}.qcm-authoring-modal .adaptive-statistics{max-height:none;overflow:visible}.qcm-authoring-modal .adaptive-statistics p{margin:1rem 0}.adaptive-settings [role=status]{flex-basis:100%;font-size:.9rem}
 
 .adaptive-qcm button.button.secondary{background:#f3f2f7;color:#5542a5}
+.adaptive-question-stat{padding:1rem 0;border-bottom:1px solid #e8e5ef}.adaptive-question-stat p{margin:.5rem 0!important;font-size:.95rem}.adaptive-stat-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}.adaptive-stat-badges span{padding:.3rem .55rem;background:#f1edf9;border-radius:.5rem;font-size:.9rem}.adaptive-block-statistics{margin:1rem 0;padding:1rem;border:1px solid #e2ddec;border-radius:.75rem}.adaptive-block-statistics summary{cursor:pointer;font-weight:700}.adaptive-block-statistics .adaptive-statistics{max-height:28rem;overflow:auto}

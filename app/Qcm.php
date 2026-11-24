@@ -250,7 +250,7 @@ final class Qcm
             if(isset($expectedKeys[$itemId][$key]))$answered[(int)$attempt['student_id']][$itemId][$key]=true;
         }
         $expected=[];$completed=[];
-        if(function_exists('adaptive_qcm_results'))foreach(adaptive_qcm_results($pdo,array_keys($expectedKeys)) as $itemId=>$results)foreach($results as $studentId=>$result)if(isset($expectedKeys[$itemId]['adaptive']))$answered[$studentId][$itemId]['adaptive']=true;
+        if(function_exists('adaptive_qcm_results'))foreach(adaptive_qcm_results($pdo,array_keys($expectedKeys),true) as $itemId=>$results)foreach($results as $studentId=>$result)if(isset($expectedKeys[$itemId]['adaptive']))$answered[$studentId][$itemId]['adaptive']=true;
         foreach($expectedKeys as $itemId=>$keys)$expected[(int)$itemId]=count($keys);
         foreach($answered as $studentId=>$items)foreach($items as $itemId=>$keys)if(count($keys)===$expected[$itemId])$completed[(int)$studentId][(int)$itemId]=true;
         return ['expected'=>$expected,'completed'=>$completed];

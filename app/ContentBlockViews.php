@@ -47,6 +47,7 @@ function render_content_block_editor(int $index,array $block): void
         <div class="submission-settings"<?=$kind==='submission'?'':' hidden'?>><label class="field"><span><?=e(t('Réponse attendue'))?></span><select name="block_submission_mode[]"><?php foreach(WorkSubmission::MODES as $mode): ?><option value="<?=$mode?>" <?=($block['submission_mode']??'link')===$mode?'selected':''?>><?=e(work_mode_label($mode))?></option><?php endforeach; ?></select></label><label class="field"><span><?=e(t('Remise'))?></span><select name="block_submission_required[]"><option value="1" <?=($block['submission_required']??1)?'selected':''?>><?=e(t('Obligatoire'))?></option><option value="0" <?=!($block['submission_required']??1)?'selected':''?>><?=e(t('Facultatif'))?></option></select></label></div>
         <div class="block-preview-actions" data-block-markdown-actions<?=$kind==='markdown'?'':' hidden'?>><button type="button" class="button secondary" data-block-preview><?=e(t('Aperçu'))?></button><button type="button" class="button secondary" data-block-preview-close hidden><?=e(t('Fermer l’aperçu'))?></button></div>
         <div class="content-block block-author-preview" data-block-author-preview hidden></div>
+        <?php if($kind==='markdown'&&function_exists('render_adaptive_block_statistics'))render_adaptive_block_statistics(db(),$block); ?>
         <p class="block-feedback" data-block-feedback role="status" hidden></p>
       </div>
     </article><?php

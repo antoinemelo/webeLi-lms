@@ -309,6 +309,10 @@ function maintenance_apply_release(PDO $pdo,string $root,array $manifest,?callab
         try{$databaseCompatibility=database_compatibility_contract($releaseRoot.'/database/compatibility.php');database_plan_packaged_migrations($pdo,$releaseRoot.'/database/migrations',(int)$manifest['database_version']);}catch(Throwable $exception){throw new UpdateException('La chaîne de migrations Git est incomplète : '.$exception->getMessage(),0,$exception);}
         maintenance_messaging_plan($root,$releaseRoot,(int)$manifest['messaging_database_version']);
         maintenance_backup_database($pdo,$backup.'/apr.sqlite');
+        if(is_file($storage.'/adaptive.sqlite')){
+            $adaptive=new PDO('sqlite:'.$storage.'/adaptive.sqlite');$adaptive->exec('PRAGMA busy_timeout=10000');
+            maintenance_backup_database($adaptive,$backup.'/adaptive.sqlite');$adaptive=null;
+        }
         $oldManifest=maintenance_installed_manifest($root);$oldFiles=array_keys($oldManifest['files']??[]);
         $changes=maintenance_file_changes($root,$releaseRoot,$manifest,$oldManifest);
         foreach($changes['backup'] as $relative)maintenance_copy_file_atomic($root.'/'.$relative,$backup.'/code/'.$relative);

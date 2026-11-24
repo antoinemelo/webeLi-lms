@@ -45,8 +45,7 @@
       help.querySelectorAll('[data-qcm-mode-help]').forEach((text) => { text.hidden = text.dataset.qcmModeHelp !== select.value; });
       status.textContent = '';
     });
-    const settings = help.querySelector('.adaptive-settings');
-    settings?.addEventListener('submit', async (event) => {
+    help.querySelectorAll('.adaptive-settings').forEach((settings) => settings.addEventListener('submit', async (event) => {
       event.preventDefault();
       const button = settings.querySelector('button');
       if (button.disabled) return;
@@ -59,7 +58,7 @@
         feedback.textContent = result.message;
       } catch (failure) { feedback.textContent = failure.message || settings.dataset.error; }
       finally { button.disabled = false; }
-    });
+    }));
     help.querySelector('[data-qcm-copy]').addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(example.textContent);

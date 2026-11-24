@@ -11,10 +11,10 @@ function adaptive_qcm_present(array $blocks): bool
 /** Refresh calculated author metadata on opening the editor; never update statistics from text. */
 function adaptive_qcm_author_source(PDO $core,array $block): string
 {
-    $source=(string)$block['body'];$store=AdaptiveQcm::store($core,false);
+    $source=str_replace(["\r\n","\r"],"\n",(string)$block['body']);$store=AdaptiveQcm::store($core,false);
     if(!$store||empty($block['page_id'])||empty($block['id']))return $source;
-    $q=$store->db->prepare('SELECT id,presentations,correct,timed_answers,time_sum FROM questions WHERE page_id=? AND block_id=?');
-    $q->execute([$block['page_id'],$block['id']]);$stats=array_column($q->fetchAll(),null,'id');
+    $q=$store->db->prepare('SELECT canonical_id,presentations,correct,timed_answers,time_sum FROM questions WHERE page_id=? AND block_id=? ORDER BY presentations DESC,id');
+    $q->execute([$block['page_id'],$block['id']]);$stats=[];foreach($q as $row)$stats[$row['canonical_id']]??=$row;
     return preg_replace_callback('/(^[\t ]*:::\s*qcm_(?:adap|adaptatif)(?:\[[^\]\r\n]+\]\[[^\]\r\n]+\])?[\t ]*\R)(.*?)(\R[\t ]*:::[\t ]*(?=\R|$))/msu',static function($match)use($block,$stats){
         $section=Qcm::sections($match[0])[0]??[];
         if(empty($section['valid']))return $match[0];
@@ -22,7 +22,7 @@ function adaptive_qcm_author_source(PDO $core,array $block): string
         $body=preg_replace_callback('/^[\t ]*\[[0-3]\]\[[0-9]+\]\[[-0-9.,]+\]\[[0-9]+\]\[[0-9]+\][\t ]*$/m',static function($line)use(&$index,$section,$block,$stats){
             $question=$section['questions'][$index++];unset($question['metadata']);
             $question['domain']=$section['domain']??'';$question['theme']=$section['theme']??'';
-            $id=hash('sha256',$block['page_id']."\0".$block['id']."\0".json_encode($question,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR));
+            $id=AdaptiveQcm::canonicalId($question,(int)$block['page_id'],(int)$block['id']);
             $s=$stats[$id]??['presentations'=>0,'correct'=>0,'timed_answers'=>0,'time_sum'=>0];
             $mean=$s['timed_answers']?number_format($s['time_sum']/$s['timed_answers'],1,'.',''):'-';
             return '['.$question['level'].']['.$question['seconds'].']['.$mean.']['.$s['presentations'].']['.$s['correct'].']';
@@ -45,12 +45,52 @@ function render_adaptive_qcm(array $item,array $blocks,bool $preview=false): voi
         'question'=>'Question','total'=>'Temps total restant','remaining'=>'Temps de la question','ready'=>'Le chronomètre démarre lorsque vous commencez.','expected'=>'Réponse attendue'] as $key=>$label)$labels[$key]=t($label);
     if($preview){$labels['start']=t('Commencer le test');$labels['retry']=t('Recommencer le test');}
     else $labels['ready']=t('Le chronomètre démarre au premier clic. Une tentative en cours ne peut pas être recommencée.');
+    foreach(['time_remaining'=>'Il ne reste pas assez de temps pour une question complète.',
+        'global_timeout'=>'Fin du test : question non prise en compte.',
+        'insufficient'=>'Moins de 5 questions traitées : aucune note automatique.',
+        'basis'=>'Questions prises en compte',
+        'provisional'=>'Les questions disposent encore de peu d’historique. Le résultat reste une estimation.'] as $key=>$label)$labels[$key]=t($label);
     ?><section class="adaptive-qcm" data-adaptive-qcm data-item="<?=(int)$item['id']?>" data-preview="<?=$preview?'1':'0'?>" data-labels="<?=e(json_encode($labels,JSON_UNESCAPED_UNICODE))?>">
       <h2><?=e(t('QCM adaptatif'))?></h2>
       <p><?=e(t($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : nouvel essai après la fin.')))?> · <?=(int)$item['estimated_minutes']?> min</p>
       <?php if($preview): ?><p><?=e(t('Test enseignant : vous pouvez recommencer librement. Vos essais ne modifient ni les résultats des apprenants ni les statistiques des questions.'))?></p><button type="button" class="button secondary" data-adaptive-restart hidden><?=e(t('Recommencer le test'))?></button><?php endif; ?>
       <div data-adaptive-content><p><?=e(t('Chargement…'))?></p></div><p data-adaptive-error role="alert" hidden></p><noscript><?=e(t('Activez JavaScript pour réaliser cette activité chronométrée.'))?></noscript>
     </section><?php
+}
+
+/** Teacher-readable facts, separate from the manual level and from the learner's grade. */
+function render_adaptive_question_statistics(array $questions): void
+{
+    ?><div class="adaptive-statistics"><?php foreach($questions as $question):
+        $s=$question['stats'];$sample=$question['calibration']??['n'=>0,'correct'=>0,'mean'=>null];$n=(int)$sample['n'];
+        $mean=$s['timed_answers']?number_format($s['time_sum']/$s['timed_answers'],1,',',''):'—'; ?>
+        <article class="adaptive-question-stat"><strong><?=e($question['title'])?></strong>
+        <div class="adaptive-stat-badges"><span><?=e(t('Niveau initial'))?> : <?=(int)$question['level']?></span>
+        <span><?=e(t('Difficulté estimée'))?> : <?=e(number_format(100-$question['rate'],1,',',''))?> %</span>
+        <span><?=e(t($n===0?'Estimation initiale':($n<20?'Historique limité':'Historique disponible')))?></span></div>
+        <p><?=e(t('Réponses retenues'))?> : <?=$n?> · <?=e(t('Réussite observée'))?> : <?=$question['observed_rate']===null?'—':e(number_format($question['observed_rate'],1,',','')).' %'?> · <?=e(t('Temps moyen'))?> : <?=e($mean)?> s</p>
+        <small><?=e(t('Présentations en évaluation'))?> : <?=(int)$s['presentations']?> · <?=e(t('Réponses justes'))?> : <?=(int)$s['correct']?></small></article>
+    <?php endforeach; ?></div><?php
+}
+
+function render_adaptive_block_statistics(PDO $core,array $block): void
+{
+    if(!AdaptiveQcm::enabled()||empty($block['page_id'])||empty($block['id'])||!AdaptiveQcm::has((string)$block['body']))return;
+    try{
+        $store=AdaptiveQcm::store($core,false);$questions=[];
+        foreach(Qcm::sections($block['body']) as $section)if($section['type']==='adaptive'&&!empty($section['valid']))foreach($section['questions'] as $question){
+            $question['canonical_id']=AdaptiveQcm::canonicalId($question,(int)$block['page_id'],(int)$block['id']);
+            $question['id']=$question['canonical_id'];$questions[]=$question;
+        }
+        if(!$questions)return;
+        $questions=$store?$store->statistics($store->resolveVersions($questions)):array_map(static fn($question)=>$question+[
+            'stats'=>['presentations'=>0,'correct'=>0,'timed_answers'=>0,'time_sum'=>0],
+            'rate'=>AdaptiveQcm::INITIAL_RATES[$question['level']],'observed_rate'=>null,
+        ],$questions);
+        ?><details class="adaptive-block-statistics" open><summary><?=e(t('Niveaux et statistiques des questions'))?></summary>
+        <p><?=e(t('Les évaluations actualisent la difficulté estimée. Le niveau initial reste votre repère. Une modification du texte, des réponses ou du temps maximal démarre une nouvelle calibration.'))?></p>
+        <?php render_adaptive_question_statistics($questions); ?></details><?php
+    }catch(InvalidArgumentException){ /* The author is still editing an incomplete bank. */ }
 }
 
 function render_adaptive_qcm_editor(int $pageId,array $blocks): void
@@ -68,13 +108,21 @@ function render_adaptive_qcm_editor(int $pageId,array $blocks): void
       <?php if($present): try{
         $bank=AdaptiveQcm::bank(db(),$pageId,app_public_base_url());
         $questions=$store?$store->statistics($bank['questions']):array_map(static fn($question)=>$question+[
-            'stats'=>['presentations'=>0,'correct'=>0,'timed_answers'=>0,'time_sum'=>0],'rate'=>AdaptiveQcm::INITIAL_RATES[$question['level']],
+            'stats'=>['presentations'=>0,'correct'=>0,'timed_answers'=>0,'time_sum'=>0],'rate'=>AdaptiveQcm::INITIAL_RATES[$question['level']],'observed_rate'=>null,
         ],$bank['questions']);
         ?><h4 class="h6"><?=e(t('Questions enregistrées'))?> · <?=count($questions)?></h4>
         <p><?=e(t('Les statistiques proviennent uniquement des évaluations : temps moyen, présentations et réponses justes. Enregistrez les modifications du contenu pour actualiser ce réservoir.'))?></p>
-        <div class="adaptive-statistics"><?php foreach($questions as $question): $s=$question['stats'];$mean=$s['timed_answers']?number_format($s['time_sum']/$s['timed_answers'],1,'.',''):'-'; ?>
-          <p><strong><?=e($question['title'])?></strong><br><code><?=e('['.$question['level'].']['.$question['seconds'].']['.$mean.']['.$s['presentations'].']['.$s['correct'].']')?></code> · <?=e(number_format($question['rate'],1,',',''))?> % <?=e(t($s['presentations']?'de réussite':'provisoire'))?></p>
-        <?php endforeach; ?></div><?php
+        <p><?=e(t('Au moins 5 questions traitées sont nécessaires pour attribuer une note. Une réponse correcte raisonnablement rapide peut légèrement faciliter la question pour les futurs tests ; une réponse lente n’ajoute aucune pénalité de difficulté.'))?></p>
+        <?php render_adaptive_question_statistics($questions);
+        $actor=require_actor();$items=all('SELECT pi.id,pi.course_id,c.title FROM pathway_items pi JOIN courses c ON c.id=pi.course_id WHERE pi.page_id=? AND pi.is_evaluation=1 AND c.archived=0 ORDER BY c.title,pi.position',[$pageId]);
+        $items=array_values(array_filter($items,static fn($item)=>teacher_can_access_course(db(),(int)$item['course_id'],(int)$actor['id'])));
+        if($items): ?>
+        <h4 class="h6"><?=e(t('Référence des évaluations'))?></h4>
+        <p><?=e(t('Une évaluation conserve la même référence pour ses apprenants. Après une phase de calibration, actualisez-la pour les prochains participants. Les tentatives et résultats existants restent inchangés ; aucune tentative supplémentaire n’est autorisée.'))?></p>
+        <form method="post" class="adaptive-settings" data-error="<?=e(t('Actualisation impossible.'))?>"><?=csrf_field()?><input type="hidden" name="action" value="adaptive_qcm_reference"><input type="hidden" name="page_id" value="<?=$pageId?>">
+        <label><?=e(t('Évaluation'))?><select name="item_id"><?php foreach($items as $candidate): ?><option value="<?=(int)$candidate['id']?>"><?=e($candidate['title'])?> · #<?=(int)$candidate['id']?></option><?php endforeach; ?></select></label>
+        <button class="button secondary"><?=e(t('Actualiser pour les prochains participants'))?></button><span role="status" data-adaptive-settings-status></span></form>
+        <?php endif;
       }catch(InvalidArgumentException $error){?><p class="alert alert-warning"><?=e(t($error->getMessage()))?></p><?php }
       else: ?><p><?=e(t('Ajoutez des questions adaptatives ou un bloc QCM tiers, puis enregistrez le contenu pour voir le réservoir.'))?></p><?php endif;
     else: ?><p><?=e(t('Enregistrez d’abord cette nouvelle page pour accéder aux réglages et au réservoir.'))?></p><?php endif; ?>
@@ -97,6 +145,21 @@ function adaptive_qcm_settings(): never
         flash(t($error->getMessage()),'error');
     }
     redirect('page-edit',['id'=>$pageId,'course'=>(int)($_POST['course_id']??0)]);
+}
+
+function adaptive_qcm_reference(): never
+{
+    verify_csrf();$user=require_actor();header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store, private');
+    $item=one('SELECT id,page_id,course_id,is_evaluation FROM pathway_items WHERE id=?',[(int)($_POST['item_id']??0)]);
+    if(!AdaptiveQcm::enabled()||$user['role']!=='teacher'||!$item||!$item['is_evaluation']||(int)$item['page_id']!==(int)($_POST['page_id']??0)||!teacher_can_access_course(db(),(int)$item['course_id'],(int)$user['id'])||!teacher_can_access_page(db(),(int)$item['page_id'],(int)$user['id'])){
+        http_response_code(403);echo json_encode(['error'=>t('Accès interdit.')]);exit;
+    }
+    try{
+        AdaptiveQcm::store(db())->refreshReference((int)$item['id']);
+        echo json_encode(['message'=>t('La prochaine tentative utilisera les statistiques actualisées et le nouveau calcul. Les résultats existants sont conservés.')]);
+    }catch(InvalidArgumentException $error){http_response_code(409);echo json_encode(['error'=>t($error->getMessage())]);}
+    catch(Throwable $error){error_log('liike adaptive reference: '.$error->getMessage());http_response_code(503);echo json_encode(['error'=>t('Activité indisponible. Réessayez.')]);}
+    exit;
 }
 
 /** Teacher-only simulation, with the same engine and no persistent attempts or statistic writes. */
@@ -171,7 +234,7 @@ function adaptive_qcm_http(): never
         $run=$store->latest((int)$user['id'],(int)$item['id']);
         if($operation==='start'){
             $bank=AdaptiveQcm::bank(db(),(int)$item['page_id'],app_public_base_url());
-            $run=$store->start($item,(int)$user['id'],$bank);
+            $run=$store->start($item,(int)$user['id'],$bank,present:true);
         }
         if(!$run){
             if($operation==='answer')throw new InvalidArgumentException('Commencez cette activité avant de répondre.');
@@ -197,7 +260,7 @@ function adaptive_qcm_http(): never
 }
 
 /** Virtual attempts expose the adaptive score, never a fictitious count of correct answers. */
-function adaptive_qcm_results(PDO $core,array $itemIds): array
+function adaptive_qcm_results(PDO $core,array $itemIds,bool $includeUnscored=false): array
 {
     $store=AdaptiveQcm::store($core,false);if(!$store||!$itemIds)return [];
     $out=[];$now=microtime(true);
@@ -205,12 +268,13 @@ function adaptive_qcm_results(PDO $core,array $itemIds): array
         $marks=implode(',',array_fill(0,count($ids),'?'));
         $q=$store->db->prepare("SELECT * FROM runs WHERE item_id IN ($marks) AND finished_at IS NULL AND ends_at<=?");$q->execute([...$ids,$now]);
         foreach($q->fetchAll() as $run)$store->advance($run['id'],(int)$run['student_id'],$now);
+        $scoreFilter=$includeUnscored?'':' AND r.score IS NOT NULL';
         $q=$store->db->prepare("SELECT r.*,COUNT(a.ordinal) AS total_questions,SUM(a.result='correct') AS correct_questions
-            FROM runs r JOIN answers a ON a.run_id=r.id WHERE r.item_id IN ($marks) AND r.finished_at IS NOT NULL AND r.score IS NOT NULL
+            FROM runs r LEFT JOIN answers a ON a.run_id=r.id WHERE r.item_id IN ($marks) AND r.finished_at IS NOT NULL $scoreFilter
             AND NOT EXISTS(SELECT 1 FROM runs newer WHERE newer.item_id=r.item_id AND newer.student_id=r.student_id AND newer.finished_at IS NOT NULL AND newer.started_at>r.started_at)
             GROUP BY r.id");$q->execute($ids);
         foreach($q->fetchAll() as $run)$out[(int)$run['item_id']][(int)$run['student_id']]=[
-            'score_percent'=>(float)$run['score'],'correct_questions'=>(int)$run['correct_questions'],'total_questions'=>(int)$run['total_questions'],
+            'score_percent'=>$run['score']===null?null:(float)$run['score'],'correct_questions'=>(int)$run['correct_questions'],'total_questions'=>(int)$run['total_questions'],
             'attempt_count'=>1,'answered_at'=>gmdate('Y-m-d H:i:s',(int)$run['finished_at']),'adaptive'=>true];
     }
     return $out;
