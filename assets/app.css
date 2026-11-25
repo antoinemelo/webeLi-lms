@@ -996,5 +996,5 @@ h1{font-size:2.25rem}
 .student-page-heading>.student-heading-description{max-width:46rem;margin:.7rem 0 0;color:var(--muted);font-size:1.05rem}
 .student-mode .next-step{margin-bottom:2rem}
 .reward-nav-label{position:relative;display:inline-block;white-space:nowrap}
-.reward-nav-score{position:absolute;bottom:calc(100% - .6rem);left:calc(100% - .5rem);display:grid;place-items:center;min-width:1.6rem;height:1.6rem;padding:0 .3rem;border:2px solid var(--canvas);border-radius:999px;background:#fff0bd;color:#79520b;font-size:.72rem;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.reward-nav-score{position:absolute;bottom:calc(100% - .6rem);left:calc(100% - .8rem);display:grid;place-items:center;min-width:1.6rem;height:1.6rem;padding:0 .3rem;border:2px solid var(--canvas);border-radius:999px;background:#fff0bd;color:#79520b;font-size:.72rem;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bottom-nav .reward-nav-score{border-color:#fff}
