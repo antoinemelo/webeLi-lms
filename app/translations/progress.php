@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 return [
+    'Vue détaillée'=>['en'=>'Detailed view','de'=>'Detailansicht','it'=>'Vista dettagliata','es'=>'Vista detallada'],
+    'Bilan'=>['en'=>'Report','de'=>'Bericht','it'=>'Resoconto','es'=>'Informe'],
+    'Activer bilan'=>['en'=>'Enable report','de'=>'Bericht freigeben','it'=>'Attiva resoconto','es'=>'Activar informe'],
+    'Désactiver bilan'=>['en'=>'Disable report','de'=>'Freigabe aufheben','it'=>'Disattiva resoconto','es'=>'Desactivar informe'],
+    'Visites'=>['en'=>'Visits','de'=>'Besuche','it'=>'Visite','es'=>'Visitas'],
+    'Activer l’accès externe au bilan'=>['en'=>'Enable external access to the report','de'=>'Externen Zugriff auf den Bericht aktivieren','it'=>'Attiva accesso esterno al resoconto','es'=>'Activar acceso externo al informe'],
+    'Désactiver l’accès externe au bilan'=>['en'=>'Disable external access to the report','de'=>'Externen Zugriff auf den Bericht deaktivieren','it'=>'Disattiva accesso esterno al resoconto','es'=>'Desactivar acceso externo al informe'],
+    'Lien externe activé'=>['en'=>'External link enabled','de'=>'Externer Link aktiviert','it'=>'Link esterno attivo','es'=>'Enlace externo activado'],
+    'Accès réservé à l’apprenant et à ses enseignants'=>['en'=>'Access restricted to the learner and their teachers','de'=>'Zugriff nur für Lernende und ihre Lehrpersonen','it'=>'Accesso riservato allo studente e ai suoi docenti','es'=>'Acceso reservado al estudiante y a sus docentes'],
+    'Notes barrées : non comptabilisées dans la moyenne.'=>['en'=>'Crossed-out grades are excluded from the average.','de'=>'Durchgestrichene Noten zählen nicht zum Durchschnitt.','it'=>'I voti barrati sono esclusi dalla media.','es'=>'Las notas tachadas no cuentan en la media.'],
+    'Retrouve tes objectifs, tes compétences et les commentaires dans la vue détaillée.'=>['en'=>'Find your objectives, skills and feedback in the detailed view.','de'=>'Ziele, Kompetenzen und Rückmeldungen findest du in der Detailansicht.','it'=>'Trovi obiettivi, competenze e commenti nella vista dettagliata.','es'=>'Consulta tus objetivos, competencias y comentarios en la vista detallada.'],
     'Autoéval. /3'=>['en'=>'Self-assess. /3','de'=>'Selbstbew. /3','it'=>'Autoval. /3','es'=>'Autoeval. /3'],
     'ENS / FOR'=>['en'=>'TEACH / TRAIN','de'=>'LEHR / AUSB','it'=>'DOC / FORM','es'=>'DOC / FORM'],
     'QCM /10'=>['en'=>'Quiz /10','de'=>'Quiz /10','it'=>'Quiz /10','es'=>'Cuestionario /10'],

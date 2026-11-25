@@ -210,6 +210,10 @@ function open_authenticated_session(array $user): never
         set_pwa_cookie($remembered['token'],$remembered['expires_at']);
     }elseif(($_POST['pwa_mode']??'')==='1'){forget_pwa_cookie(db());}
     flash(t('Bienvenue :name !',['name'=>$user['first_name']]));
+    if(!empty($_SESSION['pending_progress_report_enrollment'])){
+        $enrollment=(int)$_SESSION['pending_progress_report_enrollment'];unset($_SESSION['pending_progress_report_enrollment']);
+        redirect('progress-report',['enrollment'=>$enrollment]);
+    }
     if($user['role']==='student'&&!empty($_SESSION['pending_join_course_code']))redirect('join');
     unset($_SESSION['pending_join_course_code']);
     if($user['role']==='teacher'&&!empty($_SESSION['pending_library_share'])){
@@ -487,11 +491,11 @@ function handle_action(string $action): never
         }
         exit;
     }
-    if($action==='revoke_progress_report'){
+    if(in_array($action,['revoke_progress_report','activate_progress_report'],true)){
         $enrollmentId=(int)($_POST['enrollment_id']??0);
         try{
-            progress_report_revoke(db(),$enrollmentId,(int)$user['id']);
-            flash('Le lien privé du bilan est désactivé. Un prochain export détaillé créera un nouveau lien.');
+            progress_report_set_enabled(db(),$enrollmentId,(int)$user['id'],$action==='activate_progress_report');
+            flash($action==='activate_progress_report'?'Le lien externe du bilan est activé.':'Le lien externe du bilan est désactivé. Le bilan reste accessible dans votre espace et celui de l’apprenant.');
             redirect('student-detail',['enrollment'=>$enrollmentId]);
         }catch(InvalidArgumentException){http_response_code(403);exit(t('Accès interdit.'));}
     }
@@ -808,7 +812,7 @@ function handle_action(string $action): never
 
     if($action==='save_qcm_draft'){
         $result=$user['role']==='student'
-            ?Qcm::saveDraft(db(),(int)$user['id'],(int)($_POST['item_id']??0),(int)($_POST['block_id']??0),trim((string)($_POST['qcm_key']??'')),(array)($_POST['answers']??[]),(int)($_POST['revision']??0),(int)($_POST['attempt_count']??0))
+            ?Qcm::saveDraft(db(),(int)$user['id'],(int)($_POST['item_id']??0),(int)($_POST['block_id']??0),trim((string)($_POST['qcm_key']??'')),(array)($_POST['answers']??[]),(int)($_POST['revision']??0),(int)($_POST['attempt_count']??0),(string)($_POST['quiz_epoch']??'0:0'))
             :['status'=>'forbidden'];
         http_response_code($result['status']==='saved'?200:($result['status']==='forbidden'?403:409));
         header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store');
@@ -817,8 +821,9 @@ function handle_action(string $action): never
 
     if($action==='submit_qcm'&&$user['role']==='student'){
         $itemId=(int)($_POST['item_id']??0);$blockId=(int)($_POST['block_id']??0);$key=trim((string)($_POST['qcm_key']??''));
-        $result=Qcm::submit(db(),(int)$user['id'],$itemId,$blockId,$key,(array)($_POST['answers']??[]));
-        if($result['status']==='saved')flash(t(!empty($result['is_evaluation'])?'QCM terminé : :score %.':'QCM enregistré : :score %.',['score'=>number_format((float)$result['score'],0,',','')]));
+        $result=Qcm::submit(db(),(int)$user['id'],$itemId,$blockId,$key,(array)($_POST['answers']??[]),(string)($_POST['quiz_epoch']??'0:0'));
+        if($result['status']==='saved'&&!empty($result['controlled']))flash(t('Exercice terminé, aucune note conservée.'));
+        elseif($result['status']==='saved')flash(t(!empty($result['is_evaluation'])?'QCM terminé : :score %.':'QCM enregistré : :score %.',['score'=>number_format((float)$result['score'],0,',','')]));
         elseif($result['status']==='already_submitted')flash(t('Ce QCM d’évaluation a déjà été terminé.'),'error');
         elseif($result['status']==='changed')flash(t('Le QCM a changé. Rechargez la page et réessayez.'),'error');
         else flash(t('Ce QCM n’est pas disponible.'),'error');
@@ -1045,7 +1050,7 @@ function handle_action(string $action): never
             else try{
                 db()->beginTransaction();
                 $position = (int)(one('SELECT COALESCE(MAX(position),0)+1 AS n FROM pathway_items WHERE course_id=?',[$courseId])['n']);
-                run('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight,self_evaluation_enabled,event_data) VALUES(?,?,?,?,?,?,?,?)', [$courseId,$pageId,$position,$deadline,$isEvaluation,$isEvaluation?$weight:1,$selfEvaluation,$eventData]);
+                run('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,evaluation_weight,self_evaluation_enabled,event_data,is_controlled_exercise) VALUES(?,?,?,?,?,?,?,?,?)', [$courseId,$pageId,$position,$deadline,$isEvaluation,$isEvaluation?$weight:1,$selfEvaluation,$eventData,(int)(($_POST['item_type']??'')==='controlled')]);
                 db()->commit();flash('Page ajoutée au parcours.');
             }catch(Throwable $exception){if(db()->inTransaction())db()->rollBack();throw $exception;}
             finally{release_edit_locks(db(),(int)$user['id'],'course_structure',$courseId);}
@@ -1141,6 +1146,15 @@ function handle_action(string $action): never
         elseif(in_array($result['status'],['invalid','missing'],true))flash(t('Position d’étape invalide.'),'error');
         redirect('pathway',$result['course_id']?['course'=>$result['course_id']]:[]);
     }
+    if($action==='authorize_quiz_retake'&&$user['role']==='teacher'){
+        $enrollmentId=(int)($_POST['enrollment_id']??0);
+        try{
+            if(empty($_POST['confirm_retake']))throw new InvalidArgumentException('Confirmez la suppression du résultat précédent.');
+            QuizAttempts::authorizeRetake(db(),(int)$user['id'],$enrollmentId,(int)($_POST['item_id']??0),(string)($_POST['quiz_epoch']??''));
+            flash('Nouvel essai autorisé pour cet apprenant. Les notes et résultats précédents de cette activité ont été supprimés.');
+        }catch(InvalidArgumentException $error){flash($error->getMessage(),'error');}
+        redirect('student-detail',['enrollment'=>$enrollmentId]);
+    }
     if ($action === 'update_pathway_item' && $user['role'] === 'teacher') {
         $id=(int)$_POST['item_id'];
         $item=one('SELECT * FROM pathway_items WHERE id=?',[$id]);
@@ -1160,15 +1174,19 @@ function handle_action(string $action): never
                 if(!$allowedStudents){flash('Sélectionnez au moins un apprenant pour limiter l’accès à cette étape.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             }
             try{[$isEvaluation,$selfEvaluation,$eventData]=pathway_type_settings($_POST,$item);}catch(InvalidArgumentException $exception){flash($exception->getMessage(),'error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            if(!$isEvaluation&&(bool)$item['is_evaluation']&&one('SELECT 1 FROM progress WHERE pathway_item_id=? AND evaluation_score IS NOT NULL LIMIT 1',[$id])){
-                flash(t('Cette évaluation contient des notes. Modifiez-les dans le suivi des apprenants. Pour changer le type, retirez d’abord les notes depuis ce suivi.'),'error');
+            $controlled=(int)(($_POST['item_type']??'')==='controlled');
+            $typeChanged=pathway_item_type($item)!==pathway_item_type(['is_evaluation'=>$isEvaluation,'is_controlled_exercise'=>$controlled,'self_evaluation_enabled'=>$selfEvaluation,'event_data'=>$eventData]);
+            if($typeChanged&&$item['is_evaluation']&&empty($_POST['confirm_type_reset'])){
+                flash('Confirmez la suppression des notes et résultats avant de quitter le type Évaluation.','error');
                 redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);
             }
             $weight=normalize_evaluation_weight($_POST['evaluation_weight']??1);
             if($isEvaluation&&$weight===null){flash('Choisissez une pondération valide.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
-            $update=db()->prepare("UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,event_data=?,revision=revision+1,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
-            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$frameworkTracking,$eventData,$id,$revision]);
-            if($update->rowCount()!==1){flash('Cette étape a été modifiée par un autre enseignant.','error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
+            try{QuizAttempts::transaction(db(),function()use($id,$revision,$deadline,$isEvaluation,$selfEvaluation,$eventData,$controlled,$typeChanged,$weight,$accessMode,$frameworkTracking,$allowedStudents,$item){
+            $update=db()->prepare("UPDATE pathway_items SET deadline=?,is_evaluation=?,self_evaluation_enabled=?,evaluation_weight=?,instructions=?,access_mode=?,framework_tracking_enabled=?,event_data=?,is_controlled_exercise=?,quiz_revision=quiz_revision+?,revision=revision+1,updated_at=strftime('%Y-%m-%d %H:%M:%f','now') WHERE id=? AND revision=?");
+            $update->execute([$deadline,$isEvaluation,$selfEvaluation,$isEvaluation?$weight:1,trim((string)$_POST['instructions']),$accessMode,$frameworkTracking,$eventData,$controlled,(int)$typeChanged,$id,$revision]);
+            if($update->rowCount()!==1)throw new InvalidArgumentException('Cette étape a été modifiée par un autre enseignant.');
+            if($typeChanged)QuizAttempts::clear(db(),$id);
             if($isEvaluation!==(int)$item['is_evaluation'])run("UPDATE progress SET teacher_level=NULL,evaluation_score=NULL,teacher_note='',teacher_validated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$id]);
             if($selfEvaluation!==(int)$item['self_evaluation_enabled']){
                 if(!$selfEvaluation)run("UPDATE progress SET student_level=NULL,student_note='',student_validated_at=NULL,teacher_level=CASE WHEN ?=1 THEN teacher_level ELSE NULL END,evaluation_score=CASE WHEN ?=1 THEN evaluation_score ELSE NULL END,teacher_note=CASE WHEN ?=1 THEN teacher_note ELSE '' END,teacher_validated_at=CASE WHEN ?=1 THEN teacher_validated_at ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE pathway_item_id=?",[$isEvaluation,$isEvaluation,$isEvaluation,$isEvaluation,$id]);
@@ -1179,6 +1197,7 @@ function handle_action(string $action): never
             foreach ((array)($_POST['skills']??[]) as $v) run('INSERT INTO item_skills SELECT ?,id FROM course_skills WHERE id=? AND course_id=?',[$id,(int)$v,$item['course_id']]);
             run('DELETE FROM pathway_item_students WHERE pathway_item_id=?',[$id]);
             foreach($allowedStudents as $studentId)run('INSERT INTO pathway_item_students(pathway_item_id,student_id) VALUES(?,?)',[$id,$studentId]);
+            });}catch(InvalidArgumentException $error){flash($error->getMessage(),'error');redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);}
             release_edit_locks(db(),(int)$user['id'],'pathway_item',$id);
             flash('Étape mise à jour.');
             redirect('pathway',['course'=>$item['course_id'],'edit'=>$id]);

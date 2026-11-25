@@ -92,12 +92,11 @@ Il peut ajouter une note puis envoyer son auto-positionnement. Un nouvel envoi r
 
 ### Consulter ses acquis
 
-L’écran **Acquis** propose deux synthèses :
+L’écran **Acquis** présente uniquement **Évaluation** : les notes du parcours, leur pondération et la moyenne. Les notes barrées ne comptent pas dans cette moyenne, qu’elles soient exclues individuellement ou que leur étape ne contribue pas aux moyennes.
 
-- les compétences du cours ;
-- les objectifs du cours.
+Le bouton **Vue détaillée** ouvre le bilan individuel avec les commentaires, objectifs et compétences. Il reste disponible pour l’apprenant et les enseignants autorisés sur un parcours actif, indépendamment du partage externe. Les anciennes adresses avec `kind=skill` ou `kind=objective` ouvrent désormais cette même vue Évaluation.
 
-Chaque carte compare le niveau moyen auto-évalué au niveau moyen confirmé. Le nombre de situations confirmées indique sur combien d’étapes la synthèse repose réellement.
+Sur la fiche enseignant d’un apprenant, **Bilan** ouvre ce document et **Visites** son historique de consultation. **Activer bilan / Désactiver bilan** contrôle seulement le lien externe. Le premier export détaillé crée ce lien privé ; une désactivation ultérieure reste effective même après de nouveaux exports. Une réactivation explicite ne réhabilite pas l’ancien lien révoqué. Sans partage externe, le QR des exports renvoie vers le bilan avec connexion et contrôle des droits.
 
 ### Consulter ses rewards
 
@@ -293,7 +292,7 @@ Les choix sont sauvegardés automatiquement comme brouillon, sans attribuer de s
 
 Dans une étape ordinaire, l’apprenant voit son résultat et peut recommencer. Si le type **Évaluation** est sélectionné, le bouton devient **Terminer le QCM** et une confirmation précède la remise définitive : le score reste visible par l’apprenant et apparaît dans le profil de l’apprenant côté enseignant. Pour limiter les copier-coller, le titre, la consigne et les blocs de contenu d’une évaluation ne sont pas sélectionnables dans la vue apprenant ; les champs personnels et les commandes restent utilisables. Le téléchargement PDF de l’étape est également retiré et refusé côté serveur pour l’apprenant. Ces restrictions ne s’appliquent pas aux vues enseignantes. L’enseignant voit aussi la moyenne du groupe par étape dans le tableau de bord, y compris si l’étape a été masquée après la remise, mais jamais les réponses choisies.
 
-Dans **Acquis → Évaluations**, une évaluation masquée reste présente pour assurer la continuité du suivi. Tant qu’elle n’est ni accessible ni notée, son vrai titre est remplacé par **Évaluation à venir**.
+Dans **Acquis → Évaluation**, une évaluation masquée reste présente pour assurer la continuité du suivi. Tant qu’elle n’est ni accessible ni notée, son vrai titre est remplacé par **Évaluation à venir**.
 
 La recherche porte sur le titre, le résumé, les tags, les objectifs et le nom du propriétaire ou de l’auteur connu d’une copie. Les listes permettent aussi de filtrer directement par statut, tag ou objectif. Le bouton à trois points, à droite du titre **Bibliothèque de contenus**, permet de créer une nouvelle page ou d’importer une page JSON dans une fenêtre dédiée. Dans l’éditeur, un rond orange apparaît à droite de **Modifier le contenu** dès qu’un changement local n’est pas encore enregistré. Chaque enseignant accède à ses contenus ainsi qu’aux contenus partagés auxquels il est autorisé à contribuer ; le filtre initial affiche uniquement ses propres contenus.
 
@@ -314,18 +313,18 @@ Dans l’éditeur de page, ouvrez **Créer un QCM en Markdown** (icône de quest
 :::
 ```
 
-Sous chaque question, les **cinq champs obligatoires** indiquent : niveau enseignant (0 à 3), temps maximal en secondes, temps moyen observé, nombre de présentations en évaluation et nombre de réponses justes en évaluation. Pour une nouvelle question, utilisez `[-][0][0]` pour les trois derniers champs ; ils sont calculés et actualisés par le système. `[2][60]` seul ne suffit pas. Les marqueurs `[v]`, `[x]` et `[-]` conservent leur sens habituel.
+Sous chaque question, les **cinq champs obligatoires** indiquent : niveau enseignant (0 à 3), temps maximal en secondes, temps moyen observé, nombre de présentations et de réponses justes en évaluation ou exercice contrôlé. Pour une nouvelle question, utilisez `[-][0][0]` pour les trois derniers champs ; ils sont calculés et actualisés par le système. `[2][60]` seul ne suffit pas. Les marqueurs `[v]`, `[x]` et `[-]` conservent leur sens habituel.
 
 1. Fixez la **durée estimée du contenu**, en minutes : elle limite l’activité entière, indépendamment du délai propre à chaque question.
 2. Enregistrez la page, puis ouvrez **Créer un QCM en Markdown** et sélectionnez **QCM adaptatif : réservoir et réglages** dans le menu déroulant. Cette entrée regroupe le niveau initial et les statistiques des questions enregistrées. Enregistrer le niveau ne recharge pas la page et conserve la saisie du contenu en cours. Le niveau initial sert à choisir la première question ; les suivantes dépendent des taux de réussite.
-3. Ajoutez la page au parcours. Une étape ordinaire propose un **entraînement** renouvelable, sans alimenter les statistiques. Une étape **Évaluation** autorise une tentative par apprenant et met à jour les statistiques.
+3. Ajoutez la page au parcours. Une étape ordinaire propose un **entraînement** renouvelable, sans alimenter les statistiques. Une étape **Exercice contrôlé** actualise les statistiques sans conserver de note ; une étape **Évaluation** conserve le résultat et autorise une tentative par apprenant.
 4. Pour compléter le réservoir, ajoutez explicitement un bloc **QCM tiers** avec le lien de partage d’un collègue de la même installation. Le mode **Contenu partagé** doit être autorisé. Aucun autre contenu n’est recherché automatiquement.
 
-Chaque question n’est posée qu’une fois. Un délai dépassé compte comme non réussi et fait passer à la suite. La fin du temps total ou l’épuisement du réservoir termine le test. Quitter ou recharger la page ne suspend pas les chronomètres. Les corrections sont données après chaque réponse en entraînement et à la fin en évaluation.
+Chaque question n’est posée qu’une fois. Un délai dépassé compte comme non réussi et fait passer à la suite. La fin du temps total ou l’épuisement du réservoir termine le test. Quitter ou recharger la page ne suspend pas les chronomètres. Les corrections sont données après chaque réponse en entraînement et à la fin en évaluation ou exercice contrôlé.
 
 Depuis l’**Aperçu apprenant** d’une étape, **Commencer le test** permet à l’enseignant de tester le QCM avec les mêmes délais et le même mode de correction. **Recommencer le test** reste possible pendant ou après l’essai. Recharger conserve le test et ses échéances. Ces essais ne modifient ni les résultats des apprenants ni les statistiques.
 
-Ce redémarrage est réservé au test enseignant. **L’apprenant ne peut pas recommencer une tentative en cours**, même après rechargement ou depuis un autre onglet : les réponses et les chronomètres sont conservés. Une évaluation reste limitée à une tentative ; en entraînement, un nouvel essai n’est proposé qu’après la fin du précédent.
+Ce redémarrage est réservé au test enseignant. **L’apprenant ne peut pas recommencer une tentative en cours**, même après rechargement ou depuis un autre onglet : les réponses et les chronomètres sont conservés. Une évaluation reste limitée à une tentative, sauf autorisation individuelle de l’enseignant ; en entraînement, un nouvel essai n’est proposé qu’après la fin du précédent.
 
 La note des nouvelles évaluations utilise **l’ensemble des réponses et la difficulté des questions**, avec des ajustements progressifs indépendants du rythme. **Au moins 5 questions traitées** sont nécessaires : en dessous, aucune note automatique n’est attribuée, sans transformer cette absence en zéro. Une question tronquée par la fin globale n’entre pas dans ce minimum.
 
@@ -474,7 +473,7 @@ Le lien **Parcours** de la navigation ouvre par défaut **l’aperçu apprenant*
 
 ### Passer des évaluations au parcours
 
-Dans **Acquis → Évaluations**, cliquer sur le titre d’une évaluation ramène à l’étape correspondante dans **Parcours**, avec son regroupement ouvert. Le lien **Voir mon évaluation**, sous cette étape et dans son lecteur, revient à la bonne ligne des évaluations. Le parcours courant est conservé. Une étape devenue inaccessible garde ses résultats selon les règles existantes, mais son titre ne permet plus d’ouvrir son contenu.
+Dans **Acquis → Évaluation**, cliquer sur le titre d’une évaluation ramène à l’étape correspondante dans **Parcours**, avec son regroupement ouvert. Le lien **Voir mon évaluation**, sous cette étape et dans son lecteur, revient à la bonne ligne des évaluations. Le parcours courant est conservé. Une étape devenue inaccessible garde ses résultats selon les règles existantes, mais son titre ne permet plus d’ouvrir son contenu.
 
 ### Repérer et filtrer les contenus de la bibliothèque
 
@@ -527,3 +526,12 @@ Le chevron devant le titre de l’activité affiche ou masque l’encadré conte
 Une séance est disponible 24 heures. Les identifiants aléatoires et réponses expirés sont supprimés au prochain accès à l’application. Le QR code est généré dans le navigateur, sans service externe. La participation est liée à la session du navigateur : changer de navigateur peut créer une nouvelle participation, et les résultats ne permettent pas d’identifier les apprenants. Sans compte, le pilotage est lié à la session du navigateur créateur : il reste disponible au rechargement et dans la projection ouverte depuis ce navigateur. Une autre personne qui ouvre le lien ne reçoit pas ces commandes. Si cette session est effacée ou expire, il faut créer une nouvelle séance. Limites : 500 participations par séance et 20 séances simultanées par compte enseignant ou session d’animation anonyme.
 
 Les QCM simples et stricts restent des entraînements individuels dans le lecteur externe. Les blocs de travail sont consultables, mais la remise et la notation demandent une inscription à un parcours. Les intégrations dépendent des autorisations du site intégré. Les fichiers locaux d’images et documents de moins de 10 Mo sont embarqués dans le JSON ; les autres références doivent rester accessibles depuis l’installation de destination.
+
+
+### Exercices contrôlés et nouveaux essais
+
+Dans les réglages d’une étape, **Exercice contrôlé** permet de pratiquer sans conserver de note tout en actualisant les statistiques des questions adaptatives. **Évaluation** conserve le résultat et actualise ces statistiques ; **Consultation simple** permet de s’entraîner sans les modifier. Les statistiques déjà acquises ne sont pas effacées lors d’un changement de type.
+
+Quitter le type **Évaluation** demande de confirmer la suppression des notes et résultats de l’étape. Les autres changements de type remettent aussi ses tentatives à zéro. Les modifications de date ou d’accès ne le font pas.
+
+Pour autoriser une reprise individuelle d’un quiz évalué, ouvrir **Progression** de l’apprenant, déplier **Autoriser un nouvel essai** sous l’activité et confirmer la suppression de son ancien résultat. Cette action couvre les quiz classiques et adaptatifs, sans rouvrir le test aux autres apprenants.

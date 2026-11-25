@@ -107,7 +107,7 @@ function course_progress_export_rows(array $data): Generator
             if(!$quizzes){yield array_merge($base,$step,array_fill(0,8,''));continue;}
             foreach($quizzes as $index=>$quiz){
                 $attempt=$data['attempts'][$studentId][$itemId][$quiz['block_id']][$quiz['key']]??null;
-                yield array_merge($base,$step,[$index+1,$quiz['caption'],$attempt['correct_questions']??'',$attempt['total_questions']??$quiz['questions'],$attempt?progress_export_number($attempt['score_percent']):'',$attempt?progress_export_number(10*(int)$attempt['correct_questions']/(int)$attempt['total_questions']):'',$attempt['attempt_count']??0,progress_export_date($attempt['answered_at']??null)]);
+                yield array_merge($base,$step,[$index+1,$quiz['caption'],$attempt['correct_questions']??'',$attempt['total_questions']??$quiz['questions'],$attempt?progress_export_number($attempt['score_percent']):'',$attempt?progress_export_number(!empty($attempt['adaptive'])?(float)$attempt['score_percent']/10:10*(int)$attempt['correct_questions']/max(1,(int)$attempt['total_questions'])):'',$attempt['attempt_count']??0,progress_export_date($attempt['answered_at']??null)]);
             }
         }
     }

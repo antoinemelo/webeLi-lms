@@ -43,16 +43,18 @@ function render_adaptive_qcm(array $item,array $blocks,bool $preview=false): voi
         'difficulty'=>'Score de difficulté','scale'=>'Bornes de difficulté','initial'=>'Barème initial',
         'score'=>'Résultat','review'=>'Correction','single'=>'Une seule réponse possible.','multiple'=>'Plusieurs réponses possibles.',
         'question'=>'Question','total'=>'Temps total restant','remaining'=>'Temps de la question','ready'=>'Le chronomètre démarre lorsque vous commencez.','expected'=>'Réponse attendue'] as $key=>$label)$labels[$key]=t($label);
+    if(!$preview&&!empty($item['is_controlled_exercise']))$labels['retry']=t('Nouvel exercice');
     if($preview){$labels['start']=t('Commencer le test');$labels['retry']=t('Recommencer le test');}
     else $labels['ready']=t('Le chronomètre démarre au premier clic. Une tentative en cours ne peut pas être recommencée.');
     foreach(['time_remaining'=>'Il ne reste pas assez de temps pour une question complète.',
         'global_timeout'=>'Fin du test : question non prise en compte.',
         'insufficient'=>'Moins de 5 questions traitées : aucune note automatique.',
+        'controlled'=>'Exercice terminé, aucune note conservée.',
         'basis'=>'Questions prises en compte',
         'provisional'=>'Les questions disposent encore de peu d’historique. Le résultat reste une estimation.'] as $key=>$label)$labels[$key]=t($label);
     ?><section class="adaptive-qcm" data-adaptive-qcm data-item="<?=(int)$item['id']?>" data-preview="<?=$preview?'1':'0'?>" data-labels="<?=e(json_encode($labels,JSON_UNESCAPED_UNICODE))?>">
       <h2><?=e(t('QCM adaptatif'))?></h2>
-      <p><?=e(t($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : nouvel essai après la fin.')))?> · <?=(int)$item['estimated_minutes']?> min</p>
+      <p><?=e(t(!empty($item['is_controlled_exercise'])?'Exercice contrôlé : statistiques actualisées, aucune note.':($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : nouvel essai après la fin.'))))?> · <?=(int)$item['estimated_minutes']?> min</p>
       <?php if($preview): ?><p><?=e(t('Test enseignant : vous pouvez recommencer librement. Vos essais ne modifient ni les résultats des apprenants ni les statistiques des questions.'))?></p><button type="button" class="button secondary" data-adaptive-restart hidden><?=e(t('Recommencer le test'))?></button><?php endif; ?>
       <div data-adaptive-content><p><?=e(t('Chargement…'))?></p></div><p data-adaptive-error role="alert" hidden></p><noscript><?=e(t('Activez JavaScript pour réaliser cette activité chronométrée.'))?></noscript>
     </section><?php
@@ -69,7 +71,7 @@ function render_adaptive_question_statistics(array $questions): void
         <span><?=e(t('Difficulté estimée'))?> : <?=e(number_format(100-$question['rate'],1,',',''))?> %</span>
         <span><?=e(t($n===0?'Estimation initiale':($n<20?'Historique limité':'Historique disponible')))?></span></div>
         <p><?=e(t('Réponses retenues'))?> : <?=$n?> · <?=e(t('Réussite observée'))?> : <?=$question['observed_rate']===null?'—':e(number_format($question['observed_rate'],1,',','')).' %'?> · <?=e(t('Temps moyen'))?> : <?=e($mean)?> s</p>
-        <small><?=e(t('Présentations en évaluation'))?> : <?=(int)$s['presentations']?> · <?=e(t('Réponses justes'))?> : <?=(int)$s['correct']?></small></article>
+        <small><?=e(t('Présentations en évaluation ou exercice contrôlé'))?> : <?=(int)$s['presentations']?> · <?=e(t('Réponses justes'))?> : <?=(int)$s['correct']?></small></article>
     <?php endforeach; ?></div><?php
 }
 
@@ -88,7 +90,7 @@ function render_adaptive_block_statistics(PDO $core,array $block): void
             'rate'=>AdaptiveQcm::INITIAL_RATES[$question['level']],'observed_rate'=>null,
         ],$questions);
         ?><details class="adaptive-block-statistics" open><summary><?=e(t('Niveaux et statistiques des questions'))?></summary>
-        <p><?=e(t('Les évaluations actualisent la difficulté estimée. Le niveau initial reste votre repère. Une modification du texte, des réponses ou du temps maximal démarre une nouvelle calibration.'))?></p>
+        <p><?=e(t('Les évaluations et les exercices contrôlés actualisent la difficulté estimée. Le niveau initial reste votre repère. Une modification du texte, des réponses ou du temps maximal démarre une nouvelle calibration.'))?></p>
         <?php render_adaptive_question_statistics($questions); ?></details><?php
     }catch(InvalidArgumentException){ /* The author is still editing an incomplete bank. */ }
 }
@@ -111,7 +113,7 @@ function render_adaptive_qcm_editor(int $pageId,array $blocks): void
             'stats'=>['presentations'=>0,'correct'=>0,'timed_answers'=>0,'time_sum'=>0],'rate'=>AdaptiveQcm::INITIAL_RATES[$question['level']],'observed_rate'=>null,
         ],$bank['questions']);
         ?><h4 class="h6"><?=e(t('Questions enregistrées'))?> · <?=count($questions)?></h4>
-        <p><?=e(t('Les statistiques proviennent uniquement des évaluations : temps moyen, présentations et réponses justes. Enregistrez les modifications du contenu pour actualiser ce réservoir.'))?></p>
+        <p><?=e(t('Les statistiques proviennent des évaluations et des exercices contrôlés : temps moyen, présentations et réponses justes. Enregistrez les modifications du contenu pour actualiser ce réservoir.'))?></p>
         <p><?=e(t('Au moins 5 questions traitées sont nécessaires pour attribuer une note. Une réponse correcte raisonnablement rapide peut légèrement faciliter la question pour les futurs tests ; une réponse lente n’ajoute aucune pénalité de difficulté.'))?></p>
         <?php render_adaptive_question_statistics($questions);
         $actor=require_actor();$items=all('SELECT pi.id,pi.course_id,c.title FROM pathway_items pi JOIN courses c ON c.id=pi.course_id WHERE pi.page_id=? AND pi.is_evaluation=1 AND c.archived=0 ORDER BY c.title,pi.position',[$pageId]);
@@ -155,7 +157,8 @@ function adaptive_qcm_reference(): never
         http_response_code(403);echo json_encode(['error'=>t('Accès interdit.')]);exit;
     }
     try{
-        AdaptiveQcm::store(db())->refreshReference((int)$item['id']);
+        $store=AdaptiveQcm::store(db());
+        QuizAttempts::transaction(db(),static fn()=>$store->refreshReference((int)$item['id'],db()));
         echo json_encode(['message'=>t('La prochaine tentative utilisera les statistiques actualisées et le nouveau calcul. Les résultats existants sont conservés.')]);
     }catch(InvalidArgumentException $error){http_response_code(409);echo json_encode(['error'=>t($error->getMessage())]);}
     catch(Throwable $error){error_log('liike adaptive reference: '.$error->getMessage());http_response_code(503);echo json_encode(['error'=>t('Activité indisponible. Réessayez.')]);}
@@ -175,7 +178,7 @@ function adaptive_qcm_preview_http(array $user): never
         $operation=$_POST['operation']??'state';
         if(!in_array($operation,['state','start','answer','restart'],true))throw new InvalidArgumentException('Commande invalide.');
         $snapshot=$_SESSION['adaptive_qcm_preview']??null;$run=$snapshot['run']??null;
-        if($run&&((int)$run['student_id']!==$teacherId||(int)$run['item_id']!==$itemId)){$snapshot=null;$run=null;}
+        if($run&&((int)$run['student_id']!==$teacherId||(int)$run['item_id']!==$itemId||($run['epoch']??'0:0')!==QuizAttempts::epoch($item))){$snapshot=null;$run=null;}
         $restartFrom=$snapshot['restart_from']??null;
         $restart=false;
         if($operation==='restart'){
@@ -226,20 +229,24 @@ function adaptive_qcm_http(): never
     if(!AdaptiveQcm::enabled()){http_response_code(503);echo json_encode(['error'=>t('Le module QCM adaptatif est désactivé.')]);exit;}
     if($preview)adaptive_qcm_preview_http($user);
     session_write_close();
+    if(($_POST['operation']??'')==='restart'){http_response_code(403);echo json_encode(['error'=>t('Vous ne pouvez pas remettre ce test à zéro.')]);exit;}
     try{
-        $item=AdaptiveQcm::context(db(),(int)($_POST['item_id']??0),(int)$user['id']);$store=AdaptiveQcm::store(db());
+        $store=AdaptiveQcm::store(db()); // Migrate before taking the short core write lock.
+        $payload=QuizAttempts::transaction(db(),function()use($user,$store){
+        $item=AdaptiveQcm::context(db(),(int)($_POST['item_id']??0),(int)$user['id']);
         $operation=$_POST['operation']??'state';
-        if($operation==='restart'){http_response_code(403);echo json_encode(['error'=>t('Vous ne pouvez pas remettre ce test à zéro.')]);exit;}
+        if($operation==='restart')throw new InvalidArgumentException('Vous ne pouvez pas remettre ce test à zéro.');
         if(!in_array($operation,['state','start','answer'],true))throw new InvalidArgumentException('Commande invalide.');
-        $run=$store->latest((int)$user['id'],(int)$item['id']);
+        $run=$store->latest((int)$user['id'],(int)$item['id'],QuizAttempts::epoch($item));
         if($operation==='start'){
+            if(!hash_equals(QuizAttempts::epoch($item),(string)($_POST['epoch']??'0:0')))throw new InvalidArgumentException('Cette activité a changé. Rechargez la page.');
             $bank=AdaptiveQcm::bank(db(),(int)$item['page_id'],app_public_base_url());
             $run=$store->start($item,(int)$user['id'],$bank,present:true);
         }
         if(!$run){
             if($operation==='answer')throw new InvalidArgumentException('Commencez cette activité avant de répondre.');
             $bank=AdaptiveQcm::bank(db(),(int)$item['page_id'],app_public_base_url());
-            echo json_encode(['ready'=>true,'count'=>count($bank['questions'])],JSON_THROW_ON_ERROR);exit;
+            return ['ready'=>true,'count'=>count($bank['questions']),'epoch'=>QuizAttempts::epoch($item)];
         }
         foreach(json_decode($run['sources'],true,512,JSON_THROW_ON_ERROR) as $token=>$sourceId){
             $share=library_share_resolve(db(),$token);library_share_require_mode($share,'shared');
@@ -253,7 +260,10 @@ function adaptive_qcm_http(): never
         }
         $received=(float)($_SERVER['REQUEST_TIME_FLOAT']??microtime(true));
         $run=$store->advance($run['id'],(int)$user['id'],$received,$ordinal,$selected,static fn():float=>microtime(true));
-        echo json_encode($store->publicState($run,microtime(true)),JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
+        if($run['controlled']&&$run['finished_at']!==null)Qcm::completeControlled(db(),(int)$user['id'],(int)$item['id'],$run);
+        return $store->publicState($run,microtime(true))+['epoch'=>QuizAttempts::epoch($item)];
+        });
+        echo json_encode($payload,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     }catch(InvalidArgumentException $error){http_response_code(400);echo json_encode(['error'=>t($error->getMessage())]);}
     catch(Throwable $error){error_log('liike adaptive qcm: '.$error->getMessage());http_response_code(503);echo json_encode(['error'=>t('Activité indisponible. Réessayez.')]);}
     exit;
@@ -266,14 +276,21 @@ function adaptive_qcm_results(PDO $core,array $itemIds,bool $includeUnscored=fal
     $out=[];$now=microtime(true);
     foreach(array_chunk(array_values(array_unique(array_map('intval',$itemIds))),400) as $ids){
         $marks=implode(',',array_fill(0,count($ids),'?'));
+        $q=$core->prepare("SELECT pi.id,pi.quiz_revision,e.student_id,COALESCE(pr.quiz_generation,0) AS quiz_generation FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE pi.id IN ($marks)");$q->execute($ids);$epochs=[];
+        foreach($q as $item)$epochs[(int)$item['id']][(int)$item['student_id']]=QuizAttempts::epoch($item);
+        $current=static fn(array $run):bool=>isset($epochs[(int)$run['item_id']][(int)$run['student_id']])&&$epochs[(int)$run['item_id']][(int)$run['student_id']]===$run['epoch'];
+
         $q=$store->db->prepare("SELECT * FROM runs WHERE item_id IN ($marks) AND finished_at IS NULL AND ends_at<=?");$q->execute([...$ids,$now]);
-        foreach($q->fetchAll() as $run)$store->advance($run['id'],(int)$run['student_id'],$now);
+        foreach($q->fetchAll() as $run)if($current($run))QuizAttempts::transaction($core,static function()use($core,$store,$run,$now){
+            $q=$core->prepare('SELECT pi.quiz_revision,COALESCE(pr.quiz_generation,0) AS quiz_generation FROM pathway_items pi JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE pi.id=?');$q->execute([$run['student_id'],$run['item_id']]);$item=$q->fetch(PDO::FETCH_ASSOC);
+            if($item&&QuizAttempts::epoch($item)===$run['epoch'])$store->advance($run['id'],(int)$run['student_id'],$now);
+        });
         $scoreFilter=$includeUnscored?'':' AND r.score IS NOT NULL';
         $q=$store->db->prepare("SELECT r.*,COUNT(a.ordinal) AS total_questions,SUM(a.result='correct') AS correct_questions
-            FROM runs r LEFT JOIN answers a ON a.run_id=r.id WHERE r.item_id IN ($marks) AND r.finished_at IS NOT NULL $scoreFilter
-            AND NOT EXISTS(SELECT 1 FROM runs newer WHERE newer.item_id=r.item_id AND newer.student_id=r.student_id AND newer.finished_at IS NOT NULL AND newer.started_at>r.started_at)
+            FROM runs r LEFT JOIN answers a ON a.run_id=r.id WHERE r.item_id IN ($marks) AND r.finished_at IS NOT NULL AND r.controlled=0 $scoreFilter
+            AND NOT EXISTS(SELECT 1 FROM runs newer WHERE newer.item_id=r.item_id AND newer.student_id=r.student_id AND newer.epoch=r.epoch AND newer.finished_at IS NOT NULL AND newer.started_at>r.started_at)
             GROUP BY r.id");$q->execute($ids);
-        foreach($q->fetchAll() as $run)$out[(int)$run['item_id']][(int)$run['student_id']]=[
+        foreach($q->fetchAll() as $run)if($current($run))$out[(int)$run['item_id']][(int)$run['student_id']]=[
             'score_percent'=>$run['score']===null?null:(float)$run['score'],'correct_questions'=>(int)$run['correct_questions'],'total_questions'=>(int)$run['total_questions'],
             'attempt_count'=>1,'answered_at'=>gmdate('Y-m-d H:i:s',(int)$run['finished_at']),'adaptive'=>true];
     }

@@ -1,14 +1,16 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/AdaptiveQcmModel.php';
+require_once __DIR__.'/QuizAttempts.php';
 
 /** Standalone question bank and timed adaptive runner. No writes to the LMS database. */
 final class AdaptiveQcm
 {
     public const INITIAL_RATES=[80.0,60.0,40.0,20.0];
     public const SCORING_VERSION=3;
-    public const SCHEMA_VERSION=4;
+    public const SCHEMA_VERSION=6;
     private bool $writing=false;
+    private array $poolCache=[];
     public function __construct(public readonly PDO $db)
     {
         $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
@@ -63,6 +65,36 @@ final class AdaptiveQcm
                 if(!in_array('fingerprint',array_column($columns,'name'),true))$db->exec('ALTER TABLE evaluation_revisions ADD COLUMN fingerprint TEXT');
                 $db->exec('PRAGMA user_version=4');
             }
+            if($version<5){
+                $db->exec('CREATE TABLE question_sets(id INTEGER PRIMARY KEY,fingerprint TEXT NOT NULL UNIQUE,body TEXT NOT NULL);
+                    ALTER TABLE runs ADD COLUMN pool_id INTEGER REFERENCES question_sets(id);
+                    ALTER TABLE evaluation_pools ADD COLUMN pool_id INTEGER REFERENCES question_sets(id);
+                    CREATE INDEX run_pool ON runs(pool_id);
+                    CREATE INDEX evaluation_pool_set ON evaluation_pools(pool_id);
+                    CREATE TABLE maintenance_state(name TEXT PRIMARY KEY,value INTEGER NOT NULL);
+                    CREATE TABLE calibration_v5(question_id TEXT NOT NULL REFERENCES questions(id),student_id INTEGER NOT NULL,run_id TEXT REFERENCES runs(id) ON DELETE SET NULL,correct INTEGER NOT NULL,elapsed REAL,weight REAL NOT NULL DEFAULT 1,PRIMARY KEY(question_id,student_id));
+                    INSERT INTO calibration_v5 SELECT * FROM calibration_samples;
+                    DROP TABLE calibration_samples;
+                    ALTER TABLE calibration_v5 RENAME TO calibration_samples;
+                    CREATE INDEX calibration_student ON calibration_samples(student_id)');
+                foreach(['runs','evaluation_pools'] as $table){
+                    foreach($db->query('SELECT DISTINCT pool FROM '.$table)->fetchAll(PDO::FETCH_COLUMN) as $pool){
+                        $poolId=$this->storePool($pool);
+                        $db->prepare('UPDATE '.$table.' SET pool_id=?,pool=\'\' WHERE pool=?')->execute([$poolId,$pool]);
+                    }
+                }
+                $db->exec('PRAGMA user_version=5');
+            }
+            if($version<6)$db->exec("ALTER TABLE runs ADD COLUMN epoch TEXT NOT NULL DEFAULT '0:0';
+                ALTER TABLE runs ADD COLUMN controlled INTEGER NOT NULL DEFAULT 0;
+                ALTER TABLE runs ADD COLUMN calibrates INTEGER NOT NULL DEFAULT 0;
+                UPDATE runs SET calibrates=evaluation;
+                ALTER TABLE evaluation_revisions ADD COLUMN activity_revision INTEGER NOT NULL DEFAULT 0;
+                DROP INDEX one_evaluation; DROP INDEX one_running;
+                CREATE INDEX run_item_epoch ON runs(item_id,epoch,student_id,started_at);
+                CREATE UNIQUE INDEX one_evaluation ON runs(student_id,item_id,epoch) WHERE evaluation=1;
+                CREATE UNIQUE INDEX one_running ON runs(student_id,item_id,epoch) WHERE finished_at IS NULL;
+                PRAGMA user_version=6");
             $db->exec('COMMIT');
         }catch(Throwable $error){$db->exec('ROLLBACK');throw $error;}
     }
@@ -77,20 +109,58 @@ final class AdaptiveQcm
         if(!$create&&!is_file($path))return null;
         static $stores=[];
         if(!isset($stores[$path])){
-            $pdo=new PDO('sqlite:'.$path);$pdo->exec('PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL');
-            if(in_array((int)$pdo->query('PRAGMA user_version')->fetchColumn(),[1,2,3],true)){
-                $directory=dirname($path).'/backups';
-                if(!is_dir($directory)&&!mkdir($directory,0775,true)&&!is_dir($directory))throw new RuntimeException('Impossible de sauvegarder la base adaptative avant mise à niveau.');
-                $pdo->exec('VACUUM INTO '.$pdo->quote($directory.'/adaptive-before-v4-'.gmdate('Ymd-His').'-'.bin2hex(random_bytes(4)).'.sqlite'));
-            }
-            $stores[$path]=new self($pdo);
+            $pdo=new PDO('sqlite:'.$path);$pdo->exec('PRAGMA busy_timeout=10000');$lock=null;
+            try{
+                if((int)$pdo->query('PRAGMA user_version')->fetchColumn()<self::SCHEMA_VERSION){
+                    $lock=fopen($path.'.migration.lock','c');
+                    if(!$lock||!flock($lock,LOCK_EX))throw new RuntimeException('Mise à niveau adaptative indisponible.');
+                }
+                // Recheck after locking: simultaneous openings must not duplicate backups or VACUUM.
+                $oldVersion=(int)$pdo->query('PRAGMA user_version')->fetchColumn();
+                $pdo->exec('PRAGMA journal_mode=WAL');
+                if($oldVersion>0&&$oldVersion<self::SCHEMA_VERSION){
+                    $directory=dirname($path).'/backups';
+                    if(!is_dir($directory)&&!mkdir($directory,0775,true)&&!is_dir($directory))throw new RuntimeException('Impossible de sauvegarder la base adaptative avant mise à niveau.');
+                    $pdo->exec('VACUUM INTO '.$pdo->quote($directory.'/adaptive-before-v'.self::SCHEMA_VERSION.'-'.gmdate('Ymd-His').'-'.bin2hex(random_bytes(4)).'.sqlite'));
+                }
+                $stores[$path]=new self($pdo);
+                if($oldVersion<5){
+                    try{$pdo->exec('PRAGMA auto_vacuum=INCREMENTAL; VACUUM');}
+                    catch(PDOException $error){error_log('liike adaptive compaction deferred: '.$error->getCode());}
+                }
+            }finally{if(is_resource($lock)){flock($lock,LOCK_UN);fclose($lock);}}
         }
         return $stores[$path];
     }
     public function one(string $sql,array $args=[]): ?array
     {
-        $q=$this->db->prepare($sql);$q->execute($args);return $q->fetch()?:null;
+        $q=$this->db->prepare($sql);$q->execute($args);$row=$q->fetch()?:null;
+        return $row===null?null:$this->hydrate($row);
     }
+    /** Runtime snapshots retain the existing JSON interface; SQLite stores one copy per version. */
+    public function hydrate(array $row): array
+    {
+        if(!empty($row['pool_id'])){
+            $id=(int)$row['pool_id'];
+            if(!isset($this->poolCache[$id])){
+                $q=$this->db->prepare('SELECT body FROM question_sets WHERE id=?');$q->execute([$id]);$body=$q->fetchColumn();
+                if($body===false)throw new RuntimeException('Référence adaptative introuvable.');
+                if(count($this->poolCache)>=8)$this->poolCache=[];
+                $this->poolCache[$id]=$body;
+            }
+            $row['pool']=$this->poolCache[$id];
+        }
+        return $row;
+    }
+    public function storePool(string $body): int
+    {
+        $hash=hash('sha256',$body);
+        $q=$this->db->prepare('SELECT id FROM question_sets WHERE fingerprint=?');$q->execute([$hash]);$id=$q->fetchColumn();
+        if($id!==false)return (int)$id;
+        $this->db->prepare('INSERT INTO question_sets(fingerprint,body) VALUES(?,?)')->execute([$hash,$body]);
+        return (int)$this->db->lastInsertId();
+    }
+    public function clearPoolCache(): void{$this->poolCache=[];}
     public function level(int $pageId): int{return (int)($this->one('SELECT initial_level FROM settings WHERE page_id=?',[$pageId])['initial_level']??1);}
     public function setLevel(int $pageId,int $level): void
     {
@@ -142,10 +212,11 @@ final class AdaptiveQcm
     }
     public static function context(PDO $core,int $itemId,int $studentId): array
     {
-        $q=$core->prepare("SELECT pi.*,p.estimated_minutes,p.owner_id,p.title FROM pathway_items pi JOIN pages p ON p.id=pi.page_id
+        $q=$core->prepare("SELECT pi.*,COALESCE(pr.quiz_generation,0) AS quiz_generation,p.estimated_minutes,p.owner_id,p.title FROM pathway_items pi JOIN pages p ON p.id=pi.page_id
             JOIN courses c ON c.id=pi.course_id AND c.archived=0
             JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
             JOIN users u ON u.id=e.student_id AND u.role='student' AND u.account_status='active'
+            LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id
             WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups g WHERE g.id=pi.group_id AND g.is_visible=0)
             AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
         $q->execute([$studentId,$itemId,$studentId]);$item=$q->fetch(PDO::FETCH_ASSOC);
@@ -243,16 +314,23 @@ final class AdaptiveQcm
         return hash('sha256',json_encode([self::SCORING_VERSION,$ids,$level,$duration,$revision],JSON_THROW_ON_ERROR));
     }
 
-    public function refreshReference(int $itemId): void
+    public function refreshReference(int $itemId,?PDO $core=null): void
     {
-        $this->transaction(function()use($itemId){
-            if($this->one('SELECT id FROM runs WHERE item_id=? AND finished_at IS NULL AND ends_at>?',[$itemId,microtime(true)]))throw new InvalidArgumentException('Attendez la fin des tentatives en cours avant d’actualiser la référence.');
+        $this->transaction(function()use($itemId,$core){
+            $epochs=null;
+            if($core){
+                $q=$core->prepare('SELECT pi.is_evaluation,pi.quiz_revision,e.student_id,COALESCE(pr.quiz_generation,0) AS quiz_generation FROM pathway_items pi LEFT JOIN enrollments e ON e.course_id=pi.course_id LEFT JOIN progress pr ON pr.enrollment_id=e.id AND pr.pathway_item_id=pi.id WHERE pi.id=?');$q->execute([$itemId]);$rows=$q->fetchAll(PDO::FETCH_ASSOC);
+                if(!$rows||!$rows[0]['is_evaluation'])throw new InvalidArgumentException('Cette étape a changé. Rechargez la page.');
+                $epochs=[];foreach($rows as $item)if($item['student_id']!==null)$epochs[(int)$item['student_id']]=QuizAttempts::epoch($item);
+            }
+            $q=$this->db->prepare('SELECT student_id,epoch FROM runs WHERE item_id=? AND finished_at IS NULL AND ends_at>?');$q->execute([$itemId,microtime(true)]);
+            foreach($q->fetchAll() as $run)if($epochs===null||($epochs[(int)$run['student_id']]??null)===$run['epoch'])throw new InvalidArgumentException('Attendez la fin des tentatives en cours avant d’actualiser la référence.');
             $this->db->prepare('INSERT INTO evaluation_revisions(item_id,revision) VALUES(?,1) ON CONFLICT(item_id) DO UPDATE SET revision=revision+1,fingerprint=NULL')->execute([$itemId]);
         });
     }
-    public function latest(int $studentId,int $itemId): ?array
+    public function latest(int $studentId,int $itemId,?string $epoch=null): ?array
     {
-        return $this->one('SELECT * FROM runs WHERE student_id=? AND item_id=? ORDER BY started_at DESC,id DESC LIMIT 1',[$studentId,$itemId]);
+        return $this->one('SELECT * FROM runs WHERE student_id=? AND item_id=?'.($epoch===null?'':' AND epoch=?').' ORDER BY started_at DESC,id DESC LIMIT 1',$epoch===null?[$studentId,$itemId]:[$studentId,$itemId,$epoch]);
     }
     /** Optionally issue the first question in the same durable transaction as a NEW attempt. */
     public function start(array $item,int $studentId,array $bank,?float $now=null,?int $version=null,bool $present=false): array
@@ -260,32 +338,38 @@ final class AdaptiveQcm
         return $this->transaction(function()use($item,$studentId,$bank,$now,$version,$present){
             $liveClock=$now===null;
             $now??=microtime(true);
+            $epoch=QuizAttempts::epoch($item);$controlled=!empty($item['is_controlled_exercise']);
             if($item['is_evaluation']){
-                $evaluated=$this->one('SELECT * FROM runs WHERE student_id=? AND item_id=? AND evaluation=1',[$studentId,$item['id']]);
+                $evaluated=$this->one('SELECT * FROM runs WHERE student_id=? AND item_id=? AND evaluation=1 AND epoch=?',[$studentId,$item['id'],$epoch]);
                 if($evaluated)return $evaluated;
             }
-            $last=$this->latest($studentId,(int)$item['id']);
+            $last=$this->latest($studentId,(int)$item['id'],$epoch);
             if($last&&($last['finished_at']===null||((int)$item['is_evaluation']&&(int)$last['evaluation'])))return $last;
             $level=$this->level((int)$item['page_id']);$duration=max(1,(int)$item['estimated_minutes'])*60;
             $pool=$bank['questions'];
+            $activityRevision=(int)($item['quiz_revision']??0);
+            if($item['is_evaluation']){
+                $prior=$this->one('SELECT activity_revision FROM evaluation_revisions WHERE item_id=?',[$item['id']]);
+                if($prior&&(int)$prior['activity_revision']!==$activityRevision)$this->db->prepare('UPDATE evaluation_revisions SET activity_revision=?,revision=revision+1,fingerprint=NULL WHERE item_id=?')->execute([$activityRevision,$item['id']]);
+            }
             $revision=$this->referenceRevision((int)$item['id']);
             $oldFingerprint=hash('sha256',json_encode([array_column($pool,'id'),$level,$duration],JSON_THROW_ON_ERROR));
-            $legacy=(!$revision&&$item['is_evaluation'])?$this->one('SELECT pool FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$oldFingerprint]):null;
+            $legacy=(!$revision&&$item['is_evaluation'])?$this->one('SELECT pool_id FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$oldFingerprint]):null;
             if($version===null&&$legacy){
-                $previous=$this->one('SELECT scoring_version FROM runs WHERE item_id=? AND pool=? ORDER BY started_at LIMIT 1',[$item['id'],$legacy['pool']]);
+                $previous=$this->one('SELECT scoring_version FROM runs WHERE item_id=? AND pool_id=? ORDER BY started_at LIMIT 1',[$item['id'],$legacy['pool_id']]);
                 $version=(int)($previous['scoring_version']??2);
             }
             $version??=self::SCORING_VERSION;
             $fingerprint=$version<3?$oldFingerprint:self::fingerprint($pool,$level,$duration,$revision);
-            $frozen=$item['is_evaluation']?$this->one('SELECT pool FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$fingerprint]):null;
+            $frozen=$item['is_evaluation']?$this->one('SELECT pool_id FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$fingerprint]):null;
             if($item['is_evaluation']&&$version>=3){
                 $reference=$this->one('SELECT fingerprint FROM evaluation_revisions WHERE item_id=?',[$item['id']]);
                 if((!empty($reference['fingerprint'])&&$reference['fingerprint']!==$fingerprint)
                     ||(!$revision&&!$reference&&!$frozen&&$this->one('SELECT 1 FROM evaluation_pools WHERE item_id=? LIMIT 1',[$item['id']])))
                     throw new InvalidArgumentException('Cette évaluation a été modifiée. L’enseignant doit actualiser sa référence avant les prochaines tentatives.');
-                $this->db->prepare('INSERT INTO evaluation_revisions(item_id,revision,fingerprint) VALUES(?,?,?) ON CONFLICT(item_id) DO UPDATE SET fingerprint=excluded.fingerprint')->execute([$item['id'],$revision,$fingerprint]);
+                $this->db->prepare('INSERT INTO evaluation_revisions(item_id,revision,fingerprint,activity_revision) VALUES(?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET fingerprint=excluded.fingerprint')->execute([$item['id'],$revision,$fingerprint,$activityRevision]);
             }
-            if($frozen){$poolJson=$frozen['pool'];}
+            if($frozen){$poolJson=$frozen['pool'];$poolId=(int)$frozen['pool_id'];}
             else{
                 foreach(array_chunk($pool,100) as $batch){
                     $values=[];foreach($batch as $question)array_push($values,$question['id'],$question['owner_id'],$question['page_id'],$question['block_id'],json_encode($question,JSON_THROW_ON_ERROR),$question['canonical_id']??self::canonicalId($question,$question['page_id'],$question['block_id']));
@@ -293,11 +377,12 @@ final class AdaptiveQcm
                 }
                 $pool=$bank['reference_questions']??$this->statistics($pool,$version<3);
                 $poolJson=json_encode($pool,JSON_THROW_ON_ERROR);
-                if($item['is_evaluation'])$this->db->prepare('INSERT INTO evaluation_pools VALUES(?,?,?)')->execute([$item['id'],$fingerprint,$poolJson]);
+                $poolId=$this->storePool($poolJson);
+                if($item['is_evaluation'])$this->db->prepare('INSERT INTO evaluation_pools(item_id,fingerprint,pool,pool_id) VALUES(?,?,\'\',?)')->execute([$item['id'],$fingerprint,$poolId]);
             }
             $id=bin2hex(random_bytes(16));
-            $this->db->prepare('INSERT INTO runs(id,student_id,item_id,page_id,evaluation,started_at,ends_at,initial_level,cursor,pool,sources,scoring_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
-                ->execute([$id,$studentId,$item['id'],$item['page_id'],(int)(bool)$item['is_evaluation'],$now,$now+$duration,$level,$version<3?100-self::INITIAL_RATES[$level]:50,$poolJson,json_encode($bank['sources'],JSON_THROW_ON_ERROR),$version]);
+            $this->db->prepare('INSERT INTO runs(id,student_id,item_id,page_id,evaluation,started_at,ends_at,initial_level,cursor,pool,sources,scoring_version,pool_id,epoch,controlled,calibrates) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+                ->execute([$id,$studentId,$item['id'],$item['page_id'],(int)(bool)$item['is_evaluation'],$now,$now+$duration,$level,$version<3?100-self::INITIAL_RATES[$level]:50,'',json_encode($bank['sources'],JSON_THROW_ON_ERROR),$version,$poolId,$epoch,(int)$controlled,(int)($controlled||$item['is_evaluation'])]);
             $run=$this->one('SELECT * FROM runs WHERE id=?',[$id]);
             return $present?$this->advance($id,$studentId,$now,null,null,$liveClock?static fn():float=>microtime(true):null):$run;
         });
@@ -309,7 +394,7 @@ final class AdaptiveQcm
         $this->db->exec('BEGIN IMMEDIATE');
         $this->writing=true;
         try{$result=$operation();$this->db->exec('COMMIT');return $result;}
-        catch(Throwable $error){$this->db->exec('ROLLBACK');throw $error;}
+        catch(Throwable $error){$this->db->exec('ROLLBACK');$this->poolCache=[];throw $error;}
         finally{$this->writing=false;}
     }
     public static function step(float $elapsed,float $duration): int
@@ -337,7 +422,7 @@ final class AdaptiveQcm
         if((int)$run['scoring_version']>=3){
             $q=$this->db->prepare('SELECT question_id,result FROM answers WHERE run_id=? ORDER BY ordinal');$q->execute([$run['id']]);
             $estimate=AdaptiveQcmModel::estimate(json_decode($run['pool'],true),$q->fetchAll(),true);
-            $this->db->prepare('UPDATE runs SET finished_at=?,reason=?,score=? WHERE id=? AND finished_at IS NULL')->execute([$now,$reason,$estimate['score'],$run['id']]);
+            $this->db->prepare('UPDATE runs SET finished_at=?,reason=?,score=? WHERE id=? AND finished_at IS NULL')->execute([$now,$reason,$run['controlled']?null:$estimate['score'],$run['id']]);
             return $this->one('SELECT * FROM runs WHERE id=?',[$run['id']]);
         }
         $range=self::difficultyRange(json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR));
@@ -346,7 +431,7 @@ final class AdaptiveQcm
         if($score!==null&&(int)($run['scoring_version']??1)>=2){
             $score=$reason==='hardest'?100.0:self::scaledScore($score,$range);
         }
-        $this->db->prepare('UPDATE runs SET finished_at=?,reason=?,score=? WHERE id=? AND finished_at IS NULL')->execute([$now,$reason,$score,$run['id']]);
+        $this->db->prepare('UPDATE runs SET finished_at=?,reason=?,score=? WHERE id=? AND finished_at IS NULL')->execute([$now,$reason,$run['controlled']?null:$score,$run['id']]);
         return $this->one('SELECT * FROM runs WHERE id=?',[$run['id']]);
     }
     /** All decisions, expiry and statistics are atomic and server-timed. Repeated submissions are harmless. */
@@ -397,7 +482,7 @@ final class AdaptiveQcm
                 if((int)$run['scoring_version']>=3&&$expired&&!$fullWindow)$result='global_timeout';
                 $this->db->prepare('UPDATE answers SET selected=?,result=?,answered_at=?,elapsed=?,cursor_after=? WHERE run_id=? AND ordinal=? AND result IS NULL')
                     ->execute([json_encode($chosen),$result,$now,$elapsed,$cursor,$id,$pending['ordinal']]);
-                if($run['evaluation']){
+                if($run['calibrates']){
                     $this->db->prepare('UPDATE questions SET correct=correct+?,timed_answers=timed_answers+?,time_sum=time_sum+? WHERE id=?')->execute([(int)$right,(int)!$expired,$elapsed??0,$question['id']]);
                     if($fullWindow){
                         $reference=$question['calibration']??[];$weight=1.0;
@@ -448,13 +533,13 @@ final class AdaptiveQcm
             if($first&&(int)$run['scoring_version']<3){$run['cursor']=100-$question['rate'];$this->db->prepare('UPDATE runs SET cursor=? WHERE id=?')->execute([$run['cursor'],$id]);}
             $this->db->prepare('INSERT INTO answers(run_id,ordinal,question_id,presented_at,deadline,step) VALUES(?,?,?,?,?,?)')
                 ->execute([$id,count($used)+1,$question['id'],$issuedAt,min($issuedAt+$question['seconds'],(float)$run['ends_at']),self::step($issuedAt-$run['started_at'],$run['ends_at']-$run['started_at'])]);
-            if($run['evaluation'])$this->db->prepare('UPDATE questions SET presentations=presentations+1 WHERE id=?')->execute([$question['id']]);
+            if($run['calibrates'])$this->db->prepare('UPDATE questions SET presentations=presentations+1 WHERE id=?')->execute([$question['id']]);
             return $run;
         });
     }
     public function publicState(array $run,float $now): array
     {
-        $state=['id'=>$run['id'],'evaluation'=>(bool)$run['evaluation'],'now'=>$now,'ends_at'=>(float)$run['ends_at'],'finished'=>$run['finished_at']!==null];
+        $state=['id'=>$run['id'],'evaluation'=>(bool)$run['evaluation'],'controlled'=>(bool)$run['controlled'],'now'=>$now,'ends_at'=>(float)$run['ends_at'],'finished'=>$run['finished_at']!==null];
         $pool=array_column(json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR),null,'id');
         if($state['finished']){
             $state+=['score'=>$run['score']===null?null:(float)$run['score'],'reason'=>$run['reason'],'review'=>[]];
@@ -476,7 +561,7 @@ final class AdaptiveQcm
             foreach($question['answers'] as $answer)$options[]=['index'=>$answer['index'],'text'=>$answer['text']];shuffle($options);
             $state['question']=['ordinal'=>(int)$pending['ordinal'],'title'=>$question['title'],'domain'=>$question['domain'],'theme'=>$question['theme'],'multiple'=>$question['multiple'],'answers'=>$options,'deadline'=>(float)$pending['deadline']];
         }
-        if(!$run['evaluation']){
+        if(!$run['evaluation']&&!$run['controlled']){
             $last=$this->one('SELECT * FROM answers WHERE run_id=? AND result IS NOT NULL ORDER BY ordinal DESC LIMIT 1',[$run['id']]);
             if($last)$state['feedback']=['result'=>$last['result'],'title'=>$pool[$last['question_id']]['title'],'correct'=>array_column(array_filter($pool[$last['question_id']]['answers'],static fn($answer)=>$answer['kind']==='v'),'text')];
         }

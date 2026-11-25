@@ -5,7 +5,7 @@ declare(strict_types=1);
 final class AdaptiveQcmPreview
 {
     public readonly AdaptiveQcm $store;
-    private const RUN_COLUMNS=['id','student_id','item_id','page_id','evaluation','started_at','ends_at','initial_level','cursor','pool','sources','history','finished_at','reason','score','scoring_version'];
+    private const RUN_COLUMNS=['id','student_id','item_id','page_id','evaluation','started_at','ends_at','initial_level','cursor','pool','sources','history','finished_at','reason','score','scoring_version','epoch','controlled','calibrates'];
     private const ANSWER_COLUMNS=['run_id','ordinal','question_id','presented_at','deadline','step','selected','result','answered_at','elapsed','cursor_after'];
 
     public function __construct()
@@ -15,6 +15,10 @@ final class AdaptiveQcmPreview
 
     private function insert(string $table,array $columns,array $rows): void
     {
+        if(in_array($table,['runs','evaluation_pools'],true)){
+            $columns[]='pool_id';
+            foreach($rows as &$row){$row['pool_id']=$this->store->storePool($row['pool']);$row['pool']='';}unset($row);
+        }
         $q=$this->store->db->prepare('INSERT INTO '.$table.' ('.implode(',',$columns).') VALUES ('.implode(',',array_fill(0,count($columns),'?')).')');
         foreach($rows as $row)$q->execute(array_map(static fn($column)=>$row[$column]??null,$columns));
     }
@@ -41,14 +45,14 @@ final class AdaptiveQcmPreview
         $version=null;
         if($reference&&$item['is_evaluation']){
             $duration=max(1,(int)$item['estimated_minutes'])*60;$revision=$reference->referenceRevision((int)$item['id']);
-            if($revision)$this->insert('evaluation_revisions',['item_id','revision'],[['item_id'=>$item['id'],'revision'=>$revision]]);
+            if($revision)$this->insert('evaluation_revisions',['item_id','revision','activity_revision'],[['item_id'=>$item['id'],'revision'=>$revision,'activity_revision'=>(int)($item['quiz_revision']??0)]]);
             $fingerprints=[AdaptiveQcm::fingerprint($pool,$level,$duration,$revision)];
             if(!$revision)$fingerprints[]=hash('sha256',json_encode([array_column($pool,'id'),$level,$duration],JSON_THROW_ON_ERROR));
             foreach($fingerprints as $fingerprint){
                 $frozen=$reference->one('SELECT * FROM evaluation_pools WHERE item_id=? AND fingerprint=?',[$item['id'],$fingerprint]);
                 if($frozen){
                     $this->insert('evaluation_pools',['item_id','fingerprint','pool'],[$frozen]);
-                    if($fingerprint!==$fingerprints[0])$version=(int)($reference->one('SELECT scoring_version FROM runs WHERE item_id=? AND pool=? ORDER BY started_at LIMIT 1',[$item['id'],$frozen['pool']])['scoring_version']??2);
+                    if($fingerprint!==$fingerprints[0])$version=(int)($reference->one('SELECT scoring_version FROM runs WHERE item_id=? AND pool_id=? ORDER BY started_at LIMIT 1',[$item['id'],$frozen['pool_id']])['scoring_version']??2);
                 }
             }
         }
@@ -59,7 +63,7 @@ final class AdaptiveQcmPreview
     /** The snapshot is server-side session data, never supplied by the browser. */
     public function restore(array $snapshot,int $teacherId,int $itemId): array
     {
-        $run=$snapshot['run']+['scoring_version'=>1];
+        $run=$snapshot['run']+['scoring_version'=>1,'epoch'=>'0:0','controlled'=>0,'calibrates'=>(int)($snapshot['run']['evaluation']??0)];
         if((int)$run['student_id']!==$teacherId||(int)$run['item_id']!==$itemId)throw new InvalidArgumentException('Ce test appartient à une autre session.');
         $this->questions(json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR));
         $this->insert('runs',self::RUN_COLUMNS,[$run]);

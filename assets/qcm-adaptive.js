@@ -33,7 +33,7 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
       if (state.score !== null) content.append(node('p', `${labels.score} : ${number(state.score / 10)} /10`, 'adaptive-score'));
       if (state.grading?.method === 'all_answers') {
         content.append(node('p', `${labels.basis} : ${state.grading.answered}`));
-        if (state.score === null) content.append(node('p', labels.insufficient, 'adaptive-feedback'));
+        if (state.score === null) content.append(node('p', state.controlled ? labels.controlled : labels.insufficient, 'adaptive-feedback'));
         else if (state.grading.provisional) content.append(node('p', labels.provisional));
       } else if (state.grading && state.grading.raw_score !== null) {
         content.append(node('p', `${labels.difficulty} : ${percent(state.grading.raw_score)} %`));
@@ -92,6 +92,7 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
     root.querySelectorAll('button').forEach((element) => { element.disabled = true; });
     const data = new FormData();
     data.set('token', document.body.dataset.csrf || ''); data.set('item_id', root.dataset.item); data.set('operation', operation);
+    data.set('epoch', state?.epoch || '0:0');
     if (preview) data.set('preview', '1');
     for (const [key, value] of Object.entries(payload)) {
       if (Array.isArray(value)) value.forEach((entry) => data.append(`${key}[]`, entry)); else data.set(key, value);

@@ -99,7 +99,9 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
         foreach($section['rows'] as $row){
             $presence=progress_report_result_presence($row);
             $dates=t('Échéance').' : '.progress_pdf_date($row['deadline']).' / '.t('Réalisation').' : '.progress_pdf_date($row['completed_at']);
-            $evaluation=$row['weight']!==null?'<strong>'.e(progress_pdf_score($row['evaluation'],'10')).'</strong><br><span style="font-size:7pt;color:#706e80">× '.e(progress_export_number($row['weight'],1)).'</span>':'-';
+            $mark=e(progress_pdf_score($row['evaluation'],'10'));
+            if($row['evaluation']!==null&&!$row['evaluation_included'])$mark='<s class="report-excluded" title="'.e(t('Non comptabilisé')).'">'.$mark.'</s>';
+            $evaluation=$row['weight']!==null?'<strong>'.$mark.'</strong><br><span style="font-size:7pt;color:#706e80">× '.e(progress_export_number($row['weight'],1)).'</span>':'-';
             $self=$presence['self']?e(t('Apprenant')).' : '.e(progress_pdf_score($row['student_level'],'3')).'<br>'.e(t('Enseignant')).' : '.e(progress_pdf_score($row['teacher_level'],'3')):'-';
             if($web){
                 if(!$presence['evaluation'])$evaluation='-';
@@ -118,7 +120,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
         }
         $body.='</tbody></table></div>';
     }
-    $body.='<p class="muted" style="font-size:7pt;margin:2mm 0">'.e(t('Les QCM affichent uniquement leur dernier résultat, ramené sur 10.')).' · - : '.e(t('Aucun résultat')).'</p>';
+    $body.='<p class="muted" style="font-size:7pt;margin:2mm 0">'.e(t('Les QCM affichent uniquement leur dernier résultat, ramené sur 10.')).' · - : '.e(t('Aucun résultat')).'<br>'.e(t('Notes barrées : non comptabilisées dans la moyenne.')).'</p>';
     foreach($report['comments'] as $index=>$comment){
         if($index===0)$body.='<h2 style="font-size:12pt;margin:4mm 0 1.5mm;page-break-after:avoid">'.e(t('Commentaires')).'</h2>';
         $short=mb_strlen($comment['student'].$comment['teacher'])<1200;
@@ -132,6 +134,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
 function course_progress_export_pdf(array $data,bool $web=false): string
 {
     $summary=$data['mode']==='summary';$body='';
+    if($web&&!empty($data['return_url']))$body='<nav style="margin-bottom:16px"><a style="display:inline-block;padding:8px 14px;border:1px solid #ddd9e9;border-radius:8px;color:#5344bb;text-decoration:none" href="'.e($data['return_url']).'">← '.e(t('Retour')).'</a></nav>';
     if(!$web)$body='<htmlpagefooter name="progressFooter"><table style="font-size:8pt;color:#706e80"><tr><td style="border:0;padding:1mm 0">liike · '.e($data['course']['code']).'</td><td style="border:0;padding:1mm 0;text-align:right">{PAGENO} / {nbpg}</td></tr></table></htmlpagefooter><sethtmlpagefooter name="progressFooter" value="on" />';
     if($summary){
         $students=$data['students'];$count=count($students);$average=$count?round(array_sum(array_map(static fn(array $s):float=>$s['total']?100*$s['done']/$s['total']:0,$students))/$count):0;

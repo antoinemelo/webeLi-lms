@@ -372,7 +372,7 @@ function complete_consultation_step(PDO $pdo, int $studentId, int $itemId): bool
         JOIN courses c ON c.id=pi.course_id
         JOIN enrollments e ON e.course_id=pi.course_id AND e.student_id=? AND e.status='active'
         JOIN users u ON u.id=e.student_id AND u.account_status='active'
-        WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND c.archived=0 AND pi.self_evaluation_enabled=0 AND pi.is_evaluation=0
+        WHERE pi.id=? AND NOT EXISTS(SELECT 1 FROM pathway_groups visibility_group WHERE visibility_group.id=pi.group_id AND visibility_group.is_visible=0) AND c.archived=0 AND pi.self_evaluation_enabled=0 AND pi.is_evaluation=0 AND pi.is_controlled_exercise=0
           AND (pi.access_mode='all' OR (pi.access_mode='restricted' AND EXISTS(
               SELECT 1 FROM pathway_item_students a WHERE a.pathway_item_id=pi.id AND a.student_id=?)))");
     $query->execute([$studentId,$itemId,$studentId]);$enrollmentId=(int)($query->fetchColumn()?:0);
@@ -464,11 +464,11 @@ function copy_course(PDO $pdo, int $sourceId, int $teacherId, string $title, boo
 
         $items = $pdo->prepare('SELECT * FROM pathway_items WHERE course_id=? ORDER BY position,id');
         $items->execute([$sourceId]);
-        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data,group_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
+        $insertItem = $pdo->prepare('INSERT INTO pathway_items(course_id,page_id,position,deadline,is_evaluation,self_evaluation_enabled,evaluation_weight,instructions,access_mode,framework_tracking_enabled,event_data,group_id,is_controlled_exercise) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)');
         $oldItemIds = [];
         $itemMap = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $item) {
-            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],!empty($item['event_data'])?0:$item['is_evaluation'],(!empty($item['event_data'])||$item['is_evaluation'])?0:($item['self_evaluation_enabled']??1),$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1,$item['event_data']??null,$groupMap[(int)($item['group_id']??0)]??null]);
+            $insertItem->execute([$newCourseId,$item['page_id'],$item['position'],$resetDeadlines?null:$item['deadline'],!empty($item['event_data'])?0:$item['is_evaluation'],(!empty($item['event_data'])||$item['is_evaluation']||!empty($item['is_controlled_exercise']))?0:($item['self_evaluation_enabled']??1),$item['evaluation_weight']??1,$item['instructions'],$item['access_mode'],$item['framework_tracking_enabled']??1,$item['event_data']??null,$groupMap[(int)($item['group_id']??0)]??null,(int)(!empty($item['is_controlled_exercise'])&&empty($item['event_data'])&&!$item['is_evaluation'])]);
             $oldItemId = (int)$item['id'];
             $oldItemIds[] = $oldItemId;
             $itemMap[$oldItemId] = (int)$pdo->lastInsertId();
@@ -632,7 +632,7 @@ function evaluation_summary(PDO $pdo, int $courseId, int $enrollmentId, bool $tr
         $row['evaluation_weight']=(float)$row['evaluation_weight'];
         if($row['evaluation_score']!==null){
             $row['evaluation_score']=(float)$row['evaluation_score'];
-            if($row['evaluation_included']){
+            if($row['evaluation_included']&&$row['framework_tracking_enabled']){
                 $weighted+=$row['evaluation_score']*$row['evaluation_weight'];
                 $weightTotal+=$row['evaluation_weight'];
             }

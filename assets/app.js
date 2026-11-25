@@ -1432,7 +1432,9 @@ document.querySelectorAll('[data-pathway-type]').forEach((toggle) => {
       const teacherDataRemoved = (evaluationChanged || (selfEvaluationRemoved && toggle.value !== 'evaluation'))
         && typeWarning.dataset.hasTeacherData === '1';
       const studentDataRemoved = selfEvaluationRemoved && typeWarning.dataset.hasStudentData === '1';
-      typeWarning.hidden = !teacherDataRemoved && !studentDataRemoved;
+      typeWarning.hidden = !(original === 'evaluation' && toggle.value !== original) && !teacherDataRemoved && !studentDataRemoved;
+      const confirmation = typeWarning.querySelector('[data-confirm-type-reset]');
+      if (confirmation) { confirmation.disabled = typeWarning.hidden; confirmation.required = !typeWarning.hidden; if (typeWarning.hidden) confirmation.checked = false; }
     }
     const isEvent = toggle.value === 'event';
     if (eventFields) eventFields.hidden = !isEvent;

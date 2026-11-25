@@ -32,3 +32,5 @@ Il fournit une connexion enseignante par mot de passe, des codes apprenants, une
 - [Aperçu enseignant](guide-utilisateur.md#aperçu-apprenant-pour-lenseignant) : étapes invisibles masquées et navigation filtrée.
 
 Les règles de conservation et d’accès figurent dans le [modèle fonctionnel](modele-fonctionnel.md) ; la migration 28 et les commandes de vérification sont décrites dans [l’exploitation](exploitation.md).
+
+- [Audit du stockage adaptatif, bilans et modes d’activité (25 novembre 2026)](audit-stockage-bilans-2026-11-25.md).

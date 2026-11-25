@@ -5,6 +5,7 @@ function pathway_item_type(array $item): string
 {
     if(!empty($item['event_data']))return 'event';
     if(!empty($item['is_evaluation']))return 'evaluation';
+    if(!empty($item['is_controlled_exercise']))return 'controlled';
     return !empty($item['self_evaluation_enabled'])?'self':'consultation';
 }
 
@@ -31,7 +32,7 @@ function pathway_event_normalize(array $input): array
 function pathway_type_settings(array $input, array $previous=[]): array
 {
     $type=$input['item_type']??(isset($input['is_evaluation'])?'evaluation':(!empty($input['self_evaluation_enabled']??$previous['self_evaluation_enabled']??1)?'self':'consultation'));
-    if(!in_array($type,['consultation','evaluation','self','event'],true))throw new InvalidArgumentException('Choisissez un type d’étape valide.');
+    if(!in_array($type,['consultation','evaluation','controlled','self','event'],true))throw new InvalidArgumentException('Choisissez un type d’étape valide.');
     $event=null;
     if($type==='event')foreach(['event_start_date','event_end_date','event_start_time','event_end_time'] as $key){
         if(isset($input[$key])&&!is_string($input[$key]))throw new InvalidArgumentException('Renseignez des dates et horaires valides pour l’événement.');
@@ -98,7 +99,7 @@ function render_pathway_type_fields(array $item=[]): void
 {
     $type=pathway_item_type($item?:['self_evaluation_enabled'=>1]);
     $event=json_decode($item['event_data']??'null',true)??[];
-    ?><label class="field"><span><?=e(t('Type d’étape'))?></span><select name="item_type" data-pathway-type><?php foreach(['consultation'=>'Consultation simple','evaluation'=>'Évaluation','self'=>'Autoévaluation','event'=>'Événement'] as $value=>$label): ?><option value="<?=$value?>" <?=$type===$value?'selected':''?>><?=e(t($label))?></option><?php endforeach; ?></select></label>
+    ?><label class="field"><span><?=e(t('Type d’étape'))?></span><select name="item_type" data-pathway-type><?php foreach(['consultation'=>'Consultation simple','evaluation'=>'Évaluation','controlled'=>'Exercice contrôlé','self'=>'Autoévaluation','event'=>'Événement'] as $value=>$label): ?><option value="<?=$value?>" <?=$type===$value?'selected':''?>><?=e(t($label))?></option><?php endforeach; ?></select></label>
     <fieldset data-event-fields <?=$type==='event'?'':'hidden'?>><legend><?=e(t('Événement'))?></legend><p class="muted-copy"><?=e(t('Le titre de la page sera le nom de l’événement. Horaires : Europe/Zurich.'))?></p>
     <label class="check plain"><input type="checkbox" name="event_all_day" value="1" data-event-all-day <?=!empty($event['all_day'])?'checked':''?>> <?=e(t('Toute la journée'))?></label>
     <div class="row g-3"><?php foreach(['start'=>'Début','end'=>'Fin'] as $key=>$label): ?><div class="col-sm-6"><label class="field"><span><?=e(t($label))?></span><input type="date" name="event_<?=$key?>_date" value="<?=e(substr($event[$key]??'',0,10))?>" data-event-date></label><label class="field" data-event-time-field><span><?=e(t($key==='start'?'Heure de début':'Heure de fin'))?></span><input type="time" name="event_<?=$key?>_time" value="<?=e(substr($event[$key]??'',11,5))?>" data-event-time></label></div><?php endforeach; ?></div>

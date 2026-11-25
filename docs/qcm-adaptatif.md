@@ -15,7 +15,7 @@ Dans **Créer un QCM en Markdown**, choisir **Adaptatif**, puis copier l’exemp
 :::
 ```
 
-Les cinq champs sont : niveau initial enseignant (0–3), délai maximal en secondes, temps moyen observé, présentations en évaluation, réponses justes en évaluation. Les trois derniers sont descriptifs : les saisir ou les importer ne remplace jamais les statistiques en base. `[2][60]` seul est incomplet. Les compteurs sont actualisés à l’ouverture de l’éditeur, y compris avec des retours à la ligne Windows (CRLF).
+Les cinq champs sont : niveau initial enseignant (0–3), délai maximal en secondes, temps moyen observé, présentations en évaluation ou exercice contrôlé, réponses justes dans ces modes. Les trois derniers sont descriptifs : les saisir ou les importer ne remplace jamais les statistiques en base. `[2][60]` seul est incomplet. Les compteurs sont actualisés à l’ouverture de l’éditeur, y compris avec des retours à la ligne Windows (CRLF).
 
 Le tableau **Niveaux et statistiques des questions**, directement dans l’éditeur, distingue :
 
@@ -28,6 +28,22 @@ Le tableau **Niveaux et statistiques des questions**, directement dans l’édit
 Le menu **QCM adaptatif : réservoir et réglages** rassemble ces informations, le niveau de départ du test et l’actualisation des références d’évaluation. Enregistrer ces réglages conserve le texte non enregistré dans l’éditeur.
 
 Toutes les propositions `[v]` doivent être choisies et aucune `[x]` ne doit l’être. `[-]` reste neutre. Il n’y a pas de crédit partiel ; plusieurs bonnes propositions entraînent des cases à cocher.
+
+## Choisir le type d’étape et autoriser une reprise
+
+Dans les réglages du parcours, le type d’étape détermine le traitement des réponses :
+
+| Type | Résultat du QCM | Calibration des questions adaptatives |
+| --- | --- | --- |
+| Consultation simple / Autoévaluation | Entraînement, nouvelle tentative après la fin | Non |
+| Exercice contrôlé | Correction à la fin ; aucune note conservée | Oui |
+| Évaluation | Une tentative, résultat sur 10 si au moins cinq questions | Oui |
+
+En quittant **Évaluation**, une alerte et une case de confirmation précèdent la suppression des notes, validations, commentaires d’évaluation, résultats QCM et brouillons de l’étape. Tout changement de type remet les tentatives à zéro ; revenir au type précédent ne restaure pas les résultats. Les statistiques acquises des questions restent conservées. Un simple changement de date, de pondération ou d’accès ne remet pas les tentatives à zéro.
+
+Pour reprendre une activité qui s’est mal passée : **Apprenants → Progression → activité évaluée → Autoriser un nouvel essai**. Confirmer la suppression du résultat précédent. Les QCM classiques et adaptatifs de cette activité sont rouverts pour ce seul apprenant. Ses autres activités et les autres apprenants restent inchangés. La nouvelle tentative utilise la référence d’évaluation commune, sauf actualisation explicite de celle-ci. Une reprise ne fait pas contribuer deux fois la même personne à la calibration d’une même version de question.
+
+Les anciens onglets sont refusés après une réinitialisation. Les identifiants de génération sont contrôlés côté serveur ; un double clic sur l’autorisation ne crée pas deux reprises. Les générations remplacées disparaissent immédiatement des bilans, puis sont nettoyées par la maintenance. Pour un QCM classique contrôlé, seule une trace de réalisation est stockée, sans note ; les statistiques de difficulté concernent le réservoir adaptatif.
 
 ## Démarrer sans historique
 
@@ -45,7 +61,7 @@ Si toutes les questions ont le même niveau et aucune observation, leurs difficu
 
 ## Quelles observations contribuent ?
 
-Seules les évaluations enregistrées d’apprenants authentifiés contribuent à la calibration. Les entraînements, aperçus enseignants et séances anonymes en sont exclus.
+Les évaluations et exercices contrôlés d’apprenants authentifiés contribuent à la calibration. Les entraînements, aperçus enseignants et séances anonymes en sont exclus.
 
 Pour une version de question, seule la première observation admissible de chaque apprenant contribue, même si la question est utilisée dans plusieurs parcours. Les présentations et réponses descriptives continuent à être comptées ; le tableau distingue donc ces compteurs du nombre d’observations retenues.
 
@@ -118,9 +134,13 @@ Les questions suivantes visent la difficulté la plus proche de l’aptitude est
 
 ## Stockage, sauvegarde et désactivation
 
-La base dédiée est **`storage/adaptive.sqlite`**, schéma 4. Elle se crée automatiquement au premier enregistrement des réglages ou accès apprenant ; l’aperçu seul peut fonctionner en mémoire. PHP doit pouvoir écrire dans `storage/`. Aucune base vide n’est à copier depuis dev.
+La base dédiée est **`storage/adaptive.sqlite`**, schéma 6. Elle se crée automatiquement au premier enregistrement des réglages ou accès apprenant ; l’aperçu seul peut fonctionner en mémoire. PHP doit pouvoir écrire dans `storage/`. Aucune base vide n’est à copier depuis dev.
 
-La migration des schémas 1/2/3 conserve les identités anciennes et les résultats, construit les correspondances de versions et les observations admissibles. Une sauvegarde SQLite cohérente est créée avant la migration d’une base sur disque. Les mises à jour de l’application sauvegardent aussi la base adaptative lorsqu’elle existe. Garder ensemble les sauvegardes de la base LMS et de sa base adaptative.
+La migration des schémas 1/2/3/4/5 conserve les identités anciennes et les résultats, construit les correspondances de versions et les observations admissibles. Une sauvegarde SQLite cohérente est créée avant la migration d’une base sur disque. Les mises à jour de l’application sauvegardent aussi la base adaptative lorsqu’elle existe. Garder ensemble les sauvegardes de la base LMS et de sa base adaptative.
+
+Depuis le schéma 5, `question_sets` conserve une seule copie de chaque réservoir figé. Les tentatives et références d’évaluation pointent vers cette copie : le texte complet n’est plus dupliqué pour chaque apprenant. Les champs historiques `pool` restent vides en base ; le moteur restitue leur contenu à partir de `pool_id`. La migration préserve intégralement les notes, réponses, échéances et versions, puis compacte la base une fois. Elle active la récupération incrémentale de l’espace libre. Si un verrou empêche cette compaction, les données migrées restent utilisables et l’opération peut être reprise lors d’une maintenance.
+
+La maintenance habituelle et la purge du superadmin suppriment les tentatives dont l’étape, le compte ou l’inscription a été **supprimé définitivement**. Les tentatives remplacées après changement de type ou autorisation individuelle d’un nouvel essai sont également purgées. Un archivage ne déclenche pas cette suppression. Les anciennes tentatives d’entraînement ou d’exercice contrôlé sont remplacées par la dernière tentative terminée ; une tentative en cours reste conservée. Les réponses correspondantes et les réservoirs sans référence sont libérés. Les observations utiles de calibration survivent à la suppression d’une étape ; leur lien vers la tentative est détaché. Un compte supprimé ne garde pas son identifiant dans les observations de calibration. Les compteurs descriptifs anonymes des questions sont conservés. Le passage automatique traite au plus 500 tentatives par lot et n’attend pas un verrou d’écriture ; la purge manuelle traite l’ensemble. Aucun `VACUUM` complet ne s’exécute lors d’une consultation ordinaire : la maintenance récupère au plus 64 pages libres par passage.
 
 `APP_ADAPTIVE_QCM=0` désactive le module sans supprimer sa base. Conserver le parseur actuel, qui masque les réservoirs aux apprenants. Un retour à un ancien code ne doit pas être réalisé seul sur une base migrée : préférer la désactivation, ou une restauration cohérente des bases et du code, après sauvegarde des données plus récentes.
 
@@ -132,6 +152,7 @@ Le répertoire local `quiz-test` est un matériel d’audit, **pas une dépendan
 php dev/tests/adaptive_qcm.php                 # barèmes antérieurs et compatibilité
 php dev/tests/adaptive_qcm_model.php           # nouveau calcul, minimum, vitesse, références
 php dev/tests/adaptive_qcm_audit.php dev/quiz-test  # optionnel, copies des snapshots locaux
+php dev/tests/adaptive_qcm_storage.php dev/quiz-test # migration, taille et purge sur copies
 php dev/tests/adaptive_qcm_concurrency.php
 node dev/tests/adaptive_qcm_browser.mjs
 php dev/tests/qcm_modes.php

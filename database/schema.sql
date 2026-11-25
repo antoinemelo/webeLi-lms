@@ -210,6 +210,8 @@ CREATE TABLE pathway_items (
     deadline TEXT,
     event_data TEXT,
     group_id INTEGER REFERENCES pathway_groups(id) ON DELETE SET NULL,
+    is_controlled_exercise INTEGER NOT NULL DEFAULT 0 CHECK(is_controlled_exercise IN (0,1)),
+    quiz_revision INTEGER NOT NULL DEFAULT 0,
     is_evaluation INTEGER NOT NULL DEFAULT 0 CHECK(is_evaluation IN (0,1)),
     self_evaluation_enabled INTEGER NOT NULL DEFAULT 1 CHECK(self_evaluation_enabled IN (0,1)),
     evaluation_weight REAL NOT NULL DEFAULT 1 CHECK(evaluation_weight IN (0.5,1,2,3,4)),
@@ -290,6 +292,7 @@ CREATE TABLE progress (
     completed_at TEXT,
     teacher_level INTEGER CHECK(teacher_level BETWEEN 0 AND 3),
     evaluation_score REAL CHECK(evaluation_score BETWEEN 0 AND 10),
+    quiz_generation INTEGER NOT NULL DEFAULT 0,
     evaluation_included INTEGER NOT NULL DEFAULT 1 CHECK(evaluation_included IN (0,1)),
     teacher_note TEXT NOT NULL DEFAULT '',
     teacher_validated_at TEXT,
@@ -553,7 +556,7 @@ CREATE TABLE IF NOT EXISTS qcm_class_votes (
     PRIMARY KEY(session_id,student_id,question_index)
 );
 
-PRAGMA user_version = 38;
+PRAGMA user_version = 40;
 
 CREATE TABLE pwa_logins (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -668,5 +671,16 @@ CREATE TABLE IF NOT EXISTS registration_limit_alerts (
 CREATE TABLE IF NOT EXISTS progress_report_links (
     enrollment_id INTEGER PRIMARY KEY REFERENCES enrollments(id) ON DELETE CASCADE,
     token TEXT NOT NULL UNIQUE CHECK(length(token)=64),
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1))
+);
+
+CREATE TABLE IF NOT EXISTS qcm_exercise_completions (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pathway_item_id INTEGER NOT NULL REFERENCES pathway_items(id) ON DELETE CASCADE,
+    page_block_id INTEGER NOT NULL REFERENCES page_blocks(id) ON DELETE CASCADE,
+    qcm_key TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 1,
+    answered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(student_id,pathway_item_id,page_block_id,qcm_key)
 );
