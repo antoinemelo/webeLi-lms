@@ -393,6 +393,7 @@ return [
     'Progression des apprenants'=>['en'=>'Student progress','de'=>'Fortschritt der Lernenden','it'=>'Progresso degli studenti','es'=>'Progreso de los estudiantes'],
     'Appuyez sur un apprenant pour ouvrir son suivi.'=>['en'=>'Select a student to open their progress.','de'=>'Wählen Sie einen Lernenden, um den Fortschritt zu öffnen.','it'=>'Seleziona uno studente per aprire il monitoraggio.','es'=>'Selecciona un estudiante para abrir su seguimiento.'],
     'Organiser le parcours'=>['en'=>'Organise learning path','de'=>'Lernpfad organisieren','it'=>'Organizza il percorso','es'=>'Organizar el itinerario'],
+    'Détails'=>['en'=>'Details','de'=>'Details','it'=>'Dettagli','es'=>'Detalles'],
     'Progression'=>['en'=>'Progress','de'=>'Fortschritt','it'=>'Progresso','es'=>'Progreso'],
     'Trier par :column'=>['en'=>'Sort by :column','de'=>'Nach :column sortieren','it'=>'Ordina per :column','es'=>'Ordenar por :column'],
     'Gestion des accès'=>['en'=>'Access management','de'=>'Zugriffsverwaltung','it'=>'Gestione accessi','es'=>'Gestión de accesos'],

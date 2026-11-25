@@ -22,10 +22,10 @@ function progress_pdf_qr(string $url): string
     $png=(new \Mpdf\QrCode\Output\Png())->output($qr,$qr->getQrSize()*6,[255,255,255],[0,0,0],6);
     return '<a href="'.e($url).'"><img src="data:image/png;base64,'.base64_encode($png).'" style="width:27mm;height:27mm" alt="'.e(t('Bilan personnel')).'"></a>';
 }
-function progress_pdf_header(array $data,string $title,string $subtitle,string $url=''): string
+function progress_pdf_header(array $data,string $title,string $subtitle,string $url='',bool $web=false): string
 {
     $date=t('Date de l’export').' : '.progress_pdf_date($data['exported_at'],true).' (réf. UTC Europe/Zurich)';
-    $eyebrow='<p class="eyebrow">liike · '.e(t('Progression des apprenants')).' · '.e(t($data['mode']==='summary'?'Récapitulatif':'Détaillé')).'</p>';
+    $eyebrow='<p class="eyebrow">liike · '.e(t($web?'Progression':'Progression des apprenants')).' · '.e(t($data['mode']==='summary'?'Récapitulatif':($web?'Détails':'Détaillé'))).'</p>';
     $identity='<h1 style="font-size:21pt;margin-bottom:1.5mm">'.e($title).'</h1><p style="font-size:9pt;margin:1mm 0">'.e($subtitle).'</p>';
     $stamp='<p class="muted" style="font-size:7pt;margin:1mm 0">'.e($date).'</p>';
     $text=$eyebrow.($data['mode']==='detailed'?$stamp.$identity:$identity.$stamp);
@@ -82,7 +82,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
 {
     $report=progress_report_student($data,$student);
     $subtitle=$data['course']['title'].' · '.$data['course']['code'].' · '.progress_report_contact($student);
-    $body=progress_pdf_header($data,progress_report_name($student),$subtitle,$web?'':($data['report_urls'][(int)$student['id']]??''));
+    $body=progress_pdf_header($data,progress_report_name($student),$subtitle,$web?'':($data['report_urls'][(int)$student['id']]??''),$web);
     $pct=$student['total']?(int)round(100*$student['done']/$student['total']):0;
     $body.=progress_pdf_metrics([[t('Progression'),$pct.' %'],[t('Éval. /10'),progress_pdf_number($student['evaluation_average'])],[t('Autoéval. /3'),progress_pdf_number($student['self_average'])],[t('À confirmer'),(string)(int)$student['waiting']]]);
     $body.='<p style="font-size:8pt;margin-bottom:1mm">'.e(t('Étapes réalisées')).' : '.$student['done'].' / '.$student['total'].' · '.e(t('Étapes confirmées')).' : '.(int)$student['confirmed'].' · '.e(t('Encouragements')).' : '.(int)$student['points'].' · '.e(t('Dernière activité')).' : '.e(progress_pdf_date($student['last_activity_at'],true)).'</p>';
