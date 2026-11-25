@@ -58,10 +58,17 @@ function maintenance_http_get(string $url,int $maxBytes=10_000_000,int $timeout=
     if(($parts['scheme']??'')!=='https'||!in_array(strtolower((string)($parts['host']??'')),$allowedHosts,true))throw new UpdateException('Adresse de mise à jour non autorisée.');
     if(!function_exists('curl_init'))throw new UpdateException('L’extension PHP cURL est requise pour vérifier les mises à jour.');
     $contents='';$handle=curl_init($url);
-    curl_setopt_array($handle,[CURLOPT_FOLLOWLOCATION=>true,CURLOPT_MAXREDIRS=>3,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>$timeout,CURLOPT_USERAGENT=>'liike-update-client/1',CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_REDIR_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_FAILONERROR=>true,CURLOPT_WRITEFUNCTION=>static function($curl,string $chunk)use(&$contents,$maxBytes):int{$length=strlen($chunk);if(strlen($contents)+$length>$maxBytes)return 0;$contents.=$chunk;return $length;}]);
+    curl_setopt_array($handle,[CURLOPT_FOLLOWLOCATION=>true,CURLOPT_MAXREDIRS=>3,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>$timeout,CURLOPT_USERAGENT=>'liike-update-client/1',CURLOPT_HTTPHEADER=>['Cache-Control: no-cache','Pragma: no-cache'],CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_REDIR_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_FAILONERROR=>true,CURLOPT_WRITEFUNCTION=>static function($curl,string $chunk)use(&$contents,$maxBytes):int{$length=strlen($chunk);if(strlen($contents)+$length>$maxBytes)return 0;$contents.=$chunk;return $length;}]);
     $ok=curl_exec($handle);$status=(int)curl_getinfo($handle,CURLINFO_RESPONSE_CODE);$error=curl_error($handle);curl_close($handle);
     if($ok!==true||$status!==200)throw new UpdateException('GitHub est momentanément inaccessible'.($error!==''?' : '.$error:'.'));
     return $contents;
+}
+
+/** main is mutable: a fresh URL also bypasses GitHub's cache after a publication. */
+function maintenance_fresh_release_url(string $url): string
+{
+    if(!in_array($url,[LIIKE_RELEASE_MANIFEST_URL,LIIKE_RELEASE_ARCHIVE_URL],true))throw new UpdateException('Adresse de mise à jour non autorisée.');
+    return $url.'?liike_check='.bin2hex(random_bytes(12));
 }
 
 function maintenance_installed_manifest(string $root): ?array
@@ -104,15 +111,16 @@ function maintenance_compare_versions(string $left,string $right): int
     return version_compare($left,$right);
 }
 
-function maintenance_release_status(string $root,bool $refresh=false): array
+function maintenance_release_status(string $root,bool $refresh=false,?callable $download=null): array
 {
+    $download??='maintenance_http_get';
     $installed=maintenance_installed_version($root);$installedManifest=maintenance_installed_manifest($root);$cachePath=maintenance_cache_path($root);$cached=null;
     if(!$refresh&&is_file($cachePath)){
         try{$candidate=json_decode((string)file_get_contents($cachePath),true,32,JSON_THROW_ON_ERROR);if(is_array($candidate)&&(int)($candidate['checked_at']??0)>=time()-LIIKE_RELEASE_CACHE_SECONDS)$cached=$candidate;}catch(Throwable){}
     }
     if($cached===null){
         try{
-            $raw=maintenance_http_get(LIIKE_RELEASE_MANIFEST_URL,2_000_000);$decoded=json_decode($raw,true,512,JSON_THROW_ON_ERROR);
+            $raw=$download(maintenance_fresh_release_url(LIIKE_RELEASE_MANIFEST_URL),2_000_000);$decoded=json_decode($raw,true,512,JSON_THROW_ON_ERROR);
             if(!is_array($decoded))throw new UpdateException('Le manifeste distant est invalide.');
             $manifest=maintenance_validate_manifest($decoded);$cached=['checked_at'=>time(),'manifest'=>$manifest,'error'=>null];
         }catch(Throwable $exception){$cached=['checked_at'=>time(),'manifest'=>null,'error'=>$exception->getMessage()];}
@@ -300,9 +308,9 @@ function maintenance_apply_release(PDO $pdo,string $root,array $manifest,?callab
     $work=$updates.'/work-'.bin2hex(random_bytes(6));$backup=$updates.'/backup-'.date('Ymd-His').'-'.$manifest['version'].'-'.bin2hex(random_bytes(3));$archive=$work.'/release.tar.gz';$extract=$work.'/extract';$touched=[];$messagingChanged=false;
     try{
         mkdir($work,0775,true);mkdir($extract,0775,true);mkdir($backup,0775,true);
-        $manifestRaw=$download(LIIKE_RELEASE_MANIFEST_URL,2_000_000);$fresh=json_decode($manifestRaw,true,512,JSON_THROW_ON_ERROR);$fresh=maintenance_validate_manifest($fresh);
+        $manifestRaw=$download(maintenance_fresh_release_url(LIIKE_RELEASE_MANIFEST_URL),2_000_000);$fresh=json_decode($manifestRaw,true,512,JSON_THROW_ON_ERROR);$fresh=maintenance_validate_manifest($fresh);
         if($fresh['messaging_database_version']!==$manifest['messaging_database_version']||$fresh['version']!==$manifest['version']||$fresh['database_version']!==$manifest['database_version']||$fresh['database_release_version']!==$manifest['database_release_version']||$fresh['preserve_on_update']!==$manifest['preserve_on_update']||$fresh['files']!==$manifest['files'])throw new UpdateException('Une nouvelle publication est apparue : vérifiez à nouveau la version disponible.');
-        file_put_contents($archive,$download(LIIKE_RELEASE_ARCHIVE_URL,80_000_000,45));
+        file_put_contents($archive,$download(maintenance_fresh_release_url(LIIKE_RELEASE_ARCHIVE_URL),80_000_000,45));
         $releaseRoot=maintenance_extract_verified_release($archive,$extract,$manifest,$manifestRaw);
         $schemaSql=(string)file_get_contents($releaseRoot.'/database/schema.sql');
         if(!preg_match('/PRAGMA\s+user_version\s*=\s*(\d+)\s*;/i',$schemaSql,$schemaVersion)||((int)$schemaVersion[1])!==(int)$manifest['database_version'])throw new UpdateException('La version de base du schéma ne correspond pas au manifeste Git.');

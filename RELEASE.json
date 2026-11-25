@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "0855beebdf73515f0d033cbc87a232c8d4771d8b9928db194339e394ed59e1c5",
-    "VERSION": "fa24052825f66d1cfde45c20e263321d67659563297b77cc75b0179344154dfa",
+    "VERSION": "d18af1da311c5089060ed40c8129a551c455a6363fdf124d14ae86f955921c7c",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/ActivityResults.php": "466d731c7c7988708eb8bd30c183e10ff8eba679f56675a814cdb000988dfdab",
     "app/AdaptiveQcm.php": "275008e179f942bb0216da59ce01b5df8d9bd5080ae5fbf377b8944ee1412942",
@@ -1164,7 +1164,7 @@
     "app/StudentAdminViews.php": "6aea09e80352a4814afb12762e22ec4044eebe084e21aa7d0287c1fc017e3737",
     "app/TeacherDashboard.php": "8af87ac1ff896e30e13bd97f0b575d9bf216627daeee8dad5483cfb650ff9bdb",
     "app/TransferService.php": "ff26588aee6bbc4743dc0b1c7d62d7022700b280b6f982e6e746f7436d4da231",
-    "app/UpdateService.php": "41f64b2591dc29b22bb3d09dee464bf70a7b0229235f7507158986b4d770bd09",
+    "app/UpdateService.php": "966bd057c58f7d5c42a3a30def03b82ce543c44b5a74aaa8bbd2b26a29f45b57",
     "app/UserGuide.php": "5328dae1e8a067015bfd7b6e19899c4f7022347a39b0c7a7b1b76b9b2be28f52",
     "app/WorkSubmission.php": "2f679f8ae3d23486b5695a8c1d97ab65a772c17c0987dbe33ce9e6d4ca0eab4f",
     "app/WorkSubmissionViews.php": "ad9993c0dd8327c996bc2e5b9c7256c7be4ce5eb01d868de99e2dd6e56f4655f",
@@ -1268,7 +1268,7 @@
     "docs/audit-qcm-adaptatif-2026-11-24.md": "054baea9a4c8685748fd9d7bf3e61f88ab835f81aebddcdbba09e73f11f4ef71",
     "docs/audit-stockage-bilans-2026-11-25.md": "49af1254ea58af908f538104a75a618af59be9dc959997db0c40a203356d2d37",
     "docs/discussions.md": "06781f158c74fb5289923fb4b628246d7baf1f797bd322959bde06b0ee7ccc05",
-    "docs/exploitation.md": "54f9113191696bbeb807154ec459d96c27c80d3ab06df70e2a5a3f6da4260cff",
+    "docs/exploitation.md": "79a0cc5950954716de44d135f1596c534c3e0a827ae4e87f727e6eb5977f3782",
     "docs/guide-utilisateur.md": "3f9fde8924d80d030014656c24c407570fa9987df9e8c13134d604ada87d8666",
     "docs/limitations-roadmap.md": "4d7d031df3d1656954c2a8deb79ea70e718d97899d32f4935143d0e0837df555",
     "docs/modele-fonctionnel.md": "688474d377c048c929ca3ad95aa8e4e5adf283635079817f2f0a9677003abf27",
@@ -1286,7 +1286,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-11-25T07:54:56+00:00",
+  "generated_at": "2026-11-25T08:00:51+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -1299,5 +1299,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q4.34"
+  "version": "2026Q4.35"
 }
