@@ -119,6 +119,8 @@ function js_i18n(): array
         'session_reconnect' => t('Se reconnecter dans un nouvel onglet'),
         'session_recheck' => t('J’ai rétabli ma session'),
         'session_checking' => t('Vérification de la session…'),
+        'release_checking' => t('Vérification de la version…'),
+        'release_installing' => t('Installation de la mise à jour…'),
         'session_unavailable' => t('La validité de la session ne peut pas être vérifiée pour le moment.'),
         'pdf_preview' => t('Aperçu PDF'),
         'pdf_close' => t('Fermer l’aperçu PDF'),

@@ -106,10 +106,19 @@ function render_pathway_type_fields(array $item=[]): void
     <label class="field"><span><?=e(t('Lieu'))?> (<?=e(t('facultatif'))?>)</span><input name="event_location" maxlength="500" value="<?=e($event['location']??'')?>"></label></fieldset><?php
 }
 
+/** A completed event keeps its schedule; a date shared by both endpoints is written only once. */
+function pathway_event_schedule(array $event): string
+{
+    $zone=new DateTimeZone('Europe/Zurich');
+    $start=new DateTimeImmutable($event['start'],$zone);$end=new DateTimeImmutable($event['end'],$zone);
+    $sameDay=$start->format('Y-m-d')===$end->format('Y-m-d');
+    if($event['all_day'])return $start->format('d/m/Y').($sameDay?'':' → '.$end->format('d/m/Y'));
+    return $start->format('d/m/Y H:i').' → '.$end->format($sameDay?'H:i':'d/m/Y H:i');
+}
+
 function render_pathway_event(array $item): void
 {
     if(empty($item['event_data']))return;
-    $event=json_decode($item['event_data'],true);$format=$event['all_day']?'d/m/Y':'d/m/Y H:i';
-    $start=new DateTimeImmutable($event['start'],new DateTimeZone('Europe/Zurich'));$end=new DateTimeImmutable($event['end'],new DateTimeZone('Europe/Zurich'));
-    ?><section class="pathway-event-card border rounded p-3 my-3"><h2><i class="bi bi-calendar-event" aria-hidden="true"></i> <?=e(t('Événement'))?></h2><p><?=e($start->format($format))?><?php if($event['start']!==$event['end']): ?> → <?=e($end->format($format))?><?php endif; ?> · <?=e($event['all_day']?t('Toute la journée'):'Europe/Zurich')?></p><?php if($event['location']!==''): ?><p><?=e($event['location'])?></p><?php endif; ?><div class="d-flex flex-wrap gap-2"><a class="button secondary" href="<?=e(route('event-download',['item'=>$item['id']]))?>"><i class="bi bi-download" aria-hidden="true"></i> <?=e(t('Télécharger le calendrier (.ics)'))?></a><a class="button secondary" href="<?=e(pathway_event_google_url($item))?>" target="_blank" rel="noopener noreferrer"><?=e(t('Ajouter à Google Calendar'))?></a></div><small><?=e(t('Après l’ajout à votre agenda, les modifications ne sont pas synchronisées automatiquement.'))?></small></section><?php
+    $event=json_decode($item['event_data'],true);
+    ?><section class="pathway-event-card border rounded p-3 my-3"><h2><i class="bi bi-calendar-event" aria-hidden="true"></i> <?=e(t('Événement'))?></h2><p><?=e(pathway_event_schedule($event))?> · <?=e($event['all_day']?t('Toute la journée'):'Europe/Zurich')?></p><?php if($event['location']!==''): ?><p><?=e($event['location'])?></p><?php endif; ?><div class="d-flex flex-wrap gap-2"><a class="button secondary" href="<?=e(route('event-download',['item'=>$item['id']]))?>"><i class="bi bi-download" aria-hidden="true"></i> <?=e(t('Télécharger le calendrier (.ics)'))?></a><a class="button secondary" href="<?=e(pathway_event_google_url($item))?>" target="_blank" rel="noopener noreferrer"><?=e(t('Ajouter à Google Calendar'))?></a></div><small><?=e(t('Après l’ajout à votre agenda, les modifications ne sont pas synchronisées automatiquement.'))?></small></section><?php
 }

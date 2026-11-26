@@ -657,19 +657,20 @@ function handle_action(string $action): never
     if ($action === 'superadmin_check_update' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
         $status=maintenance_release_status(dirname(__DIR__),true);
         if($status['error'])flash(t('Vérification impossible : :details',['details'=>$status['error']]),'error');
+        elseif($status['repair_needed'])flash(t('Les fichiers de la version :version doivent être réparés.',['version'=>$status['latest']]),'error');
         elseif($status['available'])flash(t('La version :version est disponible.',['version'=>$status['latest']]));
-        else flash('L’application utilise déjà la dernière version stable.');
+        elseif($status['current'])flash(t('La version :version est installée et ses fichiers sont vérifiés.',['version'=>$status['installed']]));
+        elseif($status['ahead'])flash(t('La version installée est plus récente que la publication vérifiée.'));
+        else flash(t('Impossible de confirmer la version actuelle.'),'error');
         redirect('admin');
     }
     if ($action === 'superadmin_apply_update' && $user['role'] === 'teacher' && (int)($user['is_superadmin']??0)===1) {
         try{
-            $expected=trim((string)($_POST['expected_version']??''));$status=maintenance_release_status(dirname(__DIR__),true);$manifest=$status['manifest'];
-            if($status['error']||!is_array($manifest))throw new UpdateException((string)($status['error']?:'Aucune version stable ne peut être récupérée.'));
-            if($expected===''||!hash_equals($expected,(string)$manifest['version']))throw new UpdateException('La version disponible a changé. Vérifiez à nouveau les mises à jour.');
-            if(!$status['available'])throw new UpdateException('L’application utilise déjà la dernière version stable.');
+            $expected=trim((string)($_POST['expected_version']??''));$commit=trim((string)($_POST['expected_commit']??''));
+            $manifest=maintenance_selected_manifest($expected,$commit);
             @set_time_limit(120);ignore_user_abort(true);
             $result=maintenance_apply_release(db(),dirname(__DIR__),$manifest);
-            flash(t('Mise à jour :version installée avec les migrations de la base. Une sauvegarde a été créée.',['version'=>$result['version']]));
+            flash(t($result['already_installed']?'La version :version est installée et ses fichiers sont vérifiés.':'Mise à jour :version installée avec les migrations de la base. Une sauvegarde a été créée.',['version'=>$result['version']]));
         }catch(Throwable $exception){flash(t('Mise à jour impossible : :details',['details'=>$exception->getMessage()]),'error');}
         redirect('admin');
     }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 final class AdaptiveQcmPreview
 {
     public readonly AdaptiveQcm $store;
-    private const RUN_COLUMNS=['id','student_id','item_id','page_id','evaluation','started_at','ends_at','initial_level','cursor','pool','sources','history','finished_at','reason','score','scoring_version','epoch','controlled','calibrates'];
+    private const RUN_COLUMNS=['id','student_id','item_id','page_id','evaluation','started_at','ends_at','initial_level','cursor','pool','sources','history','finished_at','reason','score','scoring_version','epoch','controlled','calibrates','grading','total_questions','correct_questions'];
     private const ANSWER_COLUMNS=['run_id','ordinal','question_id','presented_at','deadline','step','selected','result','answered_at','elapsed','cursor_after'];
 
     public function __construct()
@@ -63,17 +63,19 @@ final class AdaptiveQcmPreview
     /** The snapshot is server-side session data, never supplied by the browser. */
     public function restore(array $snapshot,int $teacherId,int $itemId): array
     {
-        $run=$snapshot['run']+['scoring_version'=>1,'epoch'=>'0:0','controlled'=>0,'calibrates'=>(int)($snapshot['run']['evaluation']??0)];
+        $run=$snapshot['run']+['scoring_version'=>1,'epoch'=>'0:0','controlled'=>0,'calibrates'=>(int)($snapshot['run']['evaluation']??0),'grading'=>'{}','total_questions'=>0,'correct_questions'=>0];
         if((int)$run['student_id']!==$teacherId||(int)$run['item_id']!==$itemId)throw new InvalidArgumentException('Ce test appartient à une autre session.');
         $this->questions(json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR));
         $this->insert('runs',self::RUN_COLUMNS,[$run]);
         $this->insert('answers',self::ANSWER_COLUMNS,$snapshot['answers']);
+        if($run['finished_at']!==null&&$run['grading']==='{}')return $this->store->compactLegacyPreview($run);
         return $run;
     }
 
     public function snapshot(array $run): array
     {
         $q=$this->store->db->prepare('SELECT * FROM answers WHERE run_id=? ORDER BY ordinal');$q->execute([$run['id']]);
+        unset($run['_review']);
         return ['run'=>$run,'answers'=>$q->fetchAll()];
     }
 }

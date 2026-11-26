@@ -8,14 +8,14 @@ final class AdaptiveQcm
 {
     public const INITIAL_RATES=[80.0,60.0,40.0,20.0];
     public const SCORING_VERSION=3;
-    public const SCHEMA_VERSION=6;
+    public const SCHEMA_VERSION=7;
     private bool $writing=false;
     private array $poolCache=[];
     public function __construct(public readonly PDO $db)
     {
         $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
         $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
-        $db->exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000');
+        $db->exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000; PRAGMA secure_delete=ON');
         $version=(int)$db->query('PRAGMA user_version')->fetchColumn();
         if($version===self::SCHEMA_VERSION)return;
         if($version>self::SCHEMA_VERSION)throw new RuntimeException('La base QCM adaptatif est plus récente que ce module.');
@@ -95,6 +95,26 @@ final class AdaptiveQcm
                 CREATE UNIQUE INDEX one_evaluation ON runs(student_id,item_id,epoch) WHERE evaluation=1;
                 CREATE UNIQUE INDEX one_running ON runs(student_id,item_id,epoch) WHERE finished_at IS NULL;
                 PRAGMA user_version=6");
+            if($version<7){
+                $db->exec("ALTER TABLE runs ADD COLUMN grading TEXT NOT NULL DEFAULT '{}';
+                    ALTER TABLE runs ADD COLUMN total_questions INTEGER NOT NULL DEFAULT 0;
+                    ALTER TABLE runs ADD COLUMN correct_questions INTEGER NOT NULL DEFAULT 0;
+                    CREATE TABLE calibration_totals(question_id TEXT PRIMARY KEY REFERENCES questions(id),n INTEGER NOT NULL,correct INTEGER NOT NULL,weight REAL NOT NULL,weighted_correct REAL NOT NULL,timed INTEGER NOT NULL,time_sum REAL NOT NULL);
+                    INSERT INTO calibration_totals SELECT question_id,COUNT(*),SUM(correct),SUM(weight),SUM(correct*weight),COUNT(elapsed),COALESCE(SUM(elapsed),0) FROM calibration_samples GROUP BY question_id;
+                    CREATE TABLE calibration_receipts(receipt BLOB PRIMARY KEY) WITHOUT ROWID");
+                // A receipt prevents repeated calibration; it contains neither a result nor a learner ID.
+                $receipt=$db->prepare('INSERT OR IGNORE INTO calibration_receipts(receipt) VALUES(?)');
+                foreach($db->query('SELECT question_id,student_id FROM calibration_samples') as $sample){
+                    $receipt->bindValue(1,self::calibrationReceipt($sample['question_id'],(int)$sample['student_id']),PDO::PARAM_LOB);$receipt->execute();
+                }
+                $db->exec('DROP TABLE calibration_samples');
+                // Preserve grades exactly: migration only summarizes and erases finished answer details.
+                foreach($db->query('SELECT id FROM runs WHERE finished_at IS NOT NULL')->fetchAll(PDO::FETCH_COLUMN) as $id){
+                    $run=$this->one('SELECT * FROM runs WHERE id=?',[$id]);
+                    $this->summarize($run,$this->runAnswers($id));
+                }
+                $db->exec('PRAGMA user_version=7');
+            }
             $db->exec('COMMIT');
         }catch(Throwable $error){$db->exec('ROLLBACK');throw $error;}
     }
@@ -124,7 +144,7 @@ final class AdaptiveQcm
                     $pdo->exec('VACUUM INTO '.$pdo->quote($directory.'/adaptive-before-v'.self::SCHEMA_VERSION.'-'.gmdate('Ymd-His').'-'.bin2hex(random_bytes(4)).'.sqlite'));
                 }
                 $stores[$path]=new self($pdo);
-                if($oldVersion<5){
+                if($oldVersion<self::SCHEMA_VERSION){
                     try{$pdo->exec('PRAGMA auto_vacuum=INCREMENTAL; VACUUM');}
                     catch(PDOException $error){error_log('liike adaptive compaction deferred: '.$error->getCode());}
                 }
@@ -292,7 +312,7 @@ final class AdaptiveQcm
         if($legacy)return $questions;
         $samples=[];
         foreach(array_chunk(array_column($questions,'id'),400) as $ids){
-            $q=$this->db->prepare('SELECT question_id,COUNT(*) n,SUM(correct) correct,SUM(weight) weight,SUM(correct*weight) weighted_correct,COUNT(elapsed) timed,AVG(elapsed) mean FROM calibration_samples WHERE question_id IN ('.implode(',',array_fill(0,count($ids),'?')).') GROUP BY question_id');
+            $q=$this->db->prepare('SELECT question_id,n,correct,weight,weighted_correct,timed,CASE WHEN timed>0 THEN time_sum/timed END mean FROM calibration_totals WHERE question_id IN ('.implode(',',array_fill(0,count($ids),'?')).')');
             $q->execute($ids);foreach($q as $row)$samples[$row['question_id']]=$row;
         }
         foreach($questions as &$question){
@@ -417,22 +437,74 @@ final class AdaptiveQcm
         if($range['max']-$range['min']<1e-9)return $raw;
         return round(max(0,min(10,10*($raw-$range['min'])/($range['max']-$range['min']))),1)*10;
     }
+    private static function calibrationReceipt(string $questionId,int $studentId): string
+    {
+        return hash('sha256',$questionId.':'.$studentId,true);
+    }
+    private function calibrate(string $questionId,int $studentId,bool $correct,?float $elapsed,float $weight): void
+    {
+        $receipt=$this->db->prepare('INSERT OR IGNORE INTO calibration_receipts(receipt) VALUES(?)');
+        $receipt->bindValue(1,self::calibrationReceipt($questionId,$studentId),PDO::PARAM_LOB);$receipt->execute();
+        if(!$receipt->rowCount())return;
+        $this->db->prepare('INSERT INTO calibration_totals(question_id,n,correct,weight,weighted_correct,timed,time_sum) VALUES(?,1,?,?,?,?,?)
+            ON CONFLICT(question_id) DO UPDATE SET n=n+1,correct=correct+excluded.correct,weight=weight+excluded.weight,
+            weighted_correct=weighted_correct+excluded.weighted_correct,timed=timed+excluded.timed,time_sum=time_sum+excluded.time_sum')
+            ->execute([$questionId,(int)$correct,$weight,$correct?$weight:0,(int)($elapsed!==null),$elapsed??0]);
+    }
+    private function runAnswers(string $id): array
+    {
+        $q=$this->db->prepare('SELECT * FROM answers WHERE run_id=? ORDER BY ordinal');$q->execute([$id]);return $q->fetchAll();
+    }
+    /** Keep only score metadata. Never persist a finished learner's question/answer history. */
+    private function summarize(array $run,array $answers): array
+    {
+        $pool=json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR);
+        if((int)$run['scoring_version']>=3){
+            $grading=['method'=>'all_answers','answered'=>count(array_filter($answers,static fn($a)=>in_array($a['result'],['correct','incorrect','timeout'],true))),
+                'minimum'=>AdaptiveQcmModel::MIN_ANSWERS,'provisional'=>(bool)array_filter($pool,static fn($q)=>(int)($q['calibration']['n']??0)<20)];
+        }else{
+            $range=$pool?self::difficultyRange($pool):['min'=>0,'max'=>0];
+            $relative=(int)$run['scoring_version']>=2&&$range['max']-$range['min']>=1e-9;
+            $grading=['relative'=>$relative,'min'=>$range['min'],'max'=>$range['max'],
+                'raw_score'=>self::finalScore(json_decode($run['history'],true,512,JSON_THROW_ON_ERROR),!$relative)];
+        }
+        $run['grading']=json_encode($grading,JSON_THROW_ON_ERROR);
+        $run['total_questions']=count($answers);
+        $run['correct_questions']=count(array_filter($answers,static fn($a)=>$a['result']==='correct'));
+        $run['history']='[]';
+        $this->db->prepare("UPDATE runs SET grading=?,total_questions=?,correct_questions=?,history='[]' WHERE id=?")
+            ->execute([$run['grading'],$run['total_questions'],$run['correct_questions'],$run['id']]);
+        $this->db->prepare('DELETE FROM answers WHERE run_id=?')->execute([$run['id']]);
+        return $run;
+    }
+    /** Compatibility for a teacher preview session created before the storage migration. */
+    public function compactLegacyPreview(array $run): array
+    {
+        if($run['finished_at']===null)throw new InvalidArgumentException('Cette activité est encore en cours.');
+        return $this->transaction(fn()=>$this->summarize($run,$this->runAnswers($run['id'])));
+    }
     private function finish(array $run,float $now,string $reason): array
     {
+        $answers=$this->runAnswers($run['id']);
+        $pool=json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR);
         if((int)$run['scoring_version']>=3){
-            $q=$this->db->prepare('SELECT question_id,result FROM answers WHERE run_id=? ORDER BY ordinal');$q->execute([$run['id']]);
-            $estimate=AdaptiveQcmModel::estimate(json_decode($run['pool'],true),$q->fetchAll(),true);
-            $this->db->prepare('UPDATE runs SET finished_at=?,reason=?,score=? WHERE id=? AND finished_at IS NULL')->execute([$now,$reason,$run['controlled']?null:$estimate['score'],$run['id']]);
-            return $this->one('SELECT * FROM runs WHERE id=?',[$run['id']]);
-        }
-        $range=self::difficultyRange(json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR));
-        $relative=(int)($run['scoring_version']??1)>=2&&$range['max']-$range['min']>=1e-9;
-        $score=self::finalScore(json_decode($run['history'],true,512,JSON_THROW_ON_ERROR),!$relative);
-        if($score!==null&&(int)($run['scoring_version']??1)>=2){
-            $score=$reason==='hardest'?100.0:self::scaledScore($score,$range);
+            $score=AdaptiveQcmModel::estimate($pool,$answers,true)['score'];
+        }else{
+            $range=self::difficultyRange($pool);
+            $relative=(int)$run['scoring_version']>=2&&$range['max']-$range['min']>=1e-9;
+            $score=self::finalScore(json_decode($run['history'],true,512,JSON_THROW_ON_ERROR),!$relative);
+            if($score!==null&&(int)$run['scoring_version']>=2)$score=$reason==='hardest'?100.0:self::scaledScore($score,$range);
         }
         $this->db->prepare('UPDATE runs SET finished_at=?,reason=?,score=? WHERE id=? AND finished_at IS NULL')->execute([$now,$reason,$run['controlled']?null:$score,$run['id']]);
-        return $this->one('SELECT * FROM runs WHERE id=?',[$run['id']]);
+        $run=$this->summarize($this->one('SELECT * FROM runs WHERE id=?',[$run['id']]),$answers);
+        // This value lives only in the completing HTTP response, never in SQLite or a PHP session.
+        $run['_review']=[];$byId=array_column($pool,null,'id');
+        foreach($answers as $answer){
+            $question=$byId[$answer['question_id']];$selected=json_decode($answer['selected']??'[]',true);
+            $options=array_values(array_filter($question['answers'],static fn($option)=>$option['kind']==='v'||($answer['result']!=='correct'&&in_array($option['index'],$selected,true))));
+            $run['_review'][]=['title'=>$question['title'],'result'=>$answer['result'],'answers'=>$options,'selected'=>$selected];
+        }
+        return $run;
     }
     /** All decisions, expiry and statistics are atomic and server-timed. Repeated submissions are harmless. */
     public function advance(string $id,int $studentId,float $now,?int $ordinal=null,?array $selected=null,?callable $clock=null): array
@@ -488,7 +560,7 @@ final class AdaptiveQcm
                         $reference=$question['calibration']??[];$weight=1.0;
                         $minimum=max(3.0,0.05*(int)$question['seconds']);
                         if($right&&($reference['timed']??0)>=5&&$elapsed>=$minimum&&$elapsed<=0.5*(float)$reference['mean'])$weight=1.25;
-                        $this->db->prepare('INSERT OR IGNORE INTO calibration_samples(question_id,student_id,run_id,correct,elapsed,weight) VALUES(?,?,?,?,?,?)')->execute([$question['id'],$studentId,$id,(int)$right,$elapsed,$weight]);
+                        $this->calibrate($question['id'],$studentId,$right,$elapsed,$weight);
                     }
                 }
                 if((int)$run['scoring_version']>=3){
@@ -540,21 +612,11 @@ final class AdaptiveQcm
     public function publicState(array $run,float $now): array
     {
         $state=['id'=>$run['id'],'evaluation'=>(bool)$run['evaluation'],'controlled'=>(bool)$run['controlled'],'now'=>$now,'ends_at'=>(float)$run['ends_at'],'finished'=>$run['finished_at']!==null];
+        if($state['finished'])return $state+[
+            'score'=>$run['score']===null?null:(float)$run['score'],'reason'=>$run['reason'],
+            'review'=>$run['_review']??[],'grading'=>json_decode($run['grading'],true,512,JSON_THROW_ON_ERROR),
+        ];
         $pool=array_column(json_decode($run['pool'],true,512,JSON_THROW_ON_ERROR),null,'id');
-        if($state['finished']){
-            $state+=['score'=>$run['score']===null?null:(float)$run['score'],'reason'=>$run['reason'],'review'=>[]];
-            $range=self::difficultyRange(array_values($pool));
-            $relative=(int)($run['scoring_version']??1)>=2&&$range['max']-$range['min']>=1e-9;
-            $state['grading']=['relative'=>$relative,'min'=>$range['min'],'max'=>$range['max'],
-                'raw_score'=>self::finalScore(json_decode($run['history'],true,512,JSON_THROW_ON_ERROR),!$relative)];
-            $q=$this->db->prepare('SELECT * FROM answers WHERE run_id=? ORDER BY ordinal');$q->execute([$run['id']]);
-            foreach($q->fetchAll() as $answer){$question=$pool[$answer['question_id']];$state['review'][]=['title'=>$question['title'],'result'=>$answer['result'],'answers'=>$question['answers'],'selected'=>json_decode($answer['selected']??'[]',true)];}
-            if((int)$run['scoring_version']>=3)$state['grading']=[
-                'method'=>'all_answers','answered'=>count(array_filter($state['review'],static fn($answer)=>$answer['result']!=='global_timeout')),
-                'minimum'=>AdaptiveQcmModel::MIN_ANSWERS,'provisional'=>(bool)array_filter($pool,static fn($question)=>(int)($question['calibration']['n']??0)<20),
-            ];
-            return $state;
-        }
         $pending=$this->one('SELECT * FROM answers WHERE run_id=? AND result IS NULL',[$run['id']]);
         if($pending){
             $question=$pool[$pending['question_id']];$options=[];

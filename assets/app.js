@@ -22,6 +22,35 @@ const locale = document.body.dataset.language || 'fr';
 
 enhanceBootstrap();
 
+// Native POST navigation stays in charge; ignore repeated clicks while it runs.
+const releaseActions = document.querySelector('[data-release-actions]');
+if (releaseActions) {
+  let pending = false;
+  const status = document.createElement('span');
+  status.className = 'small text-secondary';
+  status.setAttribute('role', 'status');
+  releaseActions.append(status);
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!form.matches?.('[data-release-form]') || event.defaultPrevented) return;
+    if (pending) { event.preventDefault(); return; }
+    pending = true;
+    form.setAttribute('aria-busy', 'true');
+    status.textContent = form.elements.action.value === 'superadmin_check_update'
+      ? ui('release_checking', 'Vérification de la version…') : ui('release_installing', 'Installation de la mise à jour…');
+    releaseActions.querySelectorAll('button:not(:disabled)').forEach((button) => {
+      button.dataset.releaseDisabled = '1'; button.disabled = true;
+    });
+  });
+  window.addEventListener('pageshow', () => {
+    pending = false; status.textContent = '';
+    releaseActions.querySelectorAll('[aria-busy]').forEach((form) => form.removeAttribute('aria-busy'));
+    releaseActions.querySelectorAll('[data-release-disabled]').forEach((button) => {
+      button.disabled = false; delete button.dataset.releaseDisabled;
+    });
+  });
+}
+
 const studentProgress = document.querySelector('[data-student-progress]');
 if (studentProgress) {
   const toggle = studentProgress.querySelector('[data-student-progress-toggle]');
@@ -134,8 +163,12 @@ if (installedPwa) {
   }
 }
 
-if (installedPwa) {
-  const pdfLinks = Array.from(document.querySelectorAll('.reader-pdf-download'));
+// Uploaded PDFs use the same closable reader as generated PDFs on phones/tablets and in the PWA.
+{
+  const pdfLinks = Array.from(document.querySelectorAll('.reader-pdf-download, .file-card[href], .reader a[href]')).filter((link) => {
+    if (link.matches('.reader-pdf-download')) return true;
+    try { return /\.pdf$/i.test(new URL(link.href, document.baseURI).pathname); } catch (_) { return false; }
+  });
   if (pdfLinks.length > 0) {
     let pdfJsPromise = null;
     let overlay = null;
@@ -200,11 +233,10 @@ if (installedPwa) {
     };
 
     const requestClose = () => {
-      if (viewerHistoryActive) {
-        window.history.back();
-        return;
-      }
-      closeViewer();
+      const goBack = viewerHistoryActive && window.history.state?.pwaPdfViewer;
+      viewerHistoryActive = false;
+      closeViewer(); // Close immediately, even if the browser delays its history event.
+      if (goBack) window.history.back();
     };
 
     const createViewer = () => {
@@ -223,10 +255,13 @@ if (installedPwa) {
       closeButton.type = 'button';
       closeButton.setAttribute('aria-label', ui('pdf_close', 'Fermer l’aperçu PDF'));
       closeButton.title = ui('pdf_close', 'Fermer l’aperçu PDF');
-      const closeIcon = document.createElement('i');
-      closeIcon.className = 'bi bi-x-lg';
-      closeIcon.setAttribute('aria-hidden', 'true');
-      closeButton.append(closeIcon);
+      // The cross stays visible even if the icon font has not loaded.
+      const closeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      closeIcon.setAttribute('viewBox', '0 0 24 24'); closeIcon.setAttribute('aria-hidden', 'true');
+      const cross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      cross.setAttribute('d', 'M6 6l12 12M18 6L6 18'); cross.setAttribute('fill', 'none');
+      cross.setAttribute('stroke', 'currentColor'); cross.setAttribute('stroke-width', '2'); cross.setAttribute('stroke-linecap', 'round');
+      closeIcon.append(cross); closeButton.append(closeIcon);
 
       const heading = document.createElement('div');
       heading.className = 'pwa-pdf-heading';
@@ -358,20 +393,23 @@ if (installedPwa) {
       releasePdf();
       const ownRequest = ++requestNumber;
       currentLink = link;
-      title.textContent = link.dataset.pdfTitle || ui('pdf_preview', 'Aperçu PDF');
+      title.textContent = link.dataset.pdfTitle || link.querySelector('b')?.textContent || ui('pdf_preview', 'Aperçu PDF');
       status.textContent = '';
       pages.replaceChildren();
       message.hidden = true;
       loading.hidden = false;
       shareButton.hidden = true;
-      downloadLink.hidden = true;
+      downloadLink.href = link.href; downloadLink.target = '_blank'; downloadLink.rel = 'noopener';
+      downloadLink.download = ''; downloadLink.hidden = false;
       overlay.hidden = false;
       document.documentElement.classList.add('pwa-pdf-open');
       closeButton.focus({ preventScroll: true });
       if (addHistory && !viewerHistoryActive) {
         const previous = window.history.state && typeof window.history.state === 'object' ? window.history.state : {};
-        window.history.pushState({ ...previous, pwaPdfViewer: true }, '', window.location.href);
-        viewerHistoryActive = true;
+        try {
+          window.history.pushState({ ...previous, pwaPdfViewer: true }, '', window.location.href);
+          viewerHistoryActive = true;
+        } catch (_) { viewerHistoryActive = false; }
       }
       fetchController = new AbortController();
       try {
@@ -401,6 +439,8 @@ if (installedPwa) {
     };
 
     pdfLinks.forEach((link) => link.addEventListener('click', (event) => {
+      if (!installedPwa && !window.matchMedia('(max-width:850px)').matches) return;
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       openPdf(link);
     }));
@@ -410,7 +450,14 @@ if (installedPwa) {
       closeViewer();
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && overlay && !overlay.hidden) requestClose();
+      if (!overlay || overlay.hidden) return;
+      if (event.key === 'Escape') { event.preventDefault(); requestClose(); }
+      if (event.key === 'Tab') {
+        const controls = [...overlay.querySelectorAll('button, a[href]')].filter(el => !el.disabled && el.getClientRects().length);
+        const first = controls[0], last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
     });
   }
 }

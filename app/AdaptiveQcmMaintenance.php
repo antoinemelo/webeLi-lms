@@ -11,7 +11,7 @@ function adaptive_qcm_prune(PDO $core,AdaptiveQcm $store,bool $force=false): arr
         $db->exec('BEGIN IMMEDIATE');$writing=true;
         $cursor=$force?0:(int)($store->one("SELECT value FROM maintenance_state WHERE name='cleanup_cursor'")['value']??0);
         do{
-            $q=$db->prepare('SELECT r.rowid AS sequence,r.id,r.student_id,r.item_id,r.epoch,(r.evaluation=0 AND r.finished_at IS NOT NULL AND EXISTS(SELECT 1 FROM runs newer WHERE newer.student_id=r.student_id AND newer.item_id=r.item_id AND newer.epoch=r.epoch AND newer.finished_at IS NOT NULL AND (newer.started_at>r.started_at OR (newer.started_at=r.started_at AND newer.id>r.id)))) AS superseded FROM runs r WHERE r.rowid>? ORDER BY r.rowid LIMIT 500');$q->execute([$cursor]);$rows=$q->fetchAll();
+            $q=$db->prepare('SELECT r.rowid AS sequence,r.id,r.student_id,r.item_id,r.epoch,(r.evaluation=0 AND r.score IS NULL AND r.finished_at IS NOT NULL AND EXISTS(SELECT 1 FROM runs newer WHERE newer.student_id=r.student_id AND newer.item_id=r.item_id AND newer.epoch=r.epoch AND newer.finished_at IS NOT NULL AND (newer.started_at>r.started_at OR (newer.started_at=r.started_at AND newer.id>r.id)))) AS superseded FROM runs r WHERE r.rowid>? ORDER BY r.rowid LIMIT 500');$q->execute([$cursor]);$rows=$q->fetchAll();
             if(!$rows)break;
             $cursor=(int)end($rows)['sequence'];
             foreach(array_chunk($rows,100) as $batch){
@@ -24,12 +24,7 @@ function adaptive_qcm_prune(PDO $core,AdaptiveQcm $store,bool $force=false): arr
         }while($force&&count($rows)===500);
         if(count($rows)<500)$cursor=0;
         $db->prepare("INSERT INTO maintenance_state VALUES('cleanup_cursor',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value")->execute([$cursor]);
-        // Calibration survives deletion of a step. A permanently deleted learner leaves no sample ID.
-        $studentIds=$db->query('SELECT DISTINCT student_id FROM calibration_samples')->fetchAll(PDO::FETCH_COLUMN);
-        foreach(array_chunk($studentIds,400) as $ids){
-            $valid=$core->prepare('SELECT id FROM users WHERE id IN ('.implode(',',array_fill(0,count($ids),'?')).')');$valid->execute($ids);$keep=array_flip($valid->fetchAll(PDO::FETCH_COLUMN));
-            $remove=$db->prepare('DELETE FROM calibration_samples WHERE student_id=?');foreach($ids as $id)if(!isset($keep[$id]))$remove->execute([$id]);
-        }
+        // Calibration is aggregated, with no individual result or learner identifier to retain.
         foreach(['evaluation_pools'=>'item_id','evaluation_revisions'=>'item_id','settings'=>'page_id'] as $table=>$field){
             $ids=$db->query('SELECT DISTINCT '.$field.' FROM '.$table)->fetchAll(PDO::FETCH_COLUMN);
             foreach(array_chunk($ids,400) as $batch){
@@ -40,6 +35,10 @@ function adaptive_qcm_prune(PDO $core,AdaptiveQcm $store,bool $force=false): arr
         $db->exec('DELETE FROM evaluation_pools WHERE NOT EXISTS(SELECT 1 FROM runs WHERE runs.pool_id=evaluation_pools.pool_id) AND EXISTS(SELECT 1 FROM evaluation_revisions ref WHERE ref.item_id=evaluation_pools.item_id AND ref.fingerprint IS NOT NULL AND ref.fingerprint<>evaluation_pools.fingerprint)');
         $counts['adaptive_references']=$db->exec('DELETE FROM question_sets WHERE NOT EXISTS(SELECT 1 FROM runs WHERE runs.pool_id=question_sets.id) AND NOT EXISTS(SELECT 1 FROM evaluation_pools WHERE evaluation_pools.pool_id=question_sets.id)');
         $db->exec('COMMIT');$writing=false;
+        // An abandoned, expired test also loses its temporary answers, even if never reopened.
+        $q=$db->prepare('SELECT id,student_id FROM runs WHERE finished_at IS NULL AND ends_at<=? AND EXISTS(SELECT 1 FROM answers WHERE run_id=runs.id) ORDER BY ends_at LIMIT 50');
+        $q->execute([microtime(true)]);
+        foreach($q->fetchAll() as $expired)$store->advance($expired['id'],(int)$expired['student_id'],microtime(true));
         if($force&&(int)$db->query('PRAGMA auto_vacuum')->fetchColumn()!==2)$db->exec('PRAGMA auto_vacuum=INCREMENTAL; VACUUM');
         // No VACUUM on normal page requests. Reclaim at most 64 free pages per housekeeping pass.
         $db->query('PRAGMA incremental_vacuum(64)')->fetchAll();

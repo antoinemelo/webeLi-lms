@@ -2,6 +2,11 @@
 declare(strict_types=1);
 
 return [
+    'Ce corrigé est temporaire : il disparaît lorsque vous quittez ou rechargez cette page.'=>['en'=>'This correction is temporary: it disappears when you leave or reload this page.','de'=>'Diese Korrektur ist vorübergehend: Sie verschwindet, wenn Sie diese Seite verlassen oder neu laden.','it'=>'Questa correzione è temporanea: scompare quando esci o ricarichi questa pagina.','es'=>'Esta corrección es temporal: desaparece al salir o recargar esta página.'],
+    'Le détail des réponses n’est plus conservé.'=>['en'=>'The answer details are no longer stored.','de'=>'Die Antwortdetails werden nicht mehr gespeichert.','it'=>'I dettagli delle risposte non sono più conservati.','es'=>'Los detalles de las respuestas ya no se conservan.'],
+    'Votre réponse incorrecte'=>['en'=>'Your incorrect answer','de'=>'Ihre falsche Antwort','it'=>'La tua risposta errata','es'=>'Tu respuesta incorrecta'],
+    'Votre choix'=>['en'=>'Your choice','de'=>'Ihre Auswahl','it'=>'La tua scelta','es'=>'Tu elección'],
+    'Votre choix sans effet sur le résultat'=>['en'=>'Your choice, with no effect on the result','de'=>'Ihre Auswahl ohne Auswirkung auf das Ergebnis','it'=>'La tua scelta senza effetto sul risultato','es'=>'Tu elección sin efecto en el resultado'],
     'QCM strict'=>['en'=>'Focused quiz','de'=>'Fokussiertes Quiz','it'=>'Quiz concentrato','es'=>'Cuestionario concentrado'],
     'QCM en classe'=>['en'=>'Classroom quiz','de'=>'Klassenquiz','it'=>'Quiz in classe','es'=>'Cuestionario en clase'],
     'Réponse neutre'=>['en'=>'Neutral answer','de'=>'Neutrale Antwort','it'=>'Risposta neutra','es'=>'Respuesta neutra'],

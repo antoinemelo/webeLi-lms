@@ -41,7 +41,9 @@ function render_adaptive_qcm(array $item,array $blocks,bool $preview=false): voi
         'empty'=>'Toutes les questions disponibles ont été présentées.','hardest'=>'La question la plus difficile a été réussie : 10/10.',
         'easiest'=>'La question la plus facile n’a pas été réussie et aucune question aussi facile ne reste disponible.',
         'difficulty'=>'Score de difficulté','scale'=>'Bornes de difficulté','initial'=>'Barème initial',
-        'score'=>'Résultat','review'=>'Correction','single'=>'Une seule réponse possible.','multiple'=>'Plusieurs réponses possibles.',
+        'score'=>'Résultat','review'=>'Correction','temporary'=>'Ce corrigé est temporaire : il disparaît lorsque vous quittez ou rechargez cette page.',
+        'reviewGone'=>'Le détail des réponses n’est plus conservé.', 'yourIncorrect'=>'Votre réponse incorrecte',
+        'selected'=>'Votre choix','neutral'=>'Votre choix sans effet sur le résultat','single'=>'Une seule réponse possible.','multiple'=>'Plusieurs réponses possibles.',
         'question'=>'Question','total'=>'Temps total restant','remaining'=>'Temps de la question','ready'=>'Le chronomètre démarre lorsque vous commencez.','expected'=>'Réponse attendue'] as $key=>$label)$labels[$key]=t($label);
     if(!$preview&&!empty($item['is_controlled_exercise']))$labels['retry']=t('Nouvel exercice');
     if($preview){$labels['start']=t('Commencer le test');$labels['retry']=t('Recommencer le test');}
@@ -286,10 +288,8 @@ function adaptive_qcm_results(PDO $core,array $itemIds,bool $includeUnscored=fal
             if($item&&QuizAttempts::epoch($item)===$run['epoch'])$store->advance($run['id'],(int)$run['student_id'],$now);
         });
         $scoreFilter=$includeUnscored?'':' AND r.score IS NOT NULL';
-        $q=$store->db->prepare("SELECT r.*,COUNT(a.ordinal) AS total_questions,SUM(a.result='correct') AS correct_questions
-            FROM runs r LEFT JOIN answers a ON a.run_id=r.id WHERE r.item_id IN ($marks) AND r.finished_at IS NOT NULL AND r.controlled=0 $scoreFilter
-            AND NOT EXISTS(SELECT 1 FROM runs newer WHERE newer.item_id=r.item_id AND newer.student_id=r.student_id AND newer.epoch=r.epoch AND newer.finished_at IS NOT NULL AND newer.started_at>r.started_at)
-            GROUP BY r.id");$q->execute($ids);
+        $q=$store->db->prepare("SELECT r.* FROM runs r WHERE r.item_id IN ($marks) AND r.finished_at IS NOT NULL AND r.controlled=0 $scoreFilter
+            AND NOT EXISTS(SELECT 1 FROM runs newer WHERE newer.item_id=r.item_id AND newer.student_id=r.student_id AND newer.epoch=r.epoch AND newer.finished_at IS NOT NULL AND newer.started_at>r.started_at)");$q->execute($ids);
         foreach($q->fetchAll() as $run)if($current($run))$out[(int)$run['item_id']][(int)$run['student_id']]=[
             'score_percent'=>$run['score']===null?null:(float)$run['score'],'correct_questions'=>(int)$run['correct_questions'],'total_questions'=>(int)$run['total_questions'],
             'attempt_count'=>1,'answered_at'=>gmdate('Y-m-d H:i:s',(int)$run['finished_at']),'adaptive'=>true];

@@ -5,7 +5,7 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
   const error = root.querySelector('[data-adaptive-error]');
   const preview = root.dataset.preview === '1';
   const restart = root.querySelector('[data-adaptive-restart]');
-  let state = null, busy = false, tick = null, retry = null, clockStart = 0, serverStart = 0, displayed = '';
+  let state = null, busy = false, tick = null, retry = null, clockStart = 0, serverStart = 0, displayed = '', viewGeneration = 0;
   const node = (tag, text, className = '') => {
     const element = document.createElement(tag);
     if (text !== undefined) element.textContent = text;
@@ -41,13 +41,28 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
           ? `${labels.scale} : ${percent(state.grading.min)} % → ${percent(state.grading.max)} %`
           : labels.initial));
       }
-      const details = node('details'); details.append(node('summary', labels.review));
-      for (const question of state.review) {
-        const section = node('section'); section.append(node('h4', question.title), node('p', labels[question.result]));
-        for (const answer of question.answers) section.append(node('p', `${question.selected.includes(answer.index) ? '☑' : '☐'} [${answer.kind}] ${answer.text}`));
-        details.append(section);
-      }
-      content.append(details);
+      if (state.review?.length) {
+        const review = node('section', undefined, 'adaptive-review'); review.dataset.adaptiveReview = '';
+        review.append(node('h3', labels.review), node('p', labels.temporary));
+        for (const question of state.review) {
+          const section = node('section', undefined, 'adaptive-review-question');
+          section.append(node('h4', question.title), node('p', labels[question.result]));
+          const options = node('ul', undefined, 'adaptive-review-options');
+          for (const answer of question.answers) {
+            const chosen = question.selected.includes(answer.index);
+            if (answer.kind !== 'v' && (question.result === 'correct' || !chosen)) continue;
+            const kind = answer.kind === 'v' ? (question.result === 'correct' ? 'correct' : 'expected') : (answer.kind === 'x' ? 'incorrect' : 'neutral');
+            const label = kind === 'correct' ? labels.correct : kind === 'expected' ? labels.expected : kind === 'incorrect' ? labels.yourIncorrect : labels.neutral;
+            const option = node('li', undefined, `adaptive-review-answer adaptive-review-${kind}`);
+            option.append(node('strong', `${label}${chosen && kind === 'expected' ? ` · ${labels.selected}` : ''}`), node('span', answer.text));
+            options.append(option);
+          }
+          section.append(options); review.append(section);
+        }
+        // The correction is immediately beneath the score, before the calculation notes.
+        const score = content.querySelector('.adaptive-score');
+        if (score) score.after(review); else content.append(review);
+      } else content.append(node('p', labels.reviewGone));
       if (preview || !state.evaluation) content.append(button(labels.retry, () => request('start')));
       return;
     }
@@ -89,6 +104,7 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
   };
   async function request(operation = 'state', payload = {}) {
     if (busy) return; busy = true; retry = null; error.hidden = true;
+    const generation = viewGeneration;
     root.querySelectorAll('button').forEach((element) => { element.disabled = true; });
     const data = new FormData();
     data.set('token', document.body.dataset.csrf || ''); data.set('item_id', root.dataset.item); data.set('operation', operation);
@@ -101,15 +117,22 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
       const response = await fetch('?view=adaptive-qcm', { method: 'POST', body: data, headers: { Accept: 'application/json' }, cache: 'no-store' });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || labels.error);
+      if (generation !== viewGeneration) result.review = [];
       state = result; serverStart = state.now; clockStart = performance.now(); busy = false; paint();
     } catch (failure) {
-      busy = false; retry = () => request(operation, payload); error.replaceChildren(node('span', failure.message || labels.error), button(labels.reload, () => retry?.())); error.hidden = false;
+      busy = false; if (generation !== viewGeneration) return;
+      retry = () => request(operation, payload); error.replaceChildren(node('span', failure.message || labels.error), button(labels.reload, () => retry?.())); error.hidden = false;
     }
   }
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && state && !state.ready && !state.finished && !busy && !retry) request('state');
   });
   restart?.addEventListener('click', () => { if (state?.id) request('restart', { run_id: state.id }); });
+  window.addEventListener('pagehide', () => {
+    viewGeneration++; clearInterval(tick); retry = null;
+    if (state) { state.review = []; delete state.feedback; }
+    content.querySelector('[data-adaptive-review]')?.remove();
+  });
   window.addEventListener('pageshow', (event) => { if (event.persisted) request('state'); });
   request();
 });
