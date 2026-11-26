@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "35997cfc0b07cc5ee15366c6118de7b15984eef03ec6d66e2c7b499e75a8194d",
-    "VERSION": "77ece86bb63c4bc1ffe367d9c35b32d3db90d6645eec93e1b2ecee98d210a4ea",
+    "VERSION": "8ee475de13cbbe61bf2f3040e2fe14c4bb8c565fc5ea501d4459f95d10f6f5bc",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/ActivityResults.php": "466d731c7c7988708eb8bd30c183e10ff8eba679f56675a814cdb000988dfdab",
     "app/AdaptiveQcm.php": "30d9dfee692b840697cbb3b60fc62c76b360f3902a87ab2b2c38954a717ca2fe",
@@ -1288,7 +1288,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-11-26T08:10:31+00:00",
+  "generated_at": "2026-11-26T08:50:34+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -1301,5 +1301,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q4.38"
+  "version": "2026Q4.39"
 }
