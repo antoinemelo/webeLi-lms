@@ -23,6 +23,7 @@ require_once __DIR__ . '/Collaboration.php';
 require_once __DIR__ . '/LibrarySharing.php';
 require_once __DIR__ . '/LibrarySharingViews.php';
 require_once __DIR__ . '/AdaptiveQcmViews.php';
+require_once __DIR__ . '/AdaptiveQcmExternal.php';
 require_once __DIR__ . '/QcmGuest.php';
 require_once __DIR__ . '/QcmGuestViews.php';
 require_once __DIR__ . '/PathwayService.php';
@@ -286,6 +287,7 @@ function render_level_picker(string $name, ?int $selected = null): string
 /** Polling and heartbeats must not compete for housekeeping write locks. */
 function request_is_background_poll(): bool
 {
+    if(($_GET['view']??'')==='adaptive-qcm-external')return true;
     if(($_SERVER['REQUEST_METHOD']??'GET')==='GET')return in_array($_GET['view']??'',[
         'adaptive-qcm','session-status','notification-status','discussion-data','qcm-class-state','guest-class-state','library-cards','library-index',
     ],true);

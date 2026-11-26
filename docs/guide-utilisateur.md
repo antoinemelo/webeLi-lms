@@ -281,12 +281,15 @@ Un QCM formatif s’insère directement dans un bloc Markdown :
 ```markdown
 :::qcm
 # Question
+$ Explication facultative de la réponse attendue
 [v] Réponse juste
 [x] Réponse fausse
 :::
 ```
 
 Une question contenant un seul `[v]` utilise des boutons radio ; plusieurs `[v]` utilisent des cases à cocher. Les réponses sont présentées dans un ordre aléatoire à chaque affichage. Chaque question vaut le même poids et n’est réussie que si toutes ses réponses justes sont cochées sans réponse fausse. La catégorie **QCM** est ajoutée automatiquement à la page.
+
+Une ligne facultative commençant par `$` sous la question permet de rédiger son explication, avant les choix. Elle apparaît en *italique* dans les résultats uniquement si la réponse est incorrecte, incomplète ou absente. Le texte est affiché littéralement, sans interpréter du HTML ou du Markdown. Cette règle vaut pour les modes classique, strict, en classe et adaptatif ; en classe, elle apparaît sur l’appareil de l’apprenant après la révélation de la correction, jamais sur la projection commune. Le retour individuel classique/strict est temporaire après la remise. Ajouter, modifier ou retirer cette ligne conserve les notes, brouillons et statistiques.
 
 Les choix sont sauvegardés automatiquement comme brouillon, sans attribuer de score ni consommer la remise d’une évaluation. Attendez le message **Brouillon enregistré** : vous pouvez alors fermer la fenêtre et retrouver les cases cochées en revenant au même QCM, même après reconnexion. En cas de coupure réseau, une copie locale permet la reprise dans le même navigateur ; un avertissement indique que le serveur n’a pas encore confirmé la sauvegarde. La remise définitive efface le brouillon. Un QCM modifié par l’équipe enseignante ne réutilise pas les anciennes réponses.
 
@@ -300,6 +303,12 @@ Le choix **Brouillon / Prêt à utiliser** et le bouton **Enregistrer** restent 
 
 Une page qui n’est utilisée dans aucun parcours peut être supprimée définitivement depuis son écran d’édition. Tant qu’elle est utilisée, la suppression reste bloquée et il faut d’abord la retirer de chaque parcours concerné.
 
+#### Partager un entraînement adaptatif sans connexion
+
+Activez **Utilisation externe** dans **Partager ce contenu** et transmettez le lien. Chaque candidat répond individuellement, sans compte. L’activité utilise les statistiques existantes pour s’adapter, mais ne modifie aucun compteur de difficulté et n’enregistre aucune note dans un parcours, même si la page y est utilisée en évaluation.
+
+La durée estimée du contenu reste la limite totale. Une reprise dans le même navigateur conserve les questions et les chronomètres ; un nouvel essai est possible après la fin. Le corrigé et ses explications sont temporaires, et le score reste consultable dans ce navigateur pendant une heure. Les QCM tiers nécessitent aussi l’autorisation **Utilisation externe** de leurs propriétaires. Retirer le partage ferme l’accès à la suite du test.
+
 #### Préparer un QCM adaptatif
 
 Dans l’éditeur de page, ouvrez **Créer un QCM en Markdown** (icône de questionnaire près du titre), sélectionnez **Adaptatif**, puis **Copier l’exemple**. Collez-le dans un bloc **Texte Markdown** et adaptez les questions. Le modal détaille les paramètres, les durées et le score ; son lien ouvre la page correspondante du guide dans un autre onglet.
@@ -307,13 +316,14 @@ Dans l’éditeur de page, ouvrez **Créer un QCM en Markdown** (icône de quest
 ```text
 :::qcm_adap[Finance et comptabilité][Transitoires]
 # Intitulé de la question
+$ Explication facultative de la réponse attendue
 [2][60][-][0][0]
 [v] Réponse juste
 [x] Réponse fausse
 :::
 ```
 
-Sous chaque question, les **cinq champs obligatoires** indiquent : niveau enseignant (0 à 3), temps maximal en secondes, temps moyen observé, nombre de présentations et de réponses justes en évaluation ou exercice contrôlé. Pour une nouvelle question, utilisez `[-][0][0]` pour les trois derniers champs ; ils sont calculés et actualisés par le système. `[2][60]` seul ne suffit pas. Les marqueurs `[v]`, `[x]` et `[-]` conservent leur sens habituel.
+Sous chaque question, les **cinq champs obligatoires** indiquent : niveau enseignant (0 à 3), temps maximal en secondes, temps moyen observé, nombre de présentations et de réponses justes en évaluation ou exercice contrôlé. Pour une nouvelle question, utilisez `[-][0][0]` pour les trois derniers champs ; ils sont calculés et actualisés par le système. `[2][60]` seul ne suffit pas. La ligne `$` peut être placée avant ou après les cinq paramètres, toujours avant le premier choix et au maximum une fois par question. L’explication adaptative est affichée uniquement dans le corrigé final, sous le score. Une modification de l’énoncé, d’une proposition, de sa correction ou du délai crée une version sans observations, qui repart de l’estimation du niveau enseignant ; une modification de l’explication ne crée pas de version statistique. Les nouveaux départs utilisent l’explication à jour ; une tentative en cours conserve sa copie. Les marqueurs `[v]`, `[x]` et `[-]` conservent leur sens habituel.
 
 1. Fixez la **durée estimée du contenu**, en minutes : elle limite l’activité entière, indépendamment du délai propre à chaque question.
 2. Enregistrez la page, puis ouvrez **Créer un QCM en Markdown** et sélectionnez **QCM adaptatif : réservoir et réglages** dans le menu déroulant. Cette entrée regroupe le niveau initial et les statistiques des questions enregistrées. Enregistrer le niveau ne recharge pas la page et conserve la saisie du contenu en cours. Le niveau initial sert à choisir la première question ; les suivantes dépendent des taux de réussite.

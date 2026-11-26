@@ -85,7 +85,7 @@ final class QcmGuest
     {
         $pdo->beginTransaction();
         try{
-            $session=self::context($pdo,$room);self::authorize($pdo,$session,$actor,$participant,$hostSecret);
+            $session=self::context($pdo,$room);$host=self::authorize($pdo,$session,$actor,$participant,$hostSecret);
             $questions=json_decode($session['questions'],true,512,JSON_THROW_ON_ERROR);$index=(int)$session['question_index'];$phase=$session['phase'];
             $query=$pdo->prepare('SELECT COUNT(*) FROM qcm_guest_participants WHERE session_id=?');$query->execute([$session['id']]);
             $state=['id'=>(int)$session['id'],'revision'=>(int)$session['revision'],'index'=>$index,'total'=>count($questions),'phase'=>$phase,'revealed'=>(bool)$session['revealed'],'eligible'=>(int)$query->fetchColumn(),'responded'=>0,'selected'=>[],'question'=>null];
@@ -95,6 +95,7 @@ final class QcmGuest
                 $query=$pdo->prepare('SELECT participant_hash,answers FROM qcm_guest_votes WHERE session_id=? AND question_index=?');$query->execute([$session['id'],$index]);
                 foreach($query->fetchAll(PDO::FETCH_ASSOC) as $vote){$choices=json_decode($vote['answers'],true,512,JSON_THROW_ON_ERROR);$state['responded']++;if(hash_equals($vote['participant_hash'],$participant))$state['selected']=$choices;if($results)foreach($choices as $choice)$answers[$choice]['count']++;}
                 $state['question']=['title'=>$question['title'],'multiple'=>$question['multiple'],'answers'=>$answers];
+                if(!$host&&$results&&$session['revealed']&&($explanation=Qcm::explanationFor($question,$state['selected']))!=='')$state['question']['explanation']=$explanation;
             }
             $pdo->commit();return ['status'=>'ok','session'=>$state];
         }catch(Throwable $exception){if($pdo->inTransaction())$pdo->rollBack();throw $exception;}

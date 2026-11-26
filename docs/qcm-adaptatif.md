@@ -9,6 +9,7 @@ Dans **Créer un QCM en Markdown**, choisir **Adaptatif**, puis copier l’exemp
 ```text
 :::qcm_adap[Finance][Transitoires]
 # Intitulé de la question
+$ Explication facultative de la réponse attendue
 [2][60][-][0][0]
 [v] Proposition correcte
 [x] Proposition incorrecte
@@ -27,6 +28,14 @@ Le tableau **Niveaux et statistiques des questions**, directement dans l’édit
 
 Le menu **QCM adaptatif : réservoir et réglages** rassemble ces informations, le niveau de départ du test et l’actualisation des références d’évaluation. Enregistrer ces réglages conserve le texte non enregistré dans l’éditeur.
 
+### Explication facultative
+
+Ajoutez une seule ligne `$ Votre explication` sous le titre, avant les choix. Elle peut précéder ou suivre les cinq paramètres. Elle est indépendante des propositions et ne compte pas comme une réponse. Le contenu est du texte simple, sans HTML ni mise en forme Markdown.
+
+Dans le corrigé final sous le score, elle apparaît en *italique* uniquement pour une réponse incorrecte, incomplète ou absente, y compris un délai dépassé. Elle reste masquée pendant le test et pour les réponses entièrement correctes. Elle disparaît avec le corrigé temporaire ; aucune réponse individuelle supplémentaire n’est conservée.
+
+Le même marqueur fonctionne dans les QCM classiques, stricts et en classe. Pour ces derniers, l’explication personnelle attend la révélation de la correction et n’apparaît pas sur la projection commune.
+
 Toutes les propositions `[v]` doivent être choisies et aucune `[x]` ne doit l’être. `[-]` reste neutre. Il n’y a pas de crédit partiel ; plusieurs bonnes propositions entraînent des cases à cocher.
 
 ## Choisir le type d’étape et autoriser une reprise
@@ -44,6 +53,19 @@ En quittant **Évaluation**, une alerte et une case de confirmation précèdent 
 Pour reprendre une activité qui s’est mal passée : **Apprenants → Progression → activité évaluée → Autoriser un nouvel essai**. Confirmer la suppression du résultat précédent. Les QCM classiques et adaptatifs de cette activité sont rouverts pour ce seul apprenant. Ses autres activités et les autres apprenants restent inchangés. La nouvelle tentative utilise la référence d’évaluation commune, sauf actualisation explicite de celle-ci. Une reprise ne fait pas contribuer deux fois la même personne à la calibration d’une même version de question.
 
 Les anciens onglets sont refusés après une réinitialisation. Les identifiants de génération sont contrôlés côté serveur ; un double clic sur l’autorisation ne crée pas deux reprises. Les générations remplacées disparaissent immédiatement des bilans, puis sont nettoyées par la maintenance. Pour un QCM classique contrôlé, seule une trace de réalisation est stockée, sans note ; les statistiques de difficulté concernent le réservoir adaptatif.
+
+## Partager un entraînement adaptatif sans compte
+
+Dans **Partager ce contenu**, activez **Utilisation externe**, puis transmettez le même lien de partage. Son destinataire peut ouvrir l’activité et commencer sans inscription, même si la page sert ailleurs à une évaluation ou à un exercice contrôlé.
+
+- Les questions restent celles de la page et de ses blocs QCM tiers explicites. Les sources tierces doivent autoriser **Contenu partagé** et **Utilisation externe** ; leurs droits sont revérifiés à chaque réponse.
+- Le niveau de départ et les statistiques déjà présentes dans `adaptive.sqlite` servent à choisir les questions. Sans historique, les estimations initiales habituelles s’appliquent.
+- La référence est lue sans écriture et figée pour cet essai. Aucune présentation, réussite, durée ou observation de calibration n’est ajoutée. Aucun résultat ne rejoint un parcours ou un bilan, même pour un visiteur connecté.
+- La durée estimée du contenu fixe le temps total. Recharger ou rouvrir le lien dans le même navigateur reprend l’essai ; le chronomètre continue. Un nouvel entraînement est possible après la fin.
+- Le score et le corrigé sont affichés à la fin, avec les mêmes règles (minimum de cinq questions, explications des erreurs). Le détail est effacé à la fin côté serveur ; le corrigé reste seulement dans la réponse affichée. Le score est temporairement disponible dans ce navigateur pendant une heure, sans historique nominatif.
+- Arrêter le partage, retirer l’utilisation externe ou repasser la page en brouillon bloque la reprise et les réponses. Les anciens onglets ne contournent pas ces autorisations.
+
+Les essais sont isolés dans la session du navigateur, sans compte ni adresse demandée. Au maximum trois activités simultanées sont retenues ; les états expirés sont écartés. À la fin, le réservoir et les réponses sont retirés de cette session. Le module ne crée ni ne migre une base adaptative depuis un accès anonyme ; une base existante doit être compatible avec la version installée.
 
 ## Démarrer sans historique
 
@@ -83,7 +105,8 @@ La référence de temps est figée pour l’évaluation. Une réponse presque in
 
 Les questions sont identifiées et versionnées en base. Le Markdown est l’interface de rédaction, pas le journal des réponses.
 
-- Modifier l’énoncé, une proposition, sa correction ou le temps maximal crée une nouvelle version statistique. Les observations de l’ancienne version et les tentatives restent conservées.
+- Modifier l’énoncé, une proposition, sa correction ou le temps maximal crée une nouvelle version statistique. Les compteurs de la nouvelle version repartent à zéro ; sa difficulté repart de l’estimation du niveau initial enseignant. Les résultats antérieurs ne sont pas recalculés.
+- Ajouter, modifier ou retirer l’explication `$` conserve l’identité, les observations, la difficulté et le barème. Les nouvelles tentatives reçoivent le texte à jour, même lorsque leur barème d’évaluation est figé ; une tentative en cours conserve sa copie.
 - Modifier les compteurs descriptifs, le classement, le niveau initial ou l’ordre des propositions ne supprime pas les observations.
 - Les espaces et retours à la ligne sont normalisés ; une simple ponctuation modifiée reste, par prudence, une modification de l’énoncé.
 - Déplacer l’ordre des questions dans un même bloc ne change pas leur identité. Déplacer une question vers un autre bloc, recréer le bloc, copier ou importer une page crée de nouvelles identités. Il n’y a pas de fusion automatique d’historiques indépendants.
@@ -165,9 +188,12 @@ php dev/tests/adaptive_qcm.php                 # barèmes antérieurs et compati
 php dev/tests/adaptive_qcm_model.php           # nouveau calcul, minimum, vitesse, références
 php dev/tests/adaptive_qcm_audit.php dev/quiz-test  # optionnel, copies des snapshots locaux
 php dev/tests/adaptive_qcm_storage.php dev/quiz-test # migration, taille et purge sur copies
+php dev/tests/adaptive_qcm_external.php        # accès anonyme, lecture seule, reprise et révocation
+node dev/tests/adaptive_qcm_external_browser.mjs
 php dev/tests/adaptive_qcm_retention.php       # corrigé temporaire, purge atomique, reprise
 php dev/tests/adaptive_qcm_concurrency.php
 node dev/tests/adaptive_qcm_browser.mjs
+php dev/tests/qcm_explanations.php            # explications, confidentialité, identités et statistiques
 php dev/tests/qcm_modes.php
 ```
 

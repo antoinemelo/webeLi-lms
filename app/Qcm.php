@@ -94,7 +94,7 @@ final class Qcm
     {
         $html='';
         foreach(self::sections($source) as $section){
-            if(in_array($section['type'],['adaptive','reference'],true)){$html.='<p>'.e(t('QCM adaptatif : activité à réaliser dans le parcours.')).'</p>';continue;}
+            if(in_array($section['type'],['adaptive','reference'],true)){if($onlyIndex===null)$html.='<p>'.e(t('QCM adaptatif : activité à réaliser dans le parcours.')).'</p>';continue;}
             if($section['type']==='markdown'){if($onlyIndex===null)$html.=Markdown::render($section['source']);continue;}
             if($onlyIndex!==null&&(int)$section['index']!==$onlyIndex)continue;
             if(empty($section['valid'])){$html.='<p>'.e(t('QCM incomplet')).'</p>';continue;}
@@ -104,13 +104,15 @@ final class Qcm
             // Only flat, scalar selections may reach the common scoring function.
             foreach($answers as $name=>$values){$answers[$name]=is_array($values)?array_values(array_filter($values,'is_scalar')):[];}
             $html.='<section class="qcm-card" id="qcm-'.e($key).'"><header><span>'.e(t('QCM')).'</span></header>';
-            if($submitted){$result=self::score($section['questions'],$answers);$html.='<p class="alert alert-success mx-3 mt-3" role="status">'.e(t(':correct question(s) juste(s) sur :total',$result)).' · '.e(t('Résultat : :score %',['score'=>self::formatScore($result['score'])])).'</p>';}
+            if($submitted){$result=self::score($section['questions'],$answers);$html.='<p class="alert alert-success mx-3 mt-3" role="status">'.e(t(':correct question(s) juste(s) sur :total',['correct'=>$result['correct'],'total'=>$result['total']])).' · '.e(t('Résultat : :score %',['score'=>self::formatScore($result['score'])])).'</p>';}
             $html.='<form method="post" action="#qcm-'.e($key).'">'.csrf_field().'<input type="hidden" name="action" value="external_qcm"><input type="hidden" name="quiz" value="'.e($key).'">';
             foreach($section['questions'] as $index=>$question){
                 $html.='<fieldset class="qcm-question"><legend><span>'.($index+1).'</span>'.e($question['title']).'</legend>';
                 $html.='<div class="qcm-options">';
                 foreach(self::shuffledAnswers($question['answers']) as $answer)$html.='<label><input type="'.($question['multiple']?'checkbox':'radio').'" name="answers[q'.$index.'][]" value="'.$answer['index'].'"'.(in_array($answer['index'],array_map('intval',$answers['q'.$index]??[]),true)?' checked':'').'><span>'.e($answer['text']).'</span></label>';
-                $html.='</div></fieldset>';
+                $html.='</div>';
+                if($submitted&&($explanation=self::explanationFor($question,(array)($answers['q'.$index]??[])))!=='')$html.='<p class="qcm-explanation"><em>'.e($explanation).'</em></p>';
+                $html.='</fieldset>';
             }
             $html.='<button class="button primary btn btn-dark">'.e(t('Vérifier mes réponses')).'</button></form></section>';
         }
@@ -168,7 +170,7 @@ final class Qcm
         }
         $pdo->prepare('DELETE FROM qcm_drafts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?')->execute([$studentId,$itemId,$blockId,$key]);
         if($item['is_controlled_exercise'])self::completeControlled($pdo,$studentId,$itemId);
-        return ['status'=>'saved','score'=>$result['score'],'correct'=>$result['correct'],'total'=>$result['total'],'course_id'=>(int)$item['course_id'],'is_evaluation'=>$isEvaluation,'controlled'=>(bool)$item['is_controlled_exercise']];
+        return ['status'=>'saved','score'=>$result['score'],'correct'=>$result['correct'],'total'=>$result['total'],'course_id'=>(int)$item['course_id'],'is_evaluation'=>$isEvaluation,'controlled'=>(bool)$item['is_controlled_exercise'],'explanations'=>$result['explanations']];
     }
 
     private static function quizContext(PDO $pdo,int $studentId,int $itemId,int $blockId,string $key): array
@@ -364,6 +366,8 @@ final class Qcm
 
     public static function key(int $blockId,int $index,string $source,string $mode='classic'): string
     {
+        // Keep historical keys, drafts and grades when only the optional explanation changes.
+        $source=preg_replace('/^[\t ]*\$[^\r\n]*(?:\r?\n|$)/m','',$source)??$source;
         return substr(hash('sha256',$blockId."\0".$index."\0".trim($source).($mode==='classic'?'':"\0".$mode)),0,32);
     }
 
@@ -376,6 +380,9 @@ final class Qcm
             if(preg_match('/^#{1,4}\s+(.+)$/u',$trim,$match)){
                 if($current!==null)$questions[]=$current;
                 $current=['title'=>trim($match[1]),'answers'=>[]];continue;
+            }
+            if($current!==null&&!$current['answers']&&!isset($current['explanation'])&&str_starts_with($trim,'$')){
+                $current['explanation']=trim(substr($trim,1));continue;
             }
             if(preg_match('/^(?:[-*+]\s+)?\[(v|-|x)\]\s+(.+)$/iu',$trim,$match)&&$current!==null){
                 $current['answers'][]=['kind'=>mb_strtolower($match[1],'UTF-8'),'text'=>trim($match[2])];continue;
@@ -392,18 +399,32 @@ final class Qcm
         return ['valid'=>$valid,'questions'=>$questions];
     }
 
+    public static function isCorrect(array $question,array $selected): bool
+    {
+        $selected=array_map('intval',array_filter($selected,'is_scalar'));
+        foreach($question['answers'] as $answer){
+            $chosen=in_array($answer['index'],$selected,true);
+            if(($answer['kind']==='v'&&!$chosen)||($answer['kind']==='x'&&$chosen))return false;
+        }
+        return true;
+    }
+
+    /** Plain text only; never send an explanation for an entirely correct answer. */
+    public static function explanationFor(array $question,array $selected): string
+    {
+        return self::isCorrect($question,$selected)?'':trim((string)($question['explanation']??''));
+    }
+
     private static function score(array $questions,array $submitted): array
     {
-        $correctQuestions=0;
+        $correctQuestions=0;$explanations=[];
         foreach($questions as $questionIndex=>$question){
-            $answerIndexes=array_column($question['answers'],'index');
-            $selected=array_values(array_intersect($answerIndexes,array_unique(array_map('intval',(array)($submitted['q'.$questionIndex]??[])))));
-            $correct=[];$false=[];
-            foreach($question['answers'] as $answer){if($answer['kind']==='v')$correct[]=$answer['index'];elseif($answer['kind']==='x')$false[]=$answer['index'];}
-            if(!array_diff($correct,$selected)&&!array_intersect($false,$selected))$correctQuestions++;
+            $selected=(array)($submitted['q'.$questionIndex]??[]);
+            if(self::isCorrect($question,$selected))$correctQuestions++;
+            elseif(($explanation=self::explanationFor($question,$selected))!=='')$explanations[]=['title'=>$question['title'],'explanation'=>$explanation];
         }
         $total=count($questions);
-        return ['correct'=>$correctQuestions,'total'=>$total,'score'=>$total?round($correctQuestions/$total*100,2):0.0];
+        return ['correct'=>$correctQuestions,'total'=>$total,'score'=>$total?round($correctQuestions/$total*100,2):0.0,'explanations'=>$explanations];
     }
 
     private static function renderQuizForm(PDO $pdo,array $questions,string $key,int $blockId,int $itemId,int $studentId,bool $strict=false): string
@@ -417,6 +438,14 @@ final class Qcm
         if($attempt&&$controlled)$html.='<p>'.e(t('Exercice terminé, aucune note conservée.')).'</p>';
         if($attempt&&!$controlled)$html.='<div class="qcm-result"><strong>'.e(t('Résultat : :score %',['score'=>self::formatScore((float)$attempt['score_percent'])])).'</strong><small>'.e(t(':correct question(s) juste(s) sur :total',['correct'=>$attempt['correct_questions'],'total'=>$attempt['total_questions']])).'</small></div>';
         $html.='</header>';
+        $feedback=$_SESSION['qcm_feedback']??null;$feedbackHtml='';
+        if($feedback&&$feedback['student_id']===$studentId&&$feedback['item_id']===$itemId&&$feedback['block_id']===$blockId&&$feedback['key']===$key){
+            unset($_SESSION['qcm_feedback']);
+            if($feedback['epoch']===$epoch&&$feedback['expires_at']>=time())foreach($feedback['explanations'] as $entry){
+                $feedbackHtml.='<section class="qcm-question qcm-feedback"><h4>'.e($entry['title']).'</h4><p class="qcm-explanation"><em>'.e($entry['explanation']).'</em></p></section>';
+            }
+        }
+        if(!$strict||$isEvaluation)$html.=$feedbackHtml;
         if($isEvaluation&&$attempt)return $html.'<div class="qcm-evaluation-complete"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><p><b>'.e(t('QCM terminé')).'</b><span>'.e(t('Vos réponses ont été enregistrées définitivement.')).'</span></p></div></section>';
         $query=$pdo->prepare('SELECT answers,revision FROM qcm_drafts WHERE student_id=? AND pathway_item_id=? AND page_block_id=? AND qcm_key=?');
         $query->execute([$studentId,$itemId,$blockId,$key]);$draft=$query->fetch(PDO::FETCH_ASSOC);
@@ -433,7 +462,7 @@ final class Qcm
         $button=$isEvaluation?t('Terminer le QCM'):($attempt?t('Réessayer'):t('Vérifier mes réponses'));
         $html.='<p class="muted" role="status" aria-live="polite" data-qcm-status data-saved="'.e(t('Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.')).'" data-saving="'.e(t('Enregistrement du brouillon…')).'" data-error="'.e(t('Brouillon non enregistré sur le serveur. Gardez cette page ouverte et vérifiez votre connexion.')).'" data-conflict="'.e(t('Ce QCM a été modifié ou terminé ailleurs. Rechargez la page avant de continuer.')).'">'.e(t($draft?'Brouillon enregistré. Vous pouvez fermer et reprendre ce QCM.':'Vos réponses seront sauvegardées automatiquement pendant la saisie.')).'</p>';
         $form=$html.'<button class="button primary" type="submit">'.e($button).'</button></form></section>';
-        return $strict?self::strictForm($form,$controlled?null:($attempt?:null)):$form;
+        return $strict?self::strictForm($form,$controlled?null:($attempt?:null),$feedbackHtml):$form;
     }
 
     public static function uiLabels(): array
@@ -447,9 +476,10 @@ final class Qcm
         ];
     }
 
-    private static function strictForm(string $form,?array $attempt): string
+    private static function strictForm(string $form,?array $attempt,string $feedbackHtml=''): string
     {
         $result=$attempt?'<p class="qcm-strict-result"><strong>'.e(t('Résultat : :score %',['score'=>self::formatScore((float)$attempt['score_percent'])])).'</strong></p>':'';
+        $result.=$feedbackHtml;
         return '<div class="qcm-strict" data-qcm-strict data-qcm-labels="'.e(json_encode(self::uiLabels(),JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)).'"><div data-qcm-strict-intro><h3>'.e(t('QCM strict')).'</h3>'.$result.'<p>'.e(t('Le questionnaire masque la navigation du cours jusqu’à la remise. Le plein écran dépend de votre navigateur et ne verrouille pas votre appareil.')).'</p><button type="button" class="button primary" data-qcm-start>'.e(t($attempt?'Réessayer':'Commencer le QCM')).'</button><noscript><p>'.e(t('Activez JavaScript pour ouvrir ce questionnaire.')).'</p></noscript></div><dialog class="qcm-strict-dialog" aria-label="'.e(t('QCM strict')).'"><div class="qcm-strict-toolbar"><strong>'.e(t('QCM strict')).'</strong><button type="button" class="button secondary" data-qcm-fullscreen>'.e(t('Plein écran')).'</button></div><p data-qcm-screen-status role="status"></p>'.$form.'</dialog></div>';
     }
 

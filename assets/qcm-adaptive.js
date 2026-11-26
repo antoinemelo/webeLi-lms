@@ -57,7 +57,12 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
             option.append(node('strong', `${label}${chosen && kind === 'expected' ? ` · ${labels.selected}` : ''}`), node('span', answer.text));
             options.append(option);
           }
-          section.append(options); review.append(section);
+          section.append(options);
+          if (question.result !== 'correct' && question.explanation) {
+            const explanation = node('p', undefined, 'qcm-explanation');
+            explanation.append(node('em', question.explanation)); section.append(explanation);
+          }
+          review.append(section);
         }
         // The correction is immediately beneath the score, before the calculation notes.
         const score = content.querySelector('.adaptive-score');
@@ -110,11 +115,12 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
     data.set('token', document.body.dataset.csrf || ''); data.set('item_id', root.dataset.item); data.set('operation', operation);
     data.set('epoch', state?.epoch || '0:0');
     if (preview) data.set('preview', '1');
+    if (root.dataset.share) data.set('share', root.dataset.share);
     for (const [key, value] of Object.entries(payload)) {
       if (Array.isArray(value)) value.forEach((entry) => data.append(`${key}[]`, entry)); else data.set(key, value);
     }
     try {
-      const response = await fetch('?view=adaptive-qcm', { method: 'POST', body: data, headers: { Accept: 'application/json' }, cache: 'no-store' });
+      const response = await fetch(root.dataset.endpoint || '?view=adaptive-qcm', { method: 'POST', body: data, headers: { Accept: 'application/json' }, cache: 'no-store' });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || labels.error);
       if (generation !== viewGeneration) result.review = [];

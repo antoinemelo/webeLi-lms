@@ -1,7 +1,12 @@
 .adaptive-qcm,.adaptive-authoring{margin:1.5rem 0;padding:clamp(1rem,3vw,1.75rem);border:1px solid #dedbe9;border-radius:1rem;background:#fff;overflow-wrap:anywhere}
 .adaptive-qcm h2{font-size:1.35rem}.adaptive-qcm fieldset{border:0;padding:0;margin:1rem 0}.adaptive-qcm legend{float:none;font-size:1.15rem;font-weight:700}
 .adaptive-option{display:flex;align-items:flex-start;gap:.8rem;padding:.9rem;margin:.5rem 0;border:1px solid #dedbe9;border-radius:.65rem;cursor:pointer;min-height:48px}
-.adaptive-option input{width:1.2rem;height:1.2rem;flex:0 0 1.2rem;margin-top:.15rem}.adaptive-option:has(input:checked){background:#efebff;border-color:#7561bb}
+.adaptive-option input{appearance:none;-webkit-appearance:none;width:1.25rem;height:1.25rem;flex:0 0 1.25rem;margin:.15rem 0 0;padding:0;border:2px solid #81788f;background:#fff;cursor:pointer;accent-color:#6757df}
+.adaptive-option input[type=radio]{border-radius:50%}.adaptive-option input[type=checkbox]{border-radius:.25rem}
+.adaptive-option input:checked{border-color:#6757df;background-color:#6757df}.adaptive-option input[type=radio]:checked{background-image:radial-gradient(circle,#fff 0 32%,transparent 36%)}
+.adaptive-option input[type=checkbox]:checked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4 10 4 4 8-8' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:100% 100%}
+.adaptive-option input:focus-visible{outline:3px solid #8064ff;outline-offset:3px}.adaptive-option input:disabled{opacity:.6;cursor:default}.adaptive-option:has(input:checked){background:#efebff;border-color:#7561bb}
+@media(forced-colors:active){.adaptive-option input,.adaptive-option input[type=radio]:checked,.adaptive-option input[type=checkbox]:checked{appearance:auto;-webkit-appearance:auto;background:revert;border-color:ButtonText;forced-color-adjust:auto}}
 .adaptive-clocks{display:flex;flex-wrap:wrap;gap:.65rem 1.5rem;font-variant-numeric:tabular-nums;font-weight:700}.adaptive-score{font-size:1.6rem;font-weight:700}
 .adaptive-feedback{white-space:pre-line;padding:1rem;background:#f2f1f7;border-radius:.6rem}.adaptive-qcm details section{padding:1rem 0;border-bottom:1px solid #ddd}.adaptive-qcm details h4{font-size:1rem}
 .adaptive-qcm [data-adaptive-error]{padding:1rem;background:#fff0ed}.adaptive-qcm [data-adaptive-error] button{margin:.5rem}

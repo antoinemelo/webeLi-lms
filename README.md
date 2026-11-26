@@ -260,6 +260,9 @@ php tests/work_submissions.php
 python3 tests/database_profiles.py
 node tests/qcm_browser.mjs
 php tests/qcm_modes.php
+php tests/qcm_explanations.php
+php tests/adaptive_qcm_external.php
+node tests/adaptive_qcm_external_browser.mjs
 php tests/pathway_groups.php
 php tests/pathway_group_visibility.php
 php tests/next_pathway_step.php

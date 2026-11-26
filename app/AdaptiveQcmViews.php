@@ -31,7 +31,7 @@ function adaptive_qcm_author_source(PDO $core,array $block): string
     },$source)??$source;
 }
 
-function render_adaptive_qcm(array $item,array $blocks,bool $preview=false): void
+function render_adaptive_qcm(array $item,array $blocks,bool $preview=false,?string $externalShare=null): void
 {
     if(!adaptive_qcm_present($blocks))return;
     if(!AdaptiveQcm::enabled()){echo '<p class="alert alert-secondary">'.e(t('Le module QCM adaptatif est désactivé.')).'</p>';return;}
@@ -54,9 +54,9 @@ function render_adaptive_qcm(array $item,array $blocks,bool $preview=false): voi
         'controlled'=>'Exercice terminé, aucune note conservée.',
         'basis'=>'Questions prises en compte',
         'provisional'=>'Les questions disposent encore de peu d’historique. Le résultat reste une estimation.'] as $key=>$label)$labels[$key]=t($label);
-    ?><section class="adaptive-qcm" data-adaptive-qcm data-item="<?=(int)$item['id']?>" data-preview="<?=$preview?'1':'0'?>" data-labels="<?=e(json_encode($labels,JSON_UNESCAPED_UNICODE))?>">
+    ?><section class="adaptive-qcm" data-adaptive-qcm data-item="<?=(int)$item['id']?>" data-preview="<?=$preview?'1':'0'?>" <?php if($externalShare!==null): ?>data-endpoint="?view=adaptive-qcm-external" data-share="<?=e($externalShare)?>"<?php endif; ?> data-labels="<?=e(json_encode($labels,JSON_UNESCAPED_UNICODE))?>">
       <h2><?=e(t('QCM adaptatif'))?></h2>
-      <p><?=e(t(!empty($item['is_controlled_exercise'])?'Exercice contrôlé : statistiques actualisées, aucune note.':($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : nouvel essai après la fin.'))))?> · <?=(int)$item['estimated_minutes']?> min</p>
+      <p><?=e(t($externalShare!==null?'Entraînement anonyme : statistiques des questions inchangées, aucune note enregistrée.':(!empty($item['is_controlled_exercise'])?'Exercice contrôlé : statistiques actualisées, aucune note.':($preview?($item['is_evaluation']?'Mode évaluation':'Mode entraînement'):($item['is_evaluation']?'Évaluation : une tentative.':'Entraînement : nouvel essai après la fin.')))))?> · <?=(int)$item['estimated_minutes']?> min</p>
       <?php if($preview): ?><p><?=e(t('Test enseignant : vous pouvez recommencer librement. Vos essais ne modifient ni les résultats des apprenants ni les statistiques des questions.'))?></p><button type="button" class="button secondary" data-adaptive-restart hidden><?=e(t('Recommencer le test'))?></button><?php endif; ?>
       <div data-adaptive-content><p><?=e(t('Chargement…'))?></p></div><p data-adaptive-error role="alert" hidden></p><noscript><?=e(t('Activez JavaScript pour réaliser cette activité chronométrée.'))?></noscript>
     </section><?php

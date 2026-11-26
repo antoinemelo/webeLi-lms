@@ -68,7 +68,7 @@ function render_library_share_modal(array $page,int $courseId=0,string $returnVi
 
 function library_share_page_start(string $title): void
 {
-    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=171"></head><body><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
+    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?=e($title)?> · liike</title><link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css"><link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css"><link rel="stylesheet" href="assets/app.css?v=181"><link rel="stylesheet" href="assets/qcm-modes.css?v=4"><link rel="stylesheet" href="assets/qcm-adaptive.css?v=6"></head><body data-csrf="<?=e(csrf_token())?>"><main class="container py-4" style="max-width:960px"><p class="eyebrow">liike · <?=e(t(actor()&&actor()['role']==='teacher'?'Contenu partagé':'Utilisation anonyme'))?></p><?php
 }
 
 function library_share_http(): never
@@ -119,11 +119,19 @@ function library_share_http(): never
         if(!$user){$_SESSION['pending_library_share']=$token;$_SESSION['pending_library_mode']=$mode;}
         if($mode==='external'){
             $blocks=all('SELECT * FROM page_blocks WHERE page_id=? ORDER BY position,id',[$share['page_id']]);
+            $adaptiveRendered=false;
             foreach($blocks as $block){
                 echo '<section class="content-block type-'.e($block['type']).'">';
                 if($block['type']==='markdown'){
                     foreach(Qcm::sections($block['body']) as $section){
                         if($section['type']==='markdown'){echo Markdown::render($section['source']);continue;}
+                        if(in_array($section['type'],['adaptive','reference'],true)){
+                            if(!$adaptiveRendered){
+                                render_adaptive_qcm(['id'=>$share['page_id'],'estimated_minutes'=>$share['estimated_minutes'],'is_evaluation'=>0],$blocks,false,$token);
+                                $adaptiveRendered=true;
+                            }
+                            continue;
+                        }
                         if(!empty($section['valid'])&&$section['mode']==='classe'){
                             echo '<section class="qcm-card p-3"><h2>'.e(t('QCM en classe')).'</h2>';
                             if(!$user||$isTeacher){
@@ -142,6 +150,7 @@ function library_share_http(): never
                 else echo ContentBlock::kind($block)==='media'?ContentBlock::renderMedia($block):Embed::render($block['body'],$block['caption'],$block['embed_height']??null);
                 echo '</section>';
             }
+            if($adaptiveRendered)echo '<script src="assets/qcm-adaptive.js?v=9"></script>';
         }else{
             if($user&&$user['role']==='teacher'){
                 $courses=all('SELECT c.id,c.title FROM courses c WHERE c.archived=0 AND (c.teacher_id=? OR EXISTS(SELECT 1 FROM course_teachers ct WHERE ct.course_id=c.id AND ct.teacher_id=?)) ORDER BY c.title',[$user['id'],$user['id']]);

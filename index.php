@@ -75,6 +75,7 @@ if($_SERVER['REQUEST_METHOD']==='GET'&&in_array($_GET['view']??'',['library-card
 }
 
 if(($_GET['view']??'')==='adaptive-qcm')adaptive_qcm_http();
+if(($_GET['view']??'')==='adaptive-qcm-external')adaptive_qcm_external_http();
 if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['action']??'')==='adaptive_qcm_settings')adaptive_qcm_settings();
 if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['action']??'')==='adaptive_qcm_reference')adaptive_qcm_reference();
 

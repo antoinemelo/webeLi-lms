@@ -18,7 +18,7 @@ function render_qcm_authoring_help(string $example,int $pageId=0,array $blocks=[
     $examples=['qcm'=>$example];
     foreach(['qcm_strict','qcm_classe'] as $mode)$examples[$mode]=preg_replace('/^:::qcm/', ':::'.$mode, $example, 1);
     $examples['qcm_adap']=implode("\n",[':::qcm_adap['.t('Domaine').']['.t('Thématique').']',
-        '# '.t('Question'),'[1][120][-][0][0]','[v] '.t('Réponse juste'),'[x] '.t('Réponse fausse'),'[-] '.t('Réponse neutre'),
+        '# '.t('Question'),'$ '.t('Explication facultative de la réponse attendue.'),'[1][120][-][0][0]','[v] '.t('Réponse juste'),'[x] '.t('Réponse fausse'),'[-] '.t('Réponse neutre'),
         '', '# '.t('Autre question'),'[2][60][-][0][0]','[v] '.t('Réponse juste'),'[x] '.t('Réponse fausse'),':::']);
     ?><div class="modal-body qcm-authoring-modal" data-qcm-labels="<?=e(json_encode(Qcm::uiLabels(),JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE))?>" data-qcm-examples="<?=e(json_encode($examples,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE))?>">
       <label class="field" for="qcm-example-mode"><span><?=e(t('Mode du questionnaire'))?></span><select id="qcm-example-mode" data-qcm-example-mode>
@@ -39,9 +39,12 @@ function render_qcm_authoring_help(string $example,int $pageId=0,array $blocks=[
         <li><code>[v]</code> <?=e(t('Réponse juste, à sélectionner.'))?></li>
         <li><code>[x]</code> <?=e(t('Réponse fausse, à ne pas sélectionner.'))?></li>
         <li><code>[-]</code> <?=e(t('Réponse neutre, facultative : elle n’ajoute pas de pénalité et ne remplace pas une réponse juste.'))?></li>
+        <li><code>$</code> <?=e(t('Explication facultative, sur une seule ligne sous la question et avant les choix. En adaptatif, elle peut précéder ou suivre les cinq paramètres.'))?></li>
       </ul>
       <p><?=e(t('Une seule réponse [v] affiche des boutons radio ; plusieurs affichent des cases à cocher.'))?></p>
       <p><?=e(t('Une question est réussie si toutes les réponses [v] sont sélectionnées et aucune réponse [x] ne l’est.'))?></p>
+      <p><?=e(t('L’explication apparaît en italique dans les résultats uniquement si la réponse est incorrecte, incomplète ou absente. En classe, elle attend la révélation de la correction et reste personnelle. Elle est traitée comme du texte, sans HTML ni mise en forme Markdown.'))?></p>
+      <p><?=e(t('Ajouter, corriger ou retirer une explication conserve les notes et les statistiques. Modifier l’énoncé, un choix ou sa correction crée une nouvelle version adaptative sans observations ; le niveau initial enseignant reste le point de départ.'))?></p>
       <p><?=e(t('Ajoutez un titre # pour chaque nouvelle question et terminez le bloc par :::.'))?></p>
       <div data-qcm-mode-help="qcm_adap" data-qcm-adaptive-help hidden>
         <h3 class="h5 mt-4"><?=e(t('Les cinq paramètres de chaque question'))?></h3>
@@ -63,6 +66,7 @@ function render_qcm_authoring_help(string $example,int $pageId=0,array $blocks=[
         <p><?=e(t('La note sur 10, arrondie au dixième, estime le résultat sur le réservoir complet : réponses connues et réussite estimée des questions non posées. Si toutes les questions ont été traitées, 6 bonnes réponses sur 8 donnent 7,5 /10. La rapidité ne donne aucun bonus direct.'))?></p>
         <p><?=e(t('Une seule bonne réponse ne donne plus 10/10. Le test se termine lorsque le réservoir est épuisé ou que le temps restant ne permet plus une question complète. Les tentatives existantes gardent leur ancien barème ; actualiser la référence concerne uniquement les prochains participants.'))?></p>
         <p><?=e(t('Pour ajouter les questions d’un collègue, insérez un bloc QCM tiers avec son lien de partage de cette installation. Le propriétaire doit autoriser le mode Contenu partagé.'))?></p>
+        <p><?=e(t('Pour un entraînement sans compte, activez Utilisation externe dans Partager ce contenu. Le lien utilise les statistiques existantes sans les modifier et n’enregistre aucune note dans un parcours. Le temps total reste la durée estimée du contenu. Les sources QCM tiers doivent aussi autoriser Utilisation externe.'))?></p>
         <p class="mt-3"><a href="<?=e(route('user-guide'))?>#preparer-qcm-adaptatif" target="_blank" rel="noopener"><?=e(t('Lire le guide du QCM adaptatif'))?></a></p>
       </div>
       </div>
@@ -101,7 +105,7 @@ function render_qcm_class_page(array $user): void
     $teacher=$context['teacher'];$projection=$teacher&&($_GET['projection']??'')==='1';
     $params=['item'=>$item,'block'=>$block,'key'=>$key];
     $strings=qcm_class_labels();
-    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title><?=e(t('QCM en classe'))?> · <?=e($context['item']['title'])?></title><link rel="stylesheet" href="assets/app.css?v=171"><link rel="stylesheet" href="assets/qcm-modes.css?v=3"></head>
+    ?><!doctype html><html lang="<?=e(current_language())?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title><?=e(t('QCM en classe'))?> · <?=e($context['item']['title'])?></title><link rel="stylesheet" href="assets/app.css?v=171"><link rel="stylesheet" href="assets/qcm-modes.css?v=4"></head>
     <body class="qcm-class-page<?=$projection?' qcm-projection':''?>" data-csrf="<?=e(csrf_token())?>">
     <main class="qcm-live" data-qcm-live data-teacher="<?=$teacher?'1':'0'?>" data-projection="<?=$projection?'1':'0'?>" data-context="<?=e(json_encode($params,JSON_THROW_ON_ERROR))?>" data-labels="<?=e(json_encode($strings,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE))?>">
       <header class="qcm-live-header"><a class="back" href="<?=e(route($teacher?'teacher-preview-page':'learn',['item'=>$item]))?>">← <?=e(t('Retour à l’étape'))?></a><div class="qcm-live-tools"><?php if($teacher&&!$projection): ?><a class="button secondary" href="<?=e(route('qcm-class',$params+['projection'=>1]))?>" target="_blank" rel="noopener"><?=e(t('Ouvrir la projection'))?></a><?php endif; ?><button type="button" class="button secondary" data-qcm-fullscreen><?=e(t('Plein écran'))?></button></div></header>
@@ -110,7 +114,7 @@ function render_qcm_class_page(array $user): void
       <div data-qcm-live-content><p><?=e(t('Chargement de la séance…'))?></p></div>
       <p data-qcm-vote-status role="status"></p><div class="qcm-live-controls" data-qcm-live-controls></div>
       <noscript><?=e(t('Activez JavaScript pour participer à la séance.'))?></noscript>
-    </main><script src="assets/qcm-modes.js?v=4"></script></body></html><?php
+    </main><script src="assets/qcm-modes.js?v=6"></script></body></html><?php
 }
 
 function qcm_class_labels(): array

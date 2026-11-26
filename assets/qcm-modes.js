@@ -145,6 +145,10 @@
             answers.append(row);
           }
           content.append(answers);
+          if (!teacher && state.revealed && state.question.explanation) {
+            const explanation = element('p', undefined, 'qcm-explanation');
+            explanation.append(element('em', state.question.explanation)); content.append(explanation);
+          }
           if (state.phase === 'results') content.append(element('p', label('closed')));
         }
         if (teacher && !projection) {

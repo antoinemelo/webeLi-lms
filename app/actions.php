@@ -823,6 +823,11 @@ function handle_action(string $action): never
     if($action==='submit_qcm'&&$user['role']==='student'){
         $itemId=(int)($_POST['item_id']??0);$blockId=(int)($_POST['block_id']??0);$key=trim((string)($_POST['qcm_key']??''));
         $result=Qcm::submit(db(),(int)$user['id'],$itemId,$blockId,$key,(array)($_POST['answers']??[]),(string)($_POST['quiz_epoch']??'0:0'));
+        unset($_SESSION['qcm_feedback']);
+        if($result['status']==='saved'&&!empty($result['explanations']))$_SESSION['qcm_feedback']=[
+            'student_id'=>(int)$user['id'],'item_id'=>$itemId,'block_id'=>$blockId,'key'=>$key,
+            'epoch'=>(string)($_POST['quiz_epoch']??'0:0'),'expires_at'=>time()+300,'explanations'=>$result['explanations'],
+        ];
         if($result['status']==='saved'&&!empty($result['controlled']))flash(t('Exercice terminé, aucune note conservée.'));
         elseif($result['status']==='saved')flash(t(!empty($result['is_evaluation'])?'QCM terminé : :score %.':'QCM enregistré : :score %.',['score'=>number_format((float)$result['score'],0,',','')]));
         elseif($result['status']==='already_submitted')flash(t('Ce QCM d’évaluation a déjà été terminé.'),'error');

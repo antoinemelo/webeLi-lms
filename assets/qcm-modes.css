@@ -39,3 +39,5 @@
 .qcm-live .button.primary{background:#29273b;border-color:#29273b;color:#fff}
 .qcm-live .button:hover:not(:disabled){filter:brightness(.95)}
 .qcm-live .button:focus-visible,.qcm-live-choice:focus-within{outline:3px solid #6757df;outline-offset:3px}
+
+.qcm-card>.qcm-feedback{padding:1rem 1.2rem;margin:0;border-bottom:1px solid #dedbe9}.qcm-feedback h4{font-size:1.05rem;line-height:1.5}.qcm-explanation{line-height:1.5;overflow-wrap:anywhere}

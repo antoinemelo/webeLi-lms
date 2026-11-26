@@ -78,6 +78,7 @@ final class QcmClass
         }
         $state['responded']=$responded;$state['eligible']=count($students);
         $state['question']=['title'=>$question['title'],'multiple'=>$question['multiple'],'answers'=>$answers];
+        if(!$context['teacher']&&$showResults&&$session['revealed']&&($explanation=Qcm::explanationFor($question,$state['selected']))!=='')$state['question']['explanation']=$explanation;
         return $state;
     }
 

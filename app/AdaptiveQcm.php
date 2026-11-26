@@ -11,10 +11,15 @@ final class AdaptiveQcm
     public const SCHEMA_VERSION=7;
     private bool $writing=false;
     private array $poolCache=[];
-    public function __construct(public readonly PDO $db)
+    public function __construct(public readonly PDO $db,bool $readOnly=false)
     {
         $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
         $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
+        if($readOnly){
+            $db->exec('PRAGMA busy_timeout=10000; PRAGMA query_only=ON');
+            if((int)$db->query('PRAGMA user_version')->fetchColumn()!==self::SCHEMA_VERSION)throw new RuntimeException('Référence adaptative à mettre à jour.');
+            return;
+        }
         $db->exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000; PRAGMA secure_delete=ON');
         $version=(int)$db->query('PRAGMA user_version')->fetchColumn();
         if($version===self::SCHEMA_VERSION)return;
@@ -120,6 +125,16 @@ final class AdaptiveQcm
     }
 
     public static function enabled(): bool {return getenv('APP_ADAPTIVE_QCM')!=='0';}
+    /** Anonymous practice can read calibration, but cannot create, migrate or write its database. */
+    public static function readOnlyStore(PDO $core): ?self
+    {
+        if(!self::enabled())return null;
+        $file='';foreach($core->query('PRAGMA database_list') as $row)if($row['name']==='main')$file=(string)$row['file'];
+        if($file==='')return null;
+        $path=dirname($file).'/adaptive.sqlite';if(!is_file($path))return null;
+        static $stores=[];
+        return $stores[$path]??=new self(new PDO('sqlite:'.$path,null,null,[PDO::SQLITE_ATTR_OPEN_FLAGS=>PDO::SQLITE_OPEN_READONLY]),true);
+    }
     public static function store(PDO $core,bool $create=true): ?self
     {
         if(!self::enabled())return null;
@@ -212,6 +227,9 @@ final class AdaptiveQcm
                 if($current!==null)$questions[]=$current;
                 $current=['title'=>$m[1],'level'=>1,'seconds'=>120,'metadata'=>false,'answers'=>[]];continue;
             }
+            if($current!==null&&!$current['answers']&&!isset($current['explanation'])&&str_starts_with($line,'$')){
+                $current['explanation']=trim(substr($line,1));continue;
+            }
             if($current!==null&&!$current['answers']&&!$current['metadata']&&preg_match('/^\[([0-3])\]\[([1-9][0-9]{0,4})\]\[(-|[0-9]+(?:[.,][0-9]+)?)\]\[([0-9]+)\]\[([0-9]+)\]$/D',$line,$m)){
                 $current['level']=(int)$m[1];$current['seconds']=(int)$m[2];$current['metadata']=true;
                 if($current['seconds']>86400)$valid=false;
@@ -249,7 +267,7 @@ final class AdaptiveQcm
         $clean=static fn(string $text):string=>preg_replace('/\s+/u',' ',trim($text))??trim($text);
         $answers=array_map(static fn($answer)=>[$answer['kind'],$clean($answer['text'])],$question['answers']);
         sort($answers);
-        // Classification, teacher level, counters and option order do not change the assessed content.
+        // Explanation, classification, teacher level, counters and option order are not assessed content.
         return hash('sha256',json_encode([$pageId,$blockId,$clean($question['title']),(int)$question['seconds'],$answers],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR));
     }
 
@@ -265,7 +283,7 @@ final class AdaptiveQcm
     }
 
     /** Only this page and its explicit, direct references. No network requests or recursive imports. */
-    public static function bank(PDO $core,int $pageId,string $base): array
+    public static function bank(PDO $core,int $pageId,string $base,bool $external=false): array
     {
         $q=$core->prepare('SELECT b.*,p.owner_id FROM page_blocks b JOIN pages p ON p.id=b.page_id WHERE b.page_id=? AND b.type=\'markdown\' ORDER BY b.position,b.id');
         $q->execute([$pageId]);$local=$q->fetchAll(PDO::FETCH_ASSOC);$blocks=[];$sources=[];
@@ -273,6 +291,7 @@ final class AdaptiveQcm
             $url=self::reference($block['body']);
             if($url!==null){
                 $token=self::shareToken($url,$base);$share=library_share_resolve($core,$token);library_share_require_mode($share,'shared');
+                if($external)library_share_require_mode($share,'external');
                 if((int)$share['page_id']===$pageId)throw new InvalidArgumentException('Un QCM tiers doit désigner une autre page.');
                 $sources[$token]=(int)$share['page_id'];
                 $q->execute([(int)$share['page_id']]);
@@ -295,7 +314,7 @@ final class AdaptiveQcm
         }
         if(!$pool)throw new InvalidArgumentException('Ajoutez des questions adaptatives ou un bloc QCM tiers à cette page.');
         if(count($pool)>2000)throw new InvalidArgumentException('Le réservoir est limité à 2 000 questions par activité.');
-        $store=self::store($core,false);
+        $store=$external?self::readOnlyStore($core):self::store($core,false);
         return ['questions'=>$store?$store->resolveVersions($pool):$pool,'sources'=>$sources];
     }
     public function statistics(array $questions,bool $legacy=false): array
@@ -389,7 +408,16 @@ final class AdaptiveQcm
                     throw new InvalidArgumentException('Cette évaluation a été modifiée. L’enseignant doit actualiser sa référence avant les prochaines tentatives.');
                 $this->db->prepare('INSERT INTO evaluation_revisions(item_id,revision,fingerprint,activity_revision) VALUES(?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET fingerprint=excluded.fingerprint')->execute([$item['id'],$revision,$fingerprint,$activityRevision]);
             }
-            if($frozen){$poolJson=$frozen['pool'];$poolId=(int)$frozen['pool_id'];}
+            if($frozen){
+                // Refresh explanations for new attempts without changing any frozen scoring parameter.
+                $current=array_column($pool,null,'id');$reference=json_decode($frozen['pool'],true,512,JSON_THROW_ON_ERROR);
+                foreach($reference as &$question){
+                    if(isset($current[$question['id']]['explanation']))$question['explanation']=$current[$question['id']]['explanation'];
+                    else unset($question['explanation']);
+                }unset($question);
+                $poolJson=json_encode($reference,JSON_THROW_ON_ERROR);$poolId=$this->storePool($poolJson);
+                if($version>=3&&$poolId!==(int)$frozen['pool_id'])$this->db->prepare('UPDATE evaluation_pools SET pool_id=? WHERE item_id=? AND fingerprint=?')->execute([$poolId,$item['id'],$fingerprint]);
+            }
             else{
                 foreach(array_chunk($pool,100) as $batch){
                     $values=[];foreach($batch as $question)array_push($values,$question['id'],$question['owner_id'],$question['page_id'],$question['block_id'],json_encode($question,JSON_THROW_ON_ERROR),$question['canonical_id']??self::canonicalId($question,$question['page_id'],$question['block_id']));
@@ -502,7 +530,9 @@ final class AdaptiveQcm
         foreach($answers as $answer){
             $question=$byId[$answer['question_id']];$selected=json_decode($answer['selected']??'[]',true);
             $options=array_values(array_filter($question['answers'],static fn($option)=>$option['kind']==='v'||($answer['result']!=='correct'&&in_array($option['index'],$selected,true))));
-            $run['_review'][]=['title'=>$question['title'],'result'=>$answer['result'],'answers'=>$options,'selected'=>$selected];
+            $entry=['title'=>$question['title'],'result'=>$answer['result'],'answers'=>$options,'selected'=>$selected];
+            if($answer['result']!=='correct'&&!empty($question['explanation']))$entry['explanation']=$question['explanation'];
+            $run['_review'][]=$entry;
         }
         return $run;
     }
