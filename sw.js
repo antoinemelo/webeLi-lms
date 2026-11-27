@@ -1,6 +1,6 @@
 // CacheStorage is shared by every application on an origin, not by SW scope.
 const CACHE_PREFIX = `liike-shell:${self.registration.scope}:`;
-const CACHE = `${CACHE_PREFIX}v197`;
+const CACHE = `${CACHE_PREFIX}v198`;
 const SHELL = [
   'assets/vendor/bootstrap/bootstrap.min.css',
   'assets/vendor/bootstrap/bootstrap.bundle.min.js',
@@ -25,6 +25,7 @@ const SHELL = [
   'assets/announcement-messages.js',
   'assets/progress-export.js',
   'assets/student-admin.js',
+  'assets/course-enrollment.js',
   'assets/icon.svg',
   'assets/icon-192.png',
   'assets/icon-512.png',

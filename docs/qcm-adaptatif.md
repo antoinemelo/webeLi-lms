@@ -157,7 +157,7 @@ Les questions suivantes visent la difficulté la plus proche de l’aptitude est
 
 ## Corrigé temporaire après le test
 
-Sous le score, le corrigé montre chaque question présentée. Pour une question réussie, seules les bonnes propositions apparaissent, en **vert**. Pour une question non réussie, les bonnes propositions apparaissent en **orange** et les mauvais choix de l’apprenant en **rouge**. Les libellés expliquent aussi leur sens sans dépendre uniquement des couleurs. Une proposition neutre sélectionnée reste explicitement signalée sans être présentée comme une erreur.
+Sous le score, le corrigé montre chaque question présentée. Pour une réponse à choix multiples incomplète ou incorrecte, les bonnes propositions cochées apparaissent en **bleu**, les mauvaises cochées en **rouge** et les bonnes propositions oubliées en **orange**. Une réponse entièrement correcte reste en vert. Pour un choix unique, les couleurs restent inchangées : vert si juste ; rouge pour le choix erroné et orange pour la réponse attendue. Un choix neutre reste gris. Les libellés accompagnent les couleurs ; ce détail visuel ne change pas le score.
 
 Le corrigé disparaît en quittant ou rechargeant la page. Le résultat reste consultable dans le suivi ; les questions et choix individuels ne constituent plus un historique consultable.
 

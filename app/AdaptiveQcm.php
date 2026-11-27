@@ -530,7 +530,7 @@ final class AdaptiveQcm
         foreach($answers as $answer){
             $question=$byId[$answer['question_id']];$selected=json_decode($answer['selected']??'[]',true);
             $options=array_values(array_filter($question['answers'],static fn($option)=>$option['kind']==='v'||($answer['result']!=='correct'&&in_array($option['index'],$selected,true))));
-            $entry=['title'=>$question['title'],'result'=>$answer['result'],'answers'=>$options,'selected'=>$selected];
+            $entry=['title'=>$question['title'],'multiple'=>(bool)$question['multiple'],'result'=>$answer['result'],'answers'=>$options,'selected'=>$selected];
             if($answer['result']!=='correct'&&!empty($question['explanation']))$entry['explanation']=$question['explanation'];
             $run['_review'][]=$entry;
         }

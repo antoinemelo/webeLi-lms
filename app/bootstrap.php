@@ -35,6 +35,7 @@ require_once __DIR__ . '/ActivityResults.php';
 require_once __DIR__ . '/AnnouncementMessages.php';
 require_once __DIR__ . '/AnnouncementMessageViews.php';
 require_once __DIR__ . '/CourseEnrollment.php';
+require_once __DIR__ . '/CourseEnrollmentViews.php';
 require_once __DIR__ . '/TransferService.php';
 require_once __DIR__ . '/FrameworkCsv.php';
 require_once __DIR__ . '/AdminService.php';
@@ -289,7 +290,7 @@ function request_is_background_poll(): bool
 {
     if(($_GET['view']??'')==='adaptive-qcm-external')return true;
     if(($_SERVER['REQUEST_METHOD']??'GET')==='GET')return in_array($_GET['view']??'',[
-        'adaptive-qcm','session-status','notification-status','discussion-data','qcm-class-state','guest-class-state','library-cards','library-index',
+        'adaptive-qcm','session-status','notification-status','discussion-data','qcm-class-state','guest-class-state','library-cards','library-index','course-enrollment-candidates',
     ],true);
     return in_array($_POST['action']??'',[
         'acquire_edit_lock','release_edit_lock','track_learning_activity',

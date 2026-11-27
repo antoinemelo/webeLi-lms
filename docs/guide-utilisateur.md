@@ -42,6 +42,14 @@ Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifi
 
 **Se déconnecter** supprime le jeton présent dans cette PWA. Après une reconnexion automatique, cette déconnexion ne ferme pas la session de l’ordinateur. Il existe un seul jeton par personne : mémoriser une nouvelle PWA remplace le précédent. Une modification du mot de passe ou du code de connexion, un changement de statut du compte ou une collision entre connexions classiques révoque le jeton. La reconnexion nécessite un accès réseau.
 
+### Inscrire des apprenants déjà présents
+
+Dans **Parcours**, ouvrez le menu à trois points du parcours, puis **Inscrire des apprenants**, juste sous **Gérer l’équipe enseignante**. Le propriétaire et les membres de l’équipe peuvent sélectionner des apprenants actifs présents dans le système, y compris ceux d’un autre enseignant.
+
+La recherche par nom ou groupe se combine avec les filtres **Parcours** et **Groupe classe**. Les sélections sont conservées lorsque vous changez de filtre. Les personnes déjà inscrites sont identifiées et ne peuvent pas être sélectionnées à nouveau. **Inscrire la sélection** inscrit les comptes choisis, réactive leurs inscriptions archivées si nécessaire et vous ramène au parcours. Le répertoire se charge uniquement à l’ouverture de la fenêtre ; au-delà de 100 résultats, affinez les filtres.
+
+Le volet **Invitation au parcours** de cette fenêtre donne aussi le code et le lien à transmettre aux apprenants qui souhaitent rejoindre eux-mêmes le parcours.
+
 ### Rejoindre un cours avec une invitation
 
 Chaque parcours actif possède un code unique et un lien d’invitation. L’enseignant les trouve dans **Apprenants**, depuis le menu à trois points de **Apprenants & inscriptions**, puis **Invitation au parcours**, et peut les copier en un clic.
@@ -330,7 +338,7 @@ Sous chaque question, les **cinq champs obligatoires** indiquent : niveau enseig
 3. Ajoutez la page au parcours. Une étape ordinaire propose un **entraînement** renouvelable, sans alimenter les statistiques. Une étape **Exercice contrôlé** actualise les statistiques sans conserver de note ; une étape **Évaluation** conserve le résultat et autorise une tentative par apprenant.
 4. Pour compléter le réservoir, ajoutez explicitement un bloc **QCM tiers** avec le lien de partage d’un collègue de la même installation. Le mode **Contenu partagé** doit être autorisé. Aucun autre contenu n’est recherché automatiquement.
 
-Chaque question n’est posée qu’une fois. Un délai dépassé compte comme non réussi et fait passer à la suite. La fin du temps total ou l’épuisement du réservoir termine le test. Quitter ou recharger la page ne suspend pas les chronomètres. Les corrections sont données après chaque réponse en entraînement et à la fin en évaluation ou exercice contrôlé. Le corrigé final apparaît sous le score : bonnes propositions en vert pour une question réussie ; bonnes propositions en orange et mauvais choix en rouge pour une question non réussie. Il est temporaire : quitter ou recharger la page efface le détail. Le score et les statistiques globales des questions sont conservés, sans historique des réponses individuelles.
+Chaque question n’est posée qu’une fois. Un délai dépassé compte comme non réussi et fait passer à la suite. La fin du temps total ou l’épuisement du réservoir termine le test. Quitter ou recharger la page ne suspend pas les chronomètres. Les corrections sont données après chaque réponse en entraînement et à la fin en évaluation ou exercice contrôlé. Le corrigé final apparaît sous le score : vert si tout est juste ; rouge pour les mauvais choix et orange pour les bonnes propositions oubliées. Pour une réponse multiple incomplète, les bonnes propositions cochées sont bleues. Il est temporaire : quitter ou recharger la page efface le détail. Le score et les statistiques globales des questions sont conservés, sans historique des réponses individuelles.
 
 Depuis l’**Aperçu apprenant** d’une étape, **Commencer le test** permet à l’enseignant de tester le QCM avec les mêmes délais et le même mode de correction. **Recommencer le test** reste possible pendant ou après l’essai. Recharger conserve le test et ses échéances. Ces essais ne modifient ni les résultats des apprenants ni les statistiques.
 

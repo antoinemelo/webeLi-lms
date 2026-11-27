@@ -120,7 +120,7 @@ function progress_pdf_student(array $data,array $student,bool $web=false): strin
         }
         $body.='</tbody></table></div>';
     }
-    $body.='<p class="muted" style="font-size:7pt;margin:2mm 0">'.e(t('Les QCM affichent uniquement leur dernier résultat, ramené sur 10.')).' · - : '.e(t('Aucun résultat')).'<br>'.e(t('Notes barrées : non comptabilisées dans la moyenne.')).'</p>';
+    $body.='<p class="muted" style="font-size:7pt;margin:2mm 0">'.e(t('Les QCM affichent uniquement leur dernier résultat, ramené sur 10.')).($web?'':' · - : '.e(t('Aucun résultat'))).'<br>'.e(t('Notes barrées : non comptabilisées dans la moyenne.')).'</p>';
     foreach($report['comments'] as $index=>$comment){
         if($index===0)$body.='<h2 style="font-size:12pt;margin:4mm 0 1.5mm;page-break-after:avoid">'.e(t('Commentaires')).'</h2>';
         $short=mb_strlen($comment['student'].$comment['teacher'])<1200;

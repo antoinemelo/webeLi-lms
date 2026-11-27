@@ -51,10 +51,12 @@ document.querySelectorAll('[data-adaptive-qcm]').forEach((root) => {
           for (const answer of question.answers) {
             const chosen = question.selected.includes(answer.index);
             if (answer.kind !== 'v' && (question.result === 'correct' || !chosen)) continue;
-            const kind = answer.kind === 'v' ? (question.result === 'correct' ? 'correct' : 'expected') : (answer.kind === 'x' ? 'incorrect' : 'neutral');
-            const label = kind === 'correct' ? labels.correct : kind === 'expected' ? labels.expected : kind === 'incorrect' ? labels.yourIncorrect : labels.neutral;
+            const kind = answer.kind === 'v'
+              ? (question.result === 'correct' ? 'correct' : (question.multiple && chosen ? 'partial' : 'expected'))
+              : (answer.kind === 'x' ? 'incorrect' : 'neutral');
+            const label = kind === 'correct' || kind === 'partial' ? labels.correct : kind === 'expected' ? labels.expected : kind === 'incorrect' ? labels.yourIncorrect : labels.neutral;
             const option = node('li', undefined, `adaptive-review-answer adaptive-review-${kind}`);
-            option.append(node('strong', `${label}${chosen && kind === 'expected' ? ` · ${labels.selected}` : ''}`), node('span', answer.text));
+            option.append(node('strong', `${label}${kind === 'partial' || (chosen && kind === 'expected') ? ` · ${labels.selected}` : ''}`), node('span', answer.text));
             options.append(option);
           }
           section.append(options);

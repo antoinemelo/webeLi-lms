@@ -5,6 +5,13 @@ declare(strict_types=1);
 // French is the source language. These rows contain only interface copy; user-created
 // course and page content never passes through this catalogue.
 return [
+    'Inscrire des apprenants'=>['en'=>'Enrol learners','de'=>'Lernende einschreiben','it'=>'Iscrivere apprendenti','es'=>'Inscribir aprendices'],
+    'Rechercher par nom ou groupe'=>['en'=>'Search by name or class group','de'=>'Nach Name oder Klassengruppe suchen','it'=>'Cerca per nome o gruppo classe','es'=>'Buscar por nombre o grupo'],
+    'Déjà inscrit au parcours'=>['en'=>'Already enrolled in this course','de'=>'Bereits in diesem Kurs eingeschrieben','it'=>'Già iscritto a questo percorso','es'=>'Ya inscrito en este curso'],
+    'Affinez les filtres pour voir les autres apprenants.'=>['en'=>'Refine the filters to see other learners.','de'=>'Grenzen Sie die Filter ein, um weitere Lernende zu sehen.','it'=>'Affina i filtri per vedere altri apprendenti.','es'=>'Afina los filtros para ver más aprendices.'],
+    ':count apprenant(s) sélectionné(s)'=>['en'=>':count learner(s) selected','de'=>':count Lernende ausgewählt','it'=>':count apprendenti selezionati','es'=>':count aprendices seleccionados'],
+    'Activez JavaScript pour sélectionner les apprenants.'=>['en'=>'Enable JavaScript to select learners.','de'=>'Aktivieren Sie JavaScript, um Lernende auszuwählen.','it'=>'Attiva JavaScript per selezionare gli apprendenti.','es'=>'Activa JavaScript para seleccionar aprendices.'],
+
     'Évaluations à confirmer'=>['en'=>'Assessments awaiting confirmation','de'=>'Zu bestätigende Bewertungen','it'=>'Valutazioni da confermare','es'=>'Evaluaciones por confirmar'],
     'Choisir dans le calendrier'=>['en'=>'Choose from the calendar','de'=>'Im Kalender auswählen','it'=>'Scegli dal calendario','es'=>'Elegir en el calendario'],
     'Effacer la date'=>['en'=>'Clear date','de'=>'Datum löschen','it'=>'Cancella la data','es'=>'Borrar fecha'],

@@ -1384,26 +1384,16 @@ function handle_action(string $action): never
     }
     if ($action === 'enroll_students' && $user['role'] === 'teacher') {
         $courseId=(int)($_POST['course_id']??0);
-        $course=one('SELECT * FROM courses WHERE id=? AND teacher_id=?',[$courseId,$user['id']]);
-        $studentIds=array_values(array_unique(array_map('intval',(array)($_POST['students']??[]))));
-        if(!$course || !$studentIds){ flash('Choisissez un cours et au moins un apprenant.','error'); redirect('students'); }
-        $added=0;
-        foreach($studentIds as $studentId){
-            $student=one("SELECT * FROM users WHERE id=? AND role='student' AND account_status='active'",[$studentId]);
-            if(!$student)continue;
-            $exists=one('SELECT id,status FROM enrollments WHERE course_id=? AND student_id=?',[$courseId,$studentId]);
-            if($exists && $exists['status']==='archived'){
-                run("UPDATE enrollments SET status='active',archived_at=NULL WHERE id=?",[$exists['id']]);
-                $studentLanguage=normalize_language((string)($student['language']??''))??'fr';enqueue('student.enrolled',$student['email'],t('Retour dans un cours liike',[],$studentLanguage),t('Votre participation au cours « :course » a été réactivée.',['course'=>$course['title']],$studentLanguage));
-                $added++;
-            } elseif(!$exists){
-                run('INSERT INTO enrollments(course_id,student_id) VALUES(?,?)',[$courseId,$studentId]);
-                $studentLanguage=normalize_language((string)($student['language']??''))??'fr';enqueue('student.enrolled',$student['email'],t('Nouveau cours dans liike',[],$studentLanguage),t('Vous avez été inscrit·e au cours « :course ».',['course'=>$course['title']],$studentLanguage));
-                $added++;
-            }
+        $returnView=($_POST['return_view']??'')==='pathway'?'pathway':'students';
+        try{$result=course_enroll_existing_students(db(),$courseId,(int)$user['id'],(array)($_POST['students']??[]));}
+        catch(InvalidArgumentException $error){flash($error->getMessage(),'error');redirect($returnView,['course'=>$courseId]);}
+        $course=$result['course'];$added=count($result['changed']);
+        foreach($result['changed'] as $student){
+            $language=normalize_language((string)($student['language']??''))??'fr';$restored=$student['status']==='archived';
+            enqueue('student.enrolled',$student['email'],t($restored?'Retour dans un cours liike':'Nouveau cours dans liike',[],$language),t($restored?'Votre participation au cours « :course » a été réactivée.':'Vous avez été inscrit·e au cours « :course ».',['course'=>$course['title']],$language));
         }
         flash($added ? "$added inscription(s) ajoutée(s) au cours." : 'Les apprenants sélectionnés étaient déjà inscrits.');
-        redirect('students',['course'=>$courseId]);
+        redirect($returnView,['course'=>$courseId]);
     }
     if ($action === 'manage_enrollment' && $user['role'] === 'teacher') {
         $enrollmentId=(int)($_POST['enrollment_id']??0);

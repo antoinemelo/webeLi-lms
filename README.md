@@ -263,6 +263,8 @@ php tests/qcm_modes.php
 php tests/qcm_explanations.php
 php tests/adaptive_qcm_external.php
 node tests/adaptive_qcm_external_browser.mjs
+php tests/course_enrollment_directory.php
+node tests/student_detail_enrollment_browser.mjs
 php tests/pathway_groups.php
 php tests/pathway_group_visibility.php
 php tests/next_pathway_step.php
