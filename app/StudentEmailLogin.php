@@ -104,6 +104,36 @@ final class StudentEmailLogin
         return ($teacher['role']??'')==='teacher'&&($teacher['account_status']??'')==='active'&&($student['role']??'')==='student'
             &&((int)($teacher['is_superadmin']??0)===1||(int)($student['managed_by']??0)===(int)$teacher['id']);
     }
+    /** Reset this account's code budgets only; shared network/global limits remain in force. */
+    public function resetAttempts(int $studentId,array $admin): void
+    {
+        if(($admin['role']??'')!=='teacher'||($admin['account_status']??'')!=='active'||(int)($admin['is_superadmin']??0)!==1
+            ||!$this->one("SELECT id FROM users WHERE id=? AND role='teacher' AND account_status='active' AND is_superadmin=1",[(int)($admin['id']??0)])){
+            throw new InvalidArgumentException('Accès superadmin refusé.');
+        }
+        $attached=false;$transaction=false;
+        try{
+            // One transaction includes the optional delivery counter database: no partial reset.
+            $guard=rtrim($this->root,'/').'/storage/mail-guard.sqlite';
+            if(is_file($guard)){
+                $this->db->prepare('ATTACH DATABASE ? AS student_login_mail_guard')->execute([$guard]);$attached=true;
+            }
+            $this->db->exec('BEGIN IMMEDIATE');$transaction=true;
+            if(!$this->one("SELECT id FROM users WHERE id=? AND role='teacher' AND account_status='active' AND is_superadmin=1",[(int)$admin['id']]))throw new InvalidArgumentException('Accès superadmin refusé.');
+            $student=$this->one("SELECT * FROM users WHERE id=? AND role='student' AND account_status='active'",[$studentId]);
+            if(!$student)throw new InvalidArgumentException('Compte apprenant actif introuvable.');
+            if(!empty($student['login_blocked_at']))throw new InvalidArgumentException('Débloquez d’abord l’accès au compte.');
+            $scopes=['send:user:'.$studentId,'fail:user:'.$studentId];
+            foreach(['login','enable','disable','email_old','email_new'] as $purpose)$scopes[]='send:'.$studentId.':'.$purpose;
+            $this->db->prepare('DELETE FROM student_auth_events WHERE scope IN ('.implode(',',array_fill(0,count($scopes),'?')).')')->execute($scopes);
+            $this->db->prepare('DELETE FROM student_email_challenges WHERE user_id=?')->execute([$studentId]);
+            if($attached&&$this->one("SELECT name FROM student_login_mail_guard.sqlite_master WHERE type='table' AND name='mail_guard_events'",[])){
+                $this->db->prepare('DELETE FROM student_login_mail_guard.mail_guard_events WHERE scope=?')->execute(['delivery:auth-email:'.hash('sha256',strtolower((string)$student['email']))]);
+            }
+            $this->db->exec('COMMIT');$transaction=false;
+        }catch(Throwable $error){if($transaction)$this->db->exec('ROLLBACK');throw $error;}
+        finally{if($attached)$this->db->exec('DETACH DATABASE student_login_mail_guard');}
+    }
     public function block(int $studentId,array $teacher,bool $blocked): void
     {
         $student=$this->one("SELECT * FROM users WHERE id=? AND role='student'",[$studentId]);

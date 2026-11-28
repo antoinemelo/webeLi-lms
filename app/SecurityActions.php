@@ -91,6 +91,16 @@ function handle_security_action(string $action): void
         if($enabled===(bool)$user['email_login_enabled'])redirect('profile');
         student_email_begin($user,$enabled?'enable':'disable');
     }
+    if($action==='reset_student_login_attempts'){
+        $admin=require_actor();
+        if($admin['role']!=='teacher'||(int)($admin['is_superadmin']??0)!==1){http_response_code(403);exit;}
+        try{
+            student_email_service()->resetAttempts((int)($_POST['student_id']??0),$admin);
+            flash('Les demandes de code et les essais de ce compte ont été réinitialisés. L’apprenant doit demander un nouveau code.');
+        }catch(InvalidArgumentException $error){flash($error->getMessage(),'error');}
+        catch(Throwable $error){error_log('liike login attempts reset: '.get_class($error));flash('La réinitialisation est momentanément indisponible. Réessayez.','error');}
+        redirect('admin');
+    }
     if($action==='set_student_login_block'){
         $teacher=require_actor();$studentId=(int)($_POST['student_id']??0);
         try{student_email_service()->block($studentId,$teacher,($_POST['blocked']??'')==='1');flash(($_POST['blocked']??'')==='1'?'Accès bloqué. Les inscriptions et résultats sont conservés.':'Accès débloqué.');}

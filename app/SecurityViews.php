@@ -40,6 +40,14 @@ function render_student_login_block(array $student,string $returnView='students'
     ?><form method="post" class="m-0" onsubmit="return confirm('<?=e(t($blocked?'Autoriser à nouveau cet apprenant à se connecter ?':'Bloquer la connexion à ce compte et fermer ses sessions ? Ses inscriptions et résultats seront conservés.'))?>')"><?=csrf_field()?><input type="hidden" name="action" value="set_student_login_block"><input type="hidden" name="student_id" value="<?=(int)$student['id']?>"><input type="hidden" name="blocked" value="<?=$blocked?'0':'1'?>"><input type="hidden" name="return_view" value="<?=e($returnView)?>"><button class="btn btn-sm <?=$blocked?'btn-outline-primary':'btn-outline-danger'?>"><i class="bi <?=$blocked?'bi-unlock':'bi-lock'?> me-2" aria-hidden="true"></i><?=e(t($blocked?'Débloquer l’accès':'Bloquer l’accès'))?></button></form><?php
 }
 
+function render_student_attempts_reset(array $student): void
+{
+    $admin=require_actor();
+    if($admin['role']!=='teacher'||(int)($admin['is_superadmin']??0)!==1||$student['role']!=='student'||$student['account_status']!=='active')return;
+    $blocked=!empty($student['login_blocked_at']);
+    ?><form method="post" class="m-0" onsubmit="return confirm('<?=e(t('Réinitialiser les demandes de code et les essais de connexion de cet apprenant ? Ses anciens codes seront invalidés et il devra en demander un nouveau.'))?>')"><?=csrf_field()?><input type="hidden" name="action" value="reset_student_login_attempts"><input type="hidden" name="student_id" value="<?=(int)$student['id']?>"><button class="btn btn-sm btn-outline-primary" <?=$blocked?'disabled':''?> title="<?=e(t($blocked?'Débloquez d’abord l’accès au compte.':'Lever les limites temporaires de demandes de code et d’essais incorrects pour ce compte.'))?>"><i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true"></i><?=e(t('Réinitialiser les tentatives'))?></button></form><?php
+}
+
 function render_smtp_admin(): void
 {
     try{$config=SmtpConfig::read(dirname(__DIR__));}catch(Throwable){echo '<p class="alert alert-danger">'.e(t('Configuration SMTP illisible. Vérifiez le fichier de configuration sur le serveur.')).'</p>';return;}

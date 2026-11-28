@@ -225,6 +225,7 @@ Les apprenants ne reçoivent jamais les vues `students`, `pathway`, `library` ou
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
 php tests/student_email_security.php
+php tests/student_login_reset.php
 node tests/student_email_security_browser.mjs
 php tests/mail_security.php
 python3 tests/mail_security_http.py
