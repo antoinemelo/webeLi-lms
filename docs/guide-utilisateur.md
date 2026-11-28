@@ -54,7 +54,7 @@ Le superadmin peut activer **Superadministration → Serveur de messagerie**, d�
 
 ### Rester connecté dans la PWA
 
-Dans l’application installée sur l’écran d’accueil, **Rester connecté dans cette application (90 jours)** est coché par défaut lors de la connexion. Décochez cette option si vous ne souhaitez pas mémoriser votre accès sur cet appareil. Les enseignants confirment ensuite leur mot de passe ; leur choix reste conservé même après une erreur de saisie. Cette option n’est pas proposée dans une fenêtre de navigateur classique.
+Dans l’application installée sur l’écran d’accueil, **Rester connecté (90 jours)** est coché par défaut lors de la connexion. Décochez cette option si vous ne souhaitez pas mémoriser votre accès sur cet appareil. Les enseignants confirment ensuite leur mot de passe ; leur choix reste conservé même après une erreur de saisie. Cette option n’est pas proposée dans une fenêtre de navigateur classique.
 
 Pendant 90 jours, la PWA peut rétablir la connexion sans ressaisir les identifiants. La reprise est également tentée à la réouverture, à la restauration d’une page et au retour du réseau, sans interrompre une connexion manuelle déjà commencée. Cette reconnexion automatique conserve la session laissée sur l’ordinateur, tant qu’elle est encore valide. Une connexion manuelle d’apprenant reste soumise à la règle habituelle sur les connexions simultanées.
 

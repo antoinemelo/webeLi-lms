@@ -79,7 +79,7 @@ return [
     'Ordre des blocs'=>['en'=>'Block order','de'=>'Reihenfolge der Blöcke','it'=>'Ordine dei blocchi','es'=>'Orden de los bloques'],
     'Désactiver les notifications'=>['en'=>'Disable notifications','de'=>'Benachrichtigungen deaktivieren','it'=>'Disattivare le notifiche','es'=>'Desactivar las notificaciones'],
     'Notifications désactivées sur cet appareil.'=>['en'=>'Notifications disabled on this device.','de'=>'Benachrichtigungen auf diesem Gerät deaktiviert.','it'=>'Notifiche disattivate su questo dispositivo.','es'=>'Notificaciones desactivadas en este dispositivo.'],
-    'Rester connecté dans cette application (90 jours)'=>['en'=>'Stay signed in to this app (90 days)','de'=>'In dieser App angemeldet bleiben (90 Tage)','it'=>'Resta connesso in questa app (90 giorni)','es'=>'Mantener la sesión en esta aplicación (90 días)'],
+    'Rester connecté (90 jours)'=>['en'=>'Stay signed in (90 days)','de'=>'Angemeldet bleiben (90 Tage)','it'=>'Resta connesso (90 giorni)','es'=>'Mantener la sesión (90 días)'],
     'Suivi administratif / pédagogique'=>['en'=>'Administrative / educational follow-up','de'=>'Administrative / pädagogische Begleitung','it'=>'Monitoraggio amministrativo / didattico','es'=>'Seguimiento administrativo / pedagógico'],
     'Contenu'=>['en'=>'Content','de'=>'Inhalt','it'=>'Contenuto','es'=>'Contenido'],
     'Actions de la fiche'=>['en'=>'Profile actions','de'=>'Profilaktionen','it'=>'Azioni del profilo','es'=>'Acciones de la ficha'],
