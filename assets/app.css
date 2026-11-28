@@ -998,7 +998,7 @@ h1{font-size:2.25rem}
 .student-mode .next-step{margin-bottom:2rem}
 .reward-nav-label{position:relative;display:inline-block;white-space:nowrap}
 .reward-nav-score{position:absolute;bottom:calc(100% - .6rem - 5px);left:calc(100% - .8rem + 6px);display:grid;place-items:center;min-width:1.6rem;height:1.6rem;padding:0 .3rem;border:2px solid var(--canvas);border-radius:999px;background:#fff0bd;color:#79520b;font-size:.72rem;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.bottom-nav .reward-nav-score{border-color:#fff}
+.bottom-nav .reward-nav-score{bottom:calc(100% - .6rem + 5px);border-color:#fff}
 
 .enrollment-candidates[aria-busy=true]{opacity:.6}.enrollment-candidates label:has(input:disabled){cursor:default;background:var(--panel-soft,#f7f6fa)}.enrollment-selection{display:flex;flex-wrap:wrap;gap:.4rem}.enrollment-selection button{display:inline-flex;align-items:center;gap:.5rem;max-width:100%;overflow-wrap:anywhere}.enrollment-candidates label{min-height:44px}.enrollment-candidates:empty{display:none}
 
