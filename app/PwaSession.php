@@ -5,11 +5,12 @@ declare(strict_types=1);
 const PWA_LOGIN_SECONDS = 90 * 86400;
 
 /** One remembered credential per person, independent of the classic student session. */
-function issue_pwa_login(PDO $pdo,int $userId): array
+function issue_pwa_login(PDO $pdo,int $userId,?int $securityRevision=null): array
 {
     $token=bin2hex(random_bytes(32));$expires=time()+PWA_LOGIN_SECONDS;
-    $query=$pdo->prepare("INSERT INTO pwa_logins(user_id,token_hash,expires_at) SELECT id,?,? FROM users WHERE id=? AND account_status='active' ON CONFLICT(user_id) DO UPDATE SET token_hash=excluded.token_hash,expires_at=excluded.expires_at");
-    $query->execute([hash('sha256',$token),$expires,$userId]);
+    $query=$pdo->prepare("INSERT INTO pwa_logins(user_id,token_hash,expires_at) SELECT id,?,? FROM users WHERE id=? AND account_status='active' AND login_blocked_at IS NULL".($securityRevision!==null?' AND security_revision=?':'')." ON CONFLICT(user_id) DO UPDATE SET token_hash=excluded.token_hash,expires_at=excluded.expires_at");
+    $params=[hash('sha256',$token),$expires,$userId];if($securityRevision!==null)$params[]=$securityRevision;
+    $query->execute($params);
     if($query->rowCount()!==1)throw new RuntimeException('Compte inactif.');
     return ['token'=>$token,'expires_at'=>$expires];
 }
@@ -17,7 +18,7 @@ function issue_pwa_login(PDO $pdo,int $userId): array
 function pwa_login_user(PDO $pdo,string $token): ?array
 {
     if(!preg_match('/^[a-f0-9]{64}$/D',$token))return null;
-    $query=$pdo->prepare("SELECT u.* FROM users u JOIN pwa_logins p ON p.user_id=u.id WHERE p.token_hash=? AND p.expires_at>? AND u.account_status='active'");
+    $query=$pdo->prepare("SELECT u.* FROM users u JOIN pwa_logins p ON p.user_id=u.id WHERE p.token_hash=? AND p.expires_at>? AND u.account_status='active' AND u.login_blocked_at IS NULL");
     $query->execute([hash('sha256',$token),time()]);
     return $query->fetch(PDO::FETCH_ASSOC)?:null;
 }
@@ -25,7 +26,7 @@ function pwa_login_user(PDO $pdo,string $token): ?array
 function pwa_session_is_valid(PDO $pdo,int $userId,string $hash): bool
 {
     if(!preg_match('/^[a-f0-9]{64}$/D',$hash))return false;
-    $query=$pdo->prepare("SELECT 1 FROM pwa_logins p JOIN users u ON u.id=p.user_id WHERE p.user_id=? AND p.token_hash=? AND p.expires_at>? AND u.account_status='active'");
+    $query=$pdo->prepare("SELECT 1 FROM pwa_logins p JOIN users u ON u.id=p.user_id WHERE p.user_id=? AND p.token_hash=? AND p.expires_at>? AND u.account_status='active' AND u.login_blocked_at IS NULL");
     $query->execute([$userId,$hash,time()]);
     return (bool)$query->fetchColumn();
 }

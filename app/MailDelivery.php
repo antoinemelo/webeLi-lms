@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__.'/MailAbuseProtection.php';
+require_once __DIR__.'/SmtpConfig.php';
 
 const APP_MAIL_FROM_ADDRESS = 'noreply@lms.webe.li';
 const APP_MAIL_FROM_NAME = 'liike';
@@ -54,7 +55,7 @@ function app_mail_headers(string $cc='',string $bcc=''): string
         ."Content-Type: text/plain; charset=UTF-8";
 }
 
-function deliver_app_mail(string $recipient, string $subject, string $body,string $cc='',string $bcc=''): bool
+function deliver_app_mail(string $recipient, string $subject, string $body,string $cc='',string $bcc='',bool $authentication=false): bool
 {
     if (getenv('APP_MAIL_ENABLED') === '0') return false;
     foreach ([$recipient, $cc, $bcc] as $index => $address) {
@@ -70,13 +71,14 @@ function deliver_app_mail(string $recipient, string $subject, string $body,strin
     }
     $addresses = array_values(array_unique(array_map('strtolower', array_filter([$recipient, $cc, $bcc]))));
     $cost = count($addresses);
+    $scope=$authentication?'delivery:authentication':'delivery:global';
     $rules = [
-        ['delivery:global', 60, 30, $cost],
-        ['delivery:global', 3600, 300, $cost],
-        ['delivery:global', 86400, 1000, $cost],
+        [$scope, 60, $authentication?60:30, $cost],
+        [$scope, 3600, $authentication?600:300, $cost],
+        [$scope, 86400, $authentication?3000:1000, $cost],
     ];
     foreach ($addresses as $address) {
-        $scope = 'delivery:email:'.hash('sha256', $address);
+        $scope = ($authentication?'delivery:auth-email:':'delivery:email:').hash('sha256', $address);
         $rules[] = [$scope, 3600, 10, 1];
         $rules[] = [$scope, 86400, 30, 1];
     }
@@ -86,6 +88,12 @@ function deliver_app_mail(string $recipient, string $subject, string $body,strin
         return false;
     }
     try {
+        $config=SmtpConfig::read(dirname(__DIR__));
+        if($config['enabled']){
+            $mail=SmtpConfig::mailer($config,dirname(__DIR__));$mail->addAddress($recipient);
+            if($cc!=='')$mail->addCC($cc);if($bcc!=='')$mail->addBCC($bcc);
+            $mail->Subject=$subject;$mail->Body=$body;return $mail->send();
+        }
         return @mail(
             $recipient,
             mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n"),

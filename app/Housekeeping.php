@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/AdaptiveQcm.php';
 require_once __DIR__.'/AdaptiveQcmMaintenance.php';
+require_once __DIR__.'/StudentEmailLogin.php';
 
 const HOUSEKEEPING_INTERVAL_SECONDS = 300;
 
@@ -33,6 +34,7 @@ function run_housekeeping(PDO $pdo, string $root, bool $force=false, ?int $now=n
         purge_expired_registrations_in($pdo,$counts);
         $counts['learning_visits']=purge_learning_activity($pdo);
         $counts['guest_sessions']=QcmGuest::purge($pdo);
+        $counts['student_codes']=StudentEmailLogin::purge($pdo,$now);
         $pdo->commit();$ownsTransaction=false;
         $counts+=adaptive_qcm_housekeeping($pdo,$force);
         $report=['completed_at'=>$now,'counts'=>$counts];
@@ -74,6 +76,7 @@ function housekeeping_report_labels(): array
         'guest_sessions'=>'Séances QCM anonymes expirées',
         'registration_attempts'=>'Tentatives d’inscription de plus de deux jours',
         'verification_tokens'=>'Jetons de validation expirés',
+        'student_codes'=>'Codes de connexion expirés',
         'adaptive_runs'=>'Anciennes tentatives adaptatives devenues inutiles',
         'adaptive_references'=>'Réservoirs adaptatifs devenus inutilisés',
     ];

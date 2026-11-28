@@ -6,7 +6,7 @@ require_once __DIR__.'/DatabaseMigrations.php';
 
 final class Database
 {
-    public const SCHEMA_VERSION = 40;
+    public const SCHEMA_VERSION = 41;
     // Let a class finish its short writes on shared hosting before rejecting a request.
     private const BUSY_TIMEOUT_MS = 30000;
 

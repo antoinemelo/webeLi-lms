@@ -25,7 +25,7 @@ Mot de passe : Elan-Nora-2026!
 
 ### Apprenant
 
-L’apprenant saisit son code personnel sans mot de passe. La démonstration fournit `LIROS`, `SADIA` et `NOMAR`.
+Par défaut, l’apprenant saisit son identifiant personnel sans mot de passe ni code de vérification. La démonstration fournit `LIROS`, `SADIA` et `NOMAR`.
 
 Le code contient les deux premières lettres du prénom et les trois premiers caractères du nom après suppression des espaces. Il est affiché en majuscules :
 
@@ -33,6 +33,24 @@ Le code contient les deux premières lettres du prénom et les trois premiers ca
 - Maya DA COSTA → `MADAC`.
 
 Si deux apprenants produisent le même code, le second reçoit automatiquement un suffixe numérique.
+
+### Protection facultative par courriel
+
+Dans **Modifier mon profil → Protection de la connexion**, l’apprenant peut activer un code de connexion reçu par courriel. Cette option est **désactivée par défaut**, pour tous les comptes existants et les nouveaux. L’activation, comme la désactivation, doit être confirmée par un code envoyé à l’adresse du compte.
+
+Une fois activée, une nouvelle connexion demande l’identifiant habituel, puis un **code à 4 chiffres**, valable **10 minutes** et utilisable une seule fois. Après cinq erreurs, il faut attendre dix minutes. Un renvoi est possible après une minute ; il remplace le code précédent demandé depuis le même navigateur. Les codes se saisissent dans la fenêtre où ils ont été demandés.
+
+L’application installée reste connectée sur l’appareil mémorisé après validation. Un changement de protection ou d’adresse révoque les autres accès, mais conserve la session et, si choisi, la connexion mémorisée de l’appareil qui a confirmé. Avec la protection active, modifier son courriel demande de confirmer l’ancienne puis la nouvelle adresse. En cas de perte d’accès à la boîte, contacter un enseignant autorisé pour corriger l’adresse après vérification de l’identité.
+
+### Bloquer un accès apprenant
+
+Dans **Apprenants → Admin → Compte apprenant**, **Bloquer l’accès** ferme les sessions et empêche une nouvelle connexion sans archiver le compte ni effacer les inscriptions, travaux ou résultats. **Débloquer l’accès** permet une nouvelle connexion, sans rétablir les anciennes sessions.
+
+Ce droit appartient uniquement à l’enseignant responsable du compte (`managed_by`) et au superadmin. Un enseignant qui partage simplement un parcours avec cet apprenant ne peut pas bloquer tout son compte. Les comptes sans responsable sont gérés par le superadmin, qui dispose aussi des commandes dans **Superadministration → Utilisateurs**.
+
+### Messagerie SMTP facultative
+
+Le superadmin peut activer **Superadministration → Serveur de messagerie**, définir hôte, port, STARTTLS ou TLS, identifiants et expéditeur, puis enregistrer. Le bouton de test utilise les réglages enregistrés et envoie uniquement à l’adresse du superadmin connecté. Laisser le mot de passe vide conserve le secret existant. SMTP désactivé conserve le transport habituel du serveur ; un échec SMTP ne bascule pas silencieusement sur ce transport.
 
 ### Rester connecté dans la PWA
 

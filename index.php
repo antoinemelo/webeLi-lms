@@ -28,7 +28,7 @@ register_shutdown_function(static function()use($applicationRoot):void{
 });
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['restart_login'])) {
-    unset($_SESSION['login_teacher_id']);
+    unset($_SESSION['login_teacher_id'],$_SESSION['student_email_flow'],$_SESSION['student_email_binding']);
 }
 
 if($_SERVER['REQUEST_METHOD']==='GET'&&in_array($_GET['view']??'',['discussion-data','discussion-export','notification-status'],true))messaging_http_get((string)$_GET['view']);
@@ -108,6 +108,8 @@ if (isset($_GET['r'])) {
     render_password_reset((string)$_GET['r']);
     exit;
 }
+
+if(($_GET['view']??'')==='student-code'){render_student_code();exit;}
 
 if (!actor()) {
     $publicView=(string)($_GET['view']??'login');

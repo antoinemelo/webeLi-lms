@@ -55,5 +55,16 @@ return [
             ],
             'tip_title'=>'Participer sans compte', 'tip'=>'Un lien de contenu peut proposer un QCM adaptatif individuel sans compte : il utilise les statistiques existantes sans les modifier et n’ajoute aucune note à ton parcours. Pour un QCM collectif, rejoins le lien ou le QR code de séance fourni par ton enseignant. Les réponses restent temporaires et anonymes.',
         ],
+        [
+            'id'=>'proteger-mon-compte', 'title'=>'Protéger mon compte',
+            'lead'=>'La protection par courriel est facultative et désactivée par défaut. Tu peux la choisir depuis ton profil.',
+            'cards'=>[
+                ['title'=>'Activer le code de connexion', 'html'=>'<p>Ouvre tes initiales, puis <strong>Modifier mon profil → Protection de la connexion</strong>. Active le bouton et enregistre. Saisis le code à <strong>4 chiffres</strong> reçu à ton adresse pour confirmer.</p><p>Lors des prochaines connexions, saisis ton identifiant habituel, puis le code reçu par courriel. Sans cette option, la connexion reste inchangée.</p>'],
+                ['title'=>'Utiliser le code reçu', 'html'=>'<p>Le code est valable <strong>10 minutes</strong> et une seule fois. Si le message tarde, vérifie les courriers indésirables. Attends au moins une minute avant de demander un autre code : seul le dernier code demandé depuis ce navigateur reste valable.</p><p>Après cinq erreurs, patiente dix minutes avant de réessayer. Garde la fenêtre de connexion ouverte et ne communique jamais ton code.</p>'],
+                ['title'=>'Retrouver mon application', 'html'=>'<p>Dans la webapp installée, le choix <strong>Rester connecté</strong> conserve ton accès sur cet appareil pendant 90 jours après validation. Un code ne sera pas redemandé à chaque réouverture.</p><p>Sur un appareil partagé, ne mémorise pas la connexion. Une déconnexion explicite retire cet accès mémorisé.</p>'],
+                ['title'=>'Modifier ma protection ou mon courriel', 'html'=>'<p>La désactivation se confirme aussi par un code. Si tu changes ton adresse alors que la protection est active, confirme d’abord ton ancienne adresse, puis la nouvelle, avec un code pour chacune.</p><p>Ces changements déconnectent les autres sessions. L’appareil sur lequel tu confirmes reste utilisable. Si tu ne peux plus consulter ta boîte ou si ton accès est bloqué, contacte ton enseignant responsable ou le superadmin.</p>'],
+            ],
+            'tip_title'=>'Un compte bloqué garde ses résultats', 'tip'=>'Le blocage empêche la connexion et ferme les sessions, mais conserve les parcours et les résultats. Après déblocage, reconnecte-toi normalement.',
+        ],
     ],
 ];

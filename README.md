@@ -224,6 +224,8 @@ Les apprenants ne reçoivent jamais les vues `students`, `pathway`, `library` ou
 ```bash
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/smoke.php
+php tests/student_email_security.php
+node tests/student_email_security_browser.mjs
 php tests/mail_security.php
 python3 tests/mail_security_http.py
 python3 tests/class_registration_http.py
@@ -315,3 +317,7 @@ Sous `?view=teacher`, le menu Actions propose aussi **Réunion**, **Correspondan
 La fiche administrative présente chaque activité avec son type, son auteur et sa date de création, puis les autres participants actifs (sans l’apprenant consulté) et « Concerne : … ». Le chevron déplie le contenu et les détails ; les textes de l’historique utilisent une taille de police uniforme. Le menu à trois points de la fiche regroupe **Exporter en PDF**, **Exporter en Markdown** et **Fermer**. Chaque export contient les informations, les inscriptions affichables et toutes les pages de l’historique autorisé, avec le texte complet des activités et messages, indépendamment de leur état replié. Ces exports sont réservés aux enseignants autorisés ; ils ne contiennent pas les données techniques d’authentification. Les images Markdown sont représentées par leur description et leur adresse dans le PDF, sans chargement de ressource externe.
 
 - [Discussions privées, gestion par parcours et superadmin, notifications PWA](docs/discussions.md)
+
+### Connexion apprenant et messagerie
+
+La protection facultative par code courriel est désactivée par défaut. L’apprenant l’active dans son profil ; les appareils PWA validés conservent leur connexion. Le responsable du compte et le superadmin peuvent bloquer les accès sans archivage. Le superadmin dispose d’une configuration SMTP avec TLS. Voir [les règles et sauvegardes de sécurité](docs/exploitation.md#codes-de-connexion-apprenants-et-smtp-v41).

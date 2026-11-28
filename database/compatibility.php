@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 return static function(PDO $pdo): void {
     $required=[
+        'student_email_challenges'=>['id','user_id','purpose','binding','code_hash','expires_at','security_revision'],
+        'student_auth_events'=>['scope','recorded_at'],
         'messaging_instance'=>['id','uuid'],
         'registration_limit_alerts'=>['scope','alerted_at'],
         'pwa_logins'=>['user_id','token_hash','expires_at'],
         'schema_migrations'=>['version','name','checksum','applied_at'],
-        'users'=>['messaging_uuid','id','first_name','last_name','email','secondary_email','role','login_code','account_status','is_superadmin','language','managed_by','student_first_login_at'],
+        'users'=>['email_login_enabled','login_blocked_at','security_revision','messaging_uuid','id','first_name','last_name','email','secondary_email','role','login_code','account_status','is_superadmin','language','managed_by','student_first_login_at'],
         'courses'=>['messaging_uuid','messaging_enabled','id','reference','title','code','teacher_id','archived'],
         'course_teachers'=>['course_id','teacher_id','added_by'],
         'enrollments'=>['id','course_id','student_id','status','archived_at','pathway_changes_seen_at'],

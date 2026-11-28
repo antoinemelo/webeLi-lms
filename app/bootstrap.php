@@ -17,6 +17,8 @@ require_once __DIR__ . '/NotificationOutbox.php';
 require_once __DIR__ . '/RegistrationPolicy.php';
 require_once __DIR__ . '/PasswordReset.php';
 require_once __DIR__ . '/SessionPolicy.php';
+require_once __DIR__ . '/StudentEmailLogin.php';
+require_once __DIR__ . '/SecurityViews.php';
 require_once __DIR__.'/Messaging/Http.php';
 require_once __DIR__ . '/LearningActivity.php';
 require_once __DIR__ . '/Collaboration.php';
@@ -116,7 +118,7 @@ function actor(): ?array
 {
     $id = (int) ($_SESSION['user_id'] ?? 0);
     if($id<1)return null;
-    $user=one("SELECT * FROM users WHERE id=? AND account_status='active'",[$id]);
+    $user=one("SELECT * FROM users WHERE id=? AND account_status='active' AND login_blocked_at IS NULL",[$id]);
     if(!$user)return null;
     if(isset($_SESSION['pwa_session_hash'])){
         if(pwa_session_is_valid(db(),$id,(string)$_SESSION['pwa_session_hash']))return $user;

@@ -103,8 +103,10 @@ Le signalement apprenant des étapes ajoutées ou modifiées ne crée aucune lig
 La session conserve `user_id` et, pour les apprenants, le jeton de session classique ou l’empreinte de reconnexion PWA. À la connexion :
 
 - l’enseignant est recherché par `login_code`, puis son hash est vérifié par `password_verify()` ;
-- l’apprenant est recherché par son code personnel majuscule, sans mot de passe ;
+- l’apprenant utilise son identifiant personnel ; si `email_login_enabled=1`, `StudentEmailLogin` exige ensuite un code temporaire reçu par courriel ; cette option est désactivée par défaut ;
 - l’identifiant de session est renouvelé après succès.
+
+`SecurityActions.php` et `SecurityViews.php` gèrent la vérification, le réglage du profil, le blocage et SMTP. Les défis temporaires et budgets sont atomiques dans SQLite. La clé locale `AppSecrets` reste hors de SQLite ; `SmtpConfig` conserve les réglages et le secret chiffré dans le stockage privé. Le blocage est contrôlé dans les sessions classiques, les reprises PWA et chaque lecture de l’acteur. Voir [exploitation](exploitation.md#codes-de-connexion-apprenants-et-smtp-v41).
 
 Tous les formulaires POST portent un jeton CSRF lié à la session. Les commandes vérifient ensuite le rôle et, pour les données d’un cours, que le cours appartient bien à l’enseignant connecté.
 

@@ -185,11 +185,12 @@ function send_student_code_reminder(array $user): bool
     return try_send_outbox($messageId);
 }
 
-function open_authenticated_session(array $user): never
+function open_authenticated_session(array $user,bool $emailVerified=false): never
 {
     $studentSessionToken=null;
     if($user['role']==='student'){
-        $studentSessionToken=start_student_session(db(),(int)$user['id']);
+        if(!empty($user['email_login_enabled'])&&!$emailVerified)student_email_begin($user,'login');
+        $studentSessionToken=start_student_session(db(),(int)$user['id'],(int)$user['security_revision']);
         if($studentSessionToken===null){
             unset($_SESSION['user_id'],$_SESSION['student_session_token'],$_SESSION['login_teacher_id']);
             flash('Toutes les sessions de ce compte ont été déconnectées, car une connexion simultanée a été détectée. Reconnectez-vous pour ouvrir une seule session.','error');
@@ -206,7 +207,7 @@ function open_authenticated_session(array $user): never
     $profileLanguage=normalize_language((string)($user['language']??''));
     if($profileLanguage!==null)use_language($profileLanguage);
     if(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1'){
-        $remembered=issue_pwa_login(db(),(int)$user['id']);
+        $remembered=issue_pwa_login(db(),(int)$user['id'],(int)$user['security_revision']);
         set_pwa_cookie($remembered['token'],$remembered['expires_at']);
     }elseif(($_POST['pwa_mode']??'')==='1'){forget_pwa_cookie(db());}
     flash(t('Bienvenue :name !',['name'=>$user['first_name']]));
@@ -225,6 +226,7 @@ function open_authenticated_session(array $user): never
 
 function handle_action(string $action): never
 {
+    handle_security_action($action);
     if(str_starts_with($action,'messaging_'))messaging_http_action($action);
     if($action==='pwa_resume'){
         header('Content-Type: application/json; charset=UTF-8');
@@ -253,11 +255,12 @@ function handle_action(string $action): never
     }
 
     if ($action === 'login_continue') {
+        unset($_SESSION['student_email_flow'],$_SESSION['student_email_binding']);
         $_SESSION['login_remember_pwa']=(($_POST['pwa_mode']??'')==='1'&&($_POST['remember_pwa']??'')==='1');
         set_login_language((string)($_POST['language'] ?? ''));
         use_language((string)($_SESSION['login_language'] ?? 'fr'));
         $identifier = trim((string)($_POST['identifier'] ?? ''));
-        $user=$identifier!==''?one("SELECT * FROM users WHERE lower(login_code)=lower(?) AND account_status='active'",[$identifier]):null;
+        $user=$identifier!==''?one("SELECT * FROM users WHERE lower(login_code)=lower(?) AND account_status='active' AND login_blocked_at IS NULL",[$identifier]):null;
         if(!$user){
             unset($_SESSION['login_teacher_id']);
             flash('Nom d’utilisateur inconnu.','error');
@@ -731,6 +734,11 @@ function handle_action(string $action): never
             redirect('profile');
         }
 
+        $emailChange=$user['role']==='student'&&$email!==mb_strtolower((string)$user['email'],'UTF-8');
+        $protectedEmailChange=$emailChange&&!empty($user['email_login_enabled']);
+        $requestedEmail=$email;
+        $wasRemembered=$emailChange?student_security_remembered($user):false;
+        if($protectedEmailChange)$email=(string)$user['email'];
         $initials = mb_strtoupper(mb_substr($compactFirstName,0,1).mb_substr($compactLastName,0,1),'UTF-8');
         $params = [$firstName.' '.$lastName,$firstName,$lastName,$initials,$email,$phone,$identifier,$language];
         $sql = 'UPDATE users SET name=?,first_name=?,last_name=?,initials=?,email=?,phone=?,login_code=?,language=?';
@@ -741,7 +749,9 @@ function handle_action(string $action): never
         $sql .= ' WHERE id=? AND role=?';
         $params[] = $user['id'];
         $params[] = $user['role'];
-        run($sql, $params);
+        if($user['role']==='student'){$sql.=' AND security_revision=?';$params[]=(int)$user['security_revision'];}
+        $saveProfile=db()->prepare($sql);$saveProfile->execute($params);
+        if($saveProfile->rowCount()!==1){flash('Le compte a changé. Rechargez votre profil avant de réessayer.','error');redirect('profile');}
         $savedProfile = one('SELECT email,phone,language FROM users WHERE id=? AND role=?', [$user['id'],$user['role']]);
         if (!$savedProfile
             || normalize_language((string)($savedProfile['language'] ?? '')) !== $language
@@ -751,6 +761,8 @@ function handle_action(string $action): never
             redirect('profile');
         }
         use_language($language);
+        if($protectedEmailChange)student_email_begin($user,'email_old',['new_email'=>$requestedEmail]);
+        if($emailChange)student_security_refresh_session(one('SELECT * FROM users WHERE id=?',[$user['id']]),$wasRemembered);
         flash(t('Votre profil a été mis à jour.'));
         redirect('profile');
     }

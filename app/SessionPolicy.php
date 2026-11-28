@@ -6,14 +6,14 @@ require_once __DIR__.'/PwaSession.php';
 
 const STUDENT_SESSION_ACTIVE_SECONDS = 1800;
 
-function start_student_session(PDO $pdo, int $studentId): ?string
+function start_student_session(PDO $pdo, int $studentId,?int $securityRevision=null): ?string
 {
     $now=time();
     $pdo->exec('BEGIN IMMEDIATE');
     try{
-        $query=$pdo->prepare("SELECT student_session_token_hash,student_session_seen_at FROM users WHERE id=? AND role='student' AND account_status='active'");
+        $query=$pdo->prepare("SELECT student_session_token_hash,student_session_seen_at,security_revision FROM users WHERE id=? AND role='student' AND account_status='active' AND login_blocked_at IS NULL");
         $query->execute([$studentId]);$student=$query->fetch(PDO::FETCH_ASSOC);
-        if(!$student){$pdo->exec('ROLLBACK');return null;}
+        if(!$student||($securityRevision!==null&&(int)$student['security_revision']!==$securityRevision)){$pdo->exec('ROLLBACK');return null;}
         $active=trim((string)($student['student_session_token_hash']??''))!==''&&(int)($student['student_session_seen_at']??0)>=$now-STUDENT_SESSION_ACTIVE_SECONDS;
         if($active){
             revoke_pwa_login($pdo,$studentId);
@@ -29,7 +29,7 @@ function start_student_session(PDO $pdo, int $studentId): ?string
 function student_session_is_valid(PDO $pdo, int $studentId, string $token): bool
 {
     if(!preg_match('/^[a-f0-9]{64}$/',$token))return false;
-    $query=$pdo->prepare("SELECT student_session_seen_at FROM users WHERE id=? AND role='student' AND account_status='active' AND student_session_token_hash=?");
+    $query=$pdo->prepare("SELECT student_session_seen_at FROM users WHERE id=? AND role='student' AND account_status='active' AND login_blocked_at IS NULL AND student_session_token_hash=?");
     $query->execute([$studentId,hash('sha256',$token)]);
     $seen=$query->fetchColumn();
     if($seen===false)return false;

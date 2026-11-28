@@ -101,5 +101,16 @@ $ Explication facultative
             ],
             'tip_title'=>'Transmettre le bon lien', 'tip'=>'QCM adaptatif : partagez le lien du contenu en Utilisation externe. L’essai fonctionne sans compte, utilise les statistiques sans les modifier et n’enregistre aucune note de parcours. Les QCM tiers doivent aussi autoriser cet usage. Pour une séance collective, partagez son lien ou son QR code.',
         ],
+        [
+            'id'=>'securiser-les-acces', 'title'=>'Sécuriser les accès',
+            'lead'=>'Protection facultative, blocage des comptes et configuration de messagerie.',
+            'cards'=>[
+                ['title'=>'Une option choisie par l’apprenant', 'html'=>'<p>La protection reste <strong>désactivée par défaut</strong>, pour les comptes existants et les nouveaux. L’apprenant l’active dans son profil et confirme le code reçu. Les prochaines connexions demandent son identifiant et un code à <strong>4 chiffres</strong>.</p><p>Codes valables 10 minutes, à usage unique, limités à cinq essais. La PWA conserve la connexion sur l’appareil mémorisé après validation.</p>'],
+                ['title'=>'Bloquer un accès sans effacer', 'html'=>'<p>Dans <strong>Apprenants → Admin → Compte apprenant</strong>, utilisez <strong>Bloquer l’accès</strong>. La commande ferme les sessions et empêche une nouvelle connexion. Les inscriptions, travaux et résultats sont conservés.</p><p>Seuls <strong>l’enseignant responsable du compte et le superadmin</strong> peuvent bloquer ou débloquer cet accès global. Les comptes sans responsable relèvent du superadmin. Après déblocage, l’apprenant se reconnecte.</p>'],
+                ['title'=>'Aider en cas de changement d’adresse', 'html'=>'<p>L’apprenant protégé confirme son ancien et son nouveau courriel. En cas de boîte inaccessible, un enseignant autorisé corrige l’adresse dans <strong>Admin</strong>, après vérification d’identité. La protection reste activée ; les anciens accès sont révoqués.</p>'],
+                ['title'=>'Configurer SMTP — superadmin', 'html'=>'<p>Dans <strong>Superadministration → Serveur de messagerie</strong>, renseignez le serveur, le port, la sécurité TLS, les identifiants et l’expéditeur, puis activez SMTP. Enregistrez avant d’envoyer un test à votre propre adresse.</p><p>Mot de passe vide : secret conservé. SMTP désactivé : messagerie habituelle du serveur. SMTP indisponible : messages en attente, puis nouvelle tentative.</p>'],
+            ],
+            'tip_title'=>'Disponibilité des courriels', 'tip'=>'Testez la livraison avant une séance utilisant les codes. La file traite les codes en priorité. L’administrateur du serveur peut activer la tâche planifiée d’envoi pour une livraison régulière, même sans navigation dans liike.',
+        ],
     ],
 ];

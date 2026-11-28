@@ -7,7 +7,7 @@
 ### Identité et sécurité
 
 - l’enseignant dispose d’un mot de passe hashé, de sessions, d’une protection CSRF et d’une récupération par lien temporaire, mais il n’existe pas encore d’authentification multifacteur ;
-- les codes apprenants sans mot de passe sont volontairement simples et prévisibles : ils ne conviennent pas à des données sensibles ;
+- les identifiants apprenants sont simples et prévisibles. Une protection facultative par code courriel existe, désactivée par défaut ; sans activation, l’identifiant seul suffit. Ce mécanisme dépend de la sécurité de la boîte mail ;
 - l’application ne propose pas encore de journal complet des connexions ni de protection anti-bruteforce dédiée à toutes les formes de connexion ;
 - les inscriptions et récupérations publiques sont protégées sans CAPTCHA par des jetons à usage unique, un champ piège et des quotas persistants ; les seuils et le domaine canonique des liens sont à configurer selon l’instance (voir [exploitation](exploitation.md#protection-contre-les-abus-sans-captcha)) ;
 - les imports de blocs contrôlent la taille, les extensions des documents et le format réel des images ; aucune analyse antivirus n’est intégrée. Les iframes sont reconstruites à partir d’une URL HTTP(S), mais il n’existe pas de liste de domaines autorisés configurable ni de sandbox iframe ;
@@ -56,5 +56,5 @@
 5. Envisager des preuves figées de réalisation et des commentaires par compétence.
 6. Rendre la règle d’acquisition configurable : moyenne, dernier niveau ou seuil de situations réussies.
 7. Ajouter un historique des contenus et une gestion explicite des versions publiées.
-8. Envisager un transport SMTP configurable et un suivi des retours de livraison.
+8. Ajouter le suivi des retours de livraison au transport SMTP configurable désormais disponible.
 9. Compléter les tests PHP et Chromium existants par des essais sur téléphones réels et des mesures de charge des discussions et grands exports.

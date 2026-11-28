@@ -1001,3 +1001,9 @@ h1{font-size:2.25rem}
 .bottom-nav .reward-nav-score{border-color:#fff}
 
 .enrollment-candidates[aria-busy=true]{opacity:.6}.enrollment-candidates label:has(input:disabled){cursor:default;background:var(--panel-soft,#f7f6fa)}.enrollment-selection{display:flex;flex-wrap:wrap;gap:.4rem}.enrollment-selection button{display:inline-flex;align-items:center;gap:.5rem;max-width:100%;overflow-wrap:anywhere}.enrollment-candidates label{min-height:44px}.enrollment-candidates:empty{display:none}
+
+/* Optional email login verification, readable without mobile zoom. */
+.security-code-card{width:100%;max-width:30rem;min-width:0}
+.security-code-input{font-size:1.75rem;letter-spacing:.45em;text-align:center;font-variant-numeric:tabular-nums}
+.admin-list article>.admin-user-actions{flex-direction:row;flex-wrap:wrap;gap:.5rem;flex-shrink:0}.admin-user-actions form{margin:0!important}
+@media(max-width:575.98px){.admin-list article{flex-wrap:wrap}.admin-list article>.admin-user-actions{width:100%}.admin-user-actions .btn{min-height:2.5rem}.admin-private-emails input{min-width:0;width:100%}}
