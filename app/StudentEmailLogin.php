@@ -7,6 +7,8 @@ final class StudentEmailLogin
 {
     public const LIFETIME=600;
     public const MAX_ATTEMPTS=5;
+    public const MAX_REQUESTS_PER_HOUR=6;
+    public const MAX_REQUESTS_PER_DAY=20;
     public function __construct(private PDO $db,private string $root){}
 
     private function one(string $sql,array $params): ?array
@@ -50,7 +52,7 @@ final class StudentEmailLogin
                 if($purpose==='email_new'&&((int)($payload['old_verified_at']??0)<$now-self::LIFETIME||(int)($payload['old_revision']??-1)!==(int)$user['security_revision']))throw new InvalidArgumentException('Vérifiez d’abord votre adresse actuelle.');
             }
             $ip=function_exists('app_public_mail_ip_hash')?app_public_mail_ip_hash():hash('sha256',(string)($_SERVER['REMOTE_ADDR']??'unknown'));
-            $rules=[['send:'.$userId.':'.$purpose,60,1],['send:user:'.$userId,3600,6],['send:user:'.$userId,86400,20],['send:ip:'.$ip,900,120],['send:global',3600,600],['fail:user:'.$userId,600,5]];
+            $rules=[['send:'.$userId.':'.$purpose,60,1],['send:user:'.$userId,3600,self::MAX_REQUESTS_PER_HOUR],['send:user:'.$userId,86400,self::MAX_REQUESTS_PER_DAY],['send:ip:'.$ip,900,120],['send:global',3600,600],['fail:user:'.$userId,600,self::MAX_ATTEMPTS]];
             if(!$this->allowed($rules,$now))throw new DomainException('Trop de demandes ou d’essais. Patientez avant de réessayer.');
             $this->record(array_column(array_slice($rules,0,5),0),$now);
             $id=bin2hex(random_bytes(24));$code=str_pad((string)random_int(0,9999),4,'0',STR_PAD_LEFT);$recipient=$purpose==='email_new'?$payload['new_email']:$user['email'];
@@ -75,7 +77,7 @@ final class StudentEmailLogin
             if(!$challenge)throw new InvalidArgumentException('Code expiré ou demande indisponible. Demandez un nouveau code.');
             $userId=(int)$challenge['user_id'];$user=$this->account($userId);
             $ip=function_exists('app_public_mail_ip_hash')?app_public_mail_ip_hash():hash('sha256',(string)($_SERVER['REMOTE_ADDR']??'unknown'));
-            if(!$this->allowed([['fail:user:'.$userId,600,5],['fail:ip:'.$ip,600,300]],$now))throw new DomainException('Trop de demandes ou d’essais. Patientez avant de réessayer.');
+            if(!$this->allowed([['fail:user:'.$userId,600,self::MAX_ATTEMPTS],['fail:ip:'.$ip,600,300]],$now))throw new DomainException('Trop de demandes ou d’essais. Patientez avant de réessayer.');
             $valid=preg_match('/^[0-9]{4}$/D',$code)&&hash_equals($challenge['code_hash'],hash_hmac('sha256',$id.'|'.$code,AppSecrets::key($this->root,false)));
             if(!$valid){
                 $this->db->prepare('UPDATE student_email_challenges SET attempts=attempts+1 WHERE id=?')->execute([$id]);$this->record(['fail:user:'.$userId,'fail:ip:'.$ip],$now);
@@ -103,6 +105,44 @@ final class StudentEmailLogin
     {
         return ($teacher['role']??'')==='teacher'&&($teacher['account_status']??'')==='active'&&($student['role']??'')==='student'
             &&((int)($teacher['is_superadmin']??0)===1||(int)($student['managed_by']??0)===(int)$teacher['id']);
+    }
+    /** Read actual account limits in batches, without a query per admin-directory row. */
+    public function temporaryBlocks(array $users,?int $now=null): array
+    {
+        $now??=time();$eligible=[];$mailScopes=[];$blocked=[];
+        foreach($users as $user){
+            if(($user['role']??'')!=='student'||($user['account_status']??'')!=='active'||empty($user['email_login_enabled'])||!empty($user['login_blocked_at']))continue;
+            $id=(int)$user['id'];$eligible[$id]=true;
+            $mailScopes['delivery:auth-email:'.hash('sha256',strtolower((string)$user['email']))]=$id;
+        }
+        if(!$eligible)return [];
+        $query=$this->db->prepare("SELECT scope,COUNT(*) AS day_count,
+            SUM(CASE WHEN recorded_at>? THEN 1 ELSE 0 END) AS hour_count,
+            SUM(CASE WHEN recorded_at>? THEN 1 ELSE 0 END) AS failure_count
+            FROM student_auth_events WHERE recorded_at>? AND (scope LIKE 'send:user:%' OR scope LIKE 'fail:user:%') GROUP BY scope");
+        $query->execute([$now-3600,$now-600,$now-86400]);
+        foreach($query->fetchAll(PDO::FETCH_ASSOC) as $row){
+            $id=(int)substr($row['scope'],10);if(!isset($eligible[$id]))continue;
+            if(str_starts_with($row['scope'],'send:user:')
+                ? ((int)$row['hour_count']>=self::MAX_REQUESTS_PER_HOUR||(int)$row['day_count']>=self::MAX_REQUESTS_PER_DAY)
+                : (int)$row['failure_count']>=self::MAX_ATTEMPTS)$blocked[$id]=true;
+        }
+        // A normal one-minute resend delay is not an account suspension.
+        // Network/global budgets cannot be lifted by an individual account reset.
+        $guard=rtrim($this->root,'/').'/storage/mail-guard.sqlite';
+        if(is_file($guard)){
+            try{
+                $mail=new PDO('sqlite:file:'.str_replace('%2F','/',rawurlencode($guard)).'?mode=ro',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+                $mail->exec('PRAGMA busy_timeout=1000;PRAGMA query_only=ON');
+                if($mail->query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='mail_guard_events'")->fetchColumn()){
+                    // Same delivery budgets as MailDelivery: ten/hour and thirty/day per code recipient.
+                    $query=$mail->prepare("SELECT scope FROM mail_guard_events WHERE recorded_at>? AND scope LIKE 'delivery:auth-email:%' GROUP BY scope HAVING SUM(cost)>=30 OR SUM(CASE WHEN recorded_at>? THEN cost ELSE 0 END)>=10");
+                    $query->execute([$now-86400,$now-3600]);
+                    foreach($query->fetchAll(PDO::FETCH_COLUMN) as $scope)if(isset($mailScopes[$scope]))$blocked[$mailScopes[$scope]]=true;
+                }
+            }catch(PDOException $error){error_log('liike login limit status: '.get_class($error));}
+        }
+        return $blocked;
     }
     /** Reset this account's code budgets only; shared network/global limits remain in force. */
     public function resetAttempts(int $studentId,array $admin): void

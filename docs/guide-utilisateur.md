@@ -50,7 +50,7 @@ Ce droit appartient uniquement à l’enseignant responsable du compte (`managed
 
 ### Lever une limite temporaire de connexion
 
-Dans **Superadministration → Utilisateurs**, le superadmin dispose du bouton **Réinitialiser les tentatives**, à côté de **Bloquer l’accès** et **Effacer**. Après confirmation, il remet à zéro les demandes de code et les essais incorrects propres à cet apprenant, ainsi que le quota d’envoi de codes à son adresse actuelle. Les anciens codes sont invalidés : l’apprenant doit en demander un nouveau.
+Dans **Superadministration → Utilisateurs**, le superadmin dispose du bouton **Réinitialiser les tentatives**, à côté de **Bloquer l’accès** et **Effacer**. Ce bouton apparaît uniquement pour les comptes protégés dont une limite temporaire individuelle est atteinte ; il disparaît après réinitialisation ou à la prochaine ouverture de la page une fois le délai écoulé. Une simple attente d’une minute avant renvoi ne le fait pas apparaître. Après confirmation, il remet à zéro les demandes de code et les essais incorrects propres à cet apprenant, ainsi que le quota d’envoi de codes à son adresse actuelle. Les anciens codes sont invalidés : l’apprenant doit en demander un nouveau.
 
 La protection par courriel, les sessions déjà validées, les inscriptions et les résultats sont conservés. Le bouton ne réactive pas un compte archivé et ne lève pas un blocage manuel : utilisez d’abord **Débloquer l’accès** si nécessaire. Les limites partagées du réseau et de la plateforme restent applicables.
 
