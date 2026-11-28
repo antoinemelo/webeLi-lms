@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "66bf16544656a13d15149ce4e9ba1db88b491e9693245362b595d5dc60a92879",
-    "VERSION": "2a16563a30aa3b5809872199379f51f53fabb0f4107a808472d5acbff3bf1764",
+    "VERSION": "1329a7b9779daab8f8b88e5cb4b987df52764ba2b99ea3c12dfbcfa6761938ba",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/ActivityResults.php": "466d731c7c7988708eb8bd30c183e10ff8eba679f56675a814cdb000988dfdab",
     "app/AdaptiveQcm.php": "dd89dcfa06d3931d9b2bfa5a4a80b852b9c5ecd240920d49ed0aa521bfd98cec",
@@ -1168,7 +1168,7 @@
     "app/ReportQr/vendor/paragonie/random_compat/psalm-autoload.php": "5cd0ad215f5b753db165e4b1eb638ced0ddadca0c78d966fe61f87acd58262f2",
     "app/ReportQr/vendor/paragonie/random_compat/psalm.xml": "e4095e243d790a5001df8f469382c2d97ae069943bd42dee0f5e613dd958cd4e",
     "app/SecurityActions.php": "499bc608ba8ede9a7e6de9c7c091ad5442c17368aa8159959eefac295609d89d",
-    "app/SecurityViews.php": "d94b4f70c91dca03720656f4a3751093ced70c6b9ea3831ef72a737056d2a830",
+    "app/SecurityViews.php": "8e989a2eff1f816e9fe9efc7e0437618a834d57240d99b583689d6f66d5aecaf",
     "app/SessionPolicy.php": "03a6226a8b15be2ad088b82696a7c8d727c144b08d6740bc89a81d6c7f77b886",
     "app/SmtpConfig.php": "f25c60388a2319d67c15233e25792a2737782b35652ac0da28846cdc42b45f9d",
     "app/StudentAdminExport.php": "7f9d6df476ce36b4d3d704426d5370396f7a736a0bbb89d6754d6e4f35d885db",
@@ -1196,7 +1196,7 @@
     "app/translations/qcm.php": "5a330a697bf9fe406b02729933392be0cf086bc690411c2497b2ed39682aa649",
     "app/translations/quiz-attempts.php": "c1c1fac2fe3962c929f93048ff3f01173f90a6caa150fe9e4e39a86912fe1151",
     "app/translations/sharing.php": "fcd55d6c3441f84468483e189cd54a69346e8d955c4066e9785d3381d6d0f828",
-    "app/views.php": "e8282e0fba90069d6a84bb23a6e017f7aa11a56ea19151854b77035406f6aef8",
+    "app/views.php": "c4ac7313bfb07bbd9475cf41641948cec7f674599099dba6b61394d862cb5224",
     "assets/announcement-messages.js": "cdce6aab879f74d09ff728ae6b9bec2301182fe8a8e9e469ac3477a005849f6f",
     "assets/app.css": "3d8a8cc9e846ca56480a9a9da4b3a0e36b6c352814fe9c3ca9d7c7384890ba05",
     "assets/app.js": "178cd746bcfff44b8d833327e4d8f656819ab2c9d23d8294cada24d70b96472f",
@@ -1302,7 +1302,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-11-28T12:08:06+00:00",
+  "generated_at": "2026-11-28T12:19:43+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -1315,5 +1315,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q4.41"
+  "version": "2026Q4.42"
 }
