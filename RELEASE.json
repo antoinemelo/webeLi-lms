@@ -9,7 +9,7 @@
     ".gitignore": "861e5d8f43ba9ae1821f0811b3c40bbd7975051aeb18150c8f0a9f9c0fb25c1b",
     ".htaccess": "a14510f953a59d5deba19829b33c924900b52ff7343033e025a4c926e1d7d674",
     "README.md": "66bf16544656a13d15149ce4e9ba1db88b491e9693245362b595d5dc60a92879",
-    "VERSION": "1329a7b9779daab8f8b88e5cb4b987df52764ba2b99ea3c12dfbcfa6761938ba",
+    "VERSION": "8fc2d687a9dfe73770ccf1cf68ad2178fe9f9f6da87f735d9bd9c20ec19b782a",
     "app/.htaccess": "dbdf47f62a27badc00789cd9369768de4d210117e6b04d534677154701c19435",
     "app/ActivityResults.php": "466d731c7c7988708eb8bd30c183e10ff8eba679f56675a814cdb000988dfdab",
     "app/AdaptiveQcm.php": "dd89dcfa06d3931d9b2bfa5a4a80b852b9c5ecd240920d49ed0aa521bfd98cec",
@@ -1196,7 +1196,7 @@
     "app/translations/qcm.php": "5a330a697bf9fe406b02729933392be0cf086bc690411c2497b2ed39682aa649",
     "app/translations/quiz-attempts.php": "c1c1fac2fe3962c929f93048ff3f01173f90a6caa150fe9e4e39a86912fe1151",
     "app/translations/sharing.php": "fcd55d6c3441f84468483e189cd54a69346e8d955c4066e9785d3381d6d0f828",
-    "app/views.php": "c4ac7313bfb07bbd9475cf41641948cec7f674599099dba6b61394d862cb5224",
+    "app/views.php": "bbae118be7473d11f64742be0d6e19b509e98759f30e8531d7383e7635d1bacb",
     "assets/announcement-messages.js": "cdce6aab879f74d09ff728ae6b9bec2301182fe8a8e9e469ac3477a005849f6f",
     "assets/app.css": "3d8a8cc9e846ca56480a9a9da4b3a0e36b6c352814fe9c3ca9d7c7384890ba05",
     "assets/app.js": "178cd746bcfff44b8d833327e4d8f656819ab2c9d23d8294cada24d70b96472f",
@@ -1302,7 +1302,7 @@
     "uploads/fiche-observation.txt": "d9b69c7097c50404014528a90456de90240862f8602897df4515b4329a6ef5cc"
   },
   "format": 1,
-  "generated_at": "2026-11-28T12:19:43+00:00",
+  "generated_at": "2026-11-28T12:25:27+00:00",
   "manifest_url": "https://raw.githubusercontent.com/antoinemelo/webeLi-lms/main/RELEASE.json",
   "messaging_database_version": 1,
   "mutable_paths": [
@@ -1315,5 +1315,5 @@
     "vendor/"
   ],
   "repository": "git@github.com:antoinemelo/webeLi-lms.git",
-  "version": "2026Q4.42"
+  "version": "2026Q4.43"
 }
